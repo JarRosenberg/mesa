@@ -38,13 +38,11 @@
       set_initial_model_number = .true.
       initial_model_number = 0
 
-      pgstar_flag = .false.
-      !pgstar_flag = .true.
+      pgstar_flag = .true.
 
 / ! end of star_job namelist
 
 &eos
-use_Skye = .false.
 / ! end of eos namelist
 
 &kap
@@ -130,7 +128,7 @@ use_Skye = .false.
       overshoot_f0(1) = 0.005
 
       min_overshoot_q = 0d0
-      overshoot_D_min = 100.0
+      overshoot_D_min = 1d-2
 
       use_other_alpha_mlt = .true. ! implemented in run_star_extras
       x_ctrl(21) = 3.0 ! alpha_H
@@ -151,7 +149,7 @@ use_Skye = .false.
       delta_lgT_max_limit_only_after_near_zams = .true.
       delta_lgT_max_limit_lgT_min = 7d0!6.5d0
       delta_lgT_max_limit = 0.001     
-      delta_lgT_max_hard_limit = 0.01
+      delta_lgT_max_hard_limit = -1
 
       delta_lgL_power_photo_limit = 0.01d0
       delta_lgL_power_photo_hard_limit = 0.02d0
@@ -208,7 +206,7 @@ use_Skye = .false.
       !warn_when_large_rel_run_E_err = 1d99
 
       use_gold2_tolerances = .false.
-      use_gold_tolerances = .false.
+      use_gold_tolerances = .true.
       
       scale_max_correction = 0.1d0
       ignore_species_in_max_correction = .true.
@@ -220,9 +218,9 @@ use_Skye = .false.
       warn_rates_for_high_temp = .true.
       max_safe_logT_for_rates = 10.5d0
       
+      use_superad_reduction = .true. 
 
-      !Pextra_factor = 1 ! for atm
-      Pextra_factor = 1d2 ! for atm
+      Pextra_factor = 2 ! for atm
 
       !op_split_burn = .true.
       !op_split_burn_min_T = 1d9
@@ -322,15 +320,15 @@ use_Skye = .false.
 
 &pgstar
 
-!pause = .true.
+!pause_flag = .true.
 
 !pgstar_interval = 1
 
 ! x-axis limits and properties
-Profile_Panels3_xaxis_name = 'mass'
-Profile_Panels3_xmin = 0.0
-Profile_Panels3_xmax = 2.0
-Profile_Panels3_xaxis_reversed = .false.
+Profile_Panels3_xaxis_name = 'zone'
+Profile_Panels3_xmin = -101d0!0.0
+Profile_Panels3_xmax = -101d0!2.0
+Profile_Panels3_xaxis_reversed = .true.
 
 
 / ! end of pgstar namelist

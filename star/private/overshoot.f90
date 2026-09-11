@@ -1,51 +1,35 @@
 ! ***********************************************************************
 !
-!   Copyright (C) 2010-2017 Rich Townsend & The MESA Team
+!   Copyright (C) 2010-2017  Rich Townsend & The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 module overshoot
 
-  ! Uses
-
-  use const_def
+  use const_def, only: dp, pi4, no_mixing, overshoot_mixing
   use num_lib
   use star_private_def
-
   use overshoot_utils
   use overshoot_exp
   use overshoot_step
-  
-  ! No implicit typing
 
   implicit none
 
-  ! Access specifers
-
   private
-
   public :: add_overshooting
-
-  ! Procedures
 
 contains
 
@@ -92,9 +76,9 @@ contains
        if (s%conv_bdy_q(i) < s%min_overshoot_q) then
           if (dbg) then
              write(*,*) 'skip since s%conv_bdy_q(i) < min_overshoot_q', i
-          endif
+          end if
           cycle conv_bdy_loop
-       endif
+       end if
 
        ! Skip this boundary if it's at the surface, since we don't
        ! overshoot there
@@ -102,7 +86,7 @@ contains
        if (s%conv_bdy_loc(i) == 1) then
           if (dbg) then
              write(*,*) 'skip since s%conv_bdy_loc(i) == 1', i
-          endif
+          end if
           cycle conv_bdy_loop
        end if
 
@@ -125,7 +109,7 @@ contains
              match_zone_type = .NOT. ( &
                   s%burn_h_conv_region(i) .OR. &
                   s%burn_he_conv_region(i) .OR. &
-                  s%burn_z_conv_region(i) )              
+                  s%burn_z_conv_region(i) )
           case ('any')
              match_zone_type = .true.
           case default
@@ -170,7 +154,7 @@ contains
              write(*,*) '  s%overshoot_zone_type=', TRIM(s%overshoot_zone_type(j))
              write(*,*) '  s%overshoot_zone_loc=', TRIM(s%overshoot_zone_loc(j))
              write(*,*) '  s%overshoot_bdy_loc=', TRIM(s%overshoot_bdy_loc(j))
-          endif
+          end if
 
           ! Special-case check for an overshoot scheme of 'none' (this can be used
           ! to turn *off* overshoot for specific boundary configurations)
@@ -188,7 +172,7 @@ contains
           select case (s%overshoot_scheme(j))
           case ('exponential')
              call eval_overshoot_exp(s, i, j, k_a, k_b, D, vc, ierr)
-          case ('step')
+          case ('step', 'step+exponential')
              call eval_overshoot_step(s, i, j, k_a, k_b, D, vc, ierr)
           case ('other')
              call s% other_overshooting_scheme(s% id, i, j, k_a, k_b, D, vc, ierr)
@@ -205,16 +189,17 @@ contains
              dk = -1
           else
              dk = 1
-          endif
+          end if
 
           face_loop : do k = k_a, k_b, dk
 
              ! Check if the overshoot will be stabilized by the stratification
 
              if (s%overshoot_brunt_B_max > 0._dp .and. s% calculate_Brunt_B) then
-                
+
                 if (.not. s% calculate_Brunt_N2) &
-                   call mesa_error(__FILE__,__LINE__,'add_overshooting: when overshoot_brunt_B_max > 0, must have calculate_Brunt_N2 = .true.')
+                   call mesa_error(__FILE__,__LINE__, &
+                                   'add_overshooting: when overshoot_brunt_B_max > 0, must have calculate_Brunt_N2 = .true.')
 
                 ! (NB: we examine B(k+dk) rather than B(k), as the latter
                 ! would allow the overshoot region to eat into a composition
@@ -224,16 +209,16 @@ contains
                    if (s%unsmoothed_brunt_B(k+dk) > s%overshoot_brunt_B_max) exit face_loop
                 else
                    if (s%unsmoothed_brunt_B(k) > s%overshoot_brunt_B_max) exit face_loop
-                endif
+                end if
 
-             endif
+             end if
 
              ! Check whether D has dropped below the minimum
 
              if (D(k) < s%overshoot_D_min) then
 
                 ! Update conv_bdy_dq to reflect where D drops below the minimum
-                ! Convective regions can happen to be entirely below s%overshoot_D_min, 
+                ! Convective regions can happen to be entirely below s%overshoot_D_min,
                 ! in which case we ignore this correction.
                 if (s%top_conv_bdy(i)) then
                    if (s%D_mix(k+1) > s%overshoot_D_min) then
@@ -263,11 +248,11 @@ contains
                          return
                       end if
                    end if
-                endif
+                end if
 
                 exit face_loop
 
-             endif
+             end if
 
              ! Revise mixing coefficients
 
@@ -276,9 +261,9 @@ contains
                       (s%dq(k-1) + s%dq(k))
              else
                 rho = s%rho(k)
-             endif
-       
-             cdc = (pi4*s%r(k)*s%r(k)*rho)*(pi4*s%r(k)*s%r(k)*rho)*D(k) ! gm^2/sec
+             end if
+
+             cdc = (pi4*s%r(k)*s%r(k)*rho)*(pi4*s%r(k)*s%r(k)*rho)*D(k)  ! gm^2/sec
 
              call eval_conv_bdy_r(s, i, r_cb, ierr)
              if (ierr /= 0) then
@@ -310,7 +295,7 @@ contains
           s%D_mix(k:k_cb:dk) = 0._dp
           s%conv_vel(k:k_cb:dk) = 0._dp
           s%mixing_type(k:k_cb:dk) = no_mixing
-          
+
           ! Finish (we apply at most a single overshoot scheme to each boundary)
 
           exit criteria_loop
@@ -336,8 +321,6 @@ contains
        end if
 
     end do check_loop
-
-    ! Finish
 
     return
 

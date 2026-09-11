@@ -2,36 +2,31 @@
 !
 ! Copyright (C) 2020 The MESA Team
 !
-! MESA is free software; you can use it and/or modify
-! it under the combined terms and restrictions of the MESA MANIFESTO
-! and the GNU General Library Public License as published
-! by the Free Software Foundation; either version 2 of the License,
-! or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-! You should have received a copy of the MESA MANIFESTO along with
-! this software; if not, it is available at the mesa website:
-! http://mesa.sourceforge.net/
+!   This program is distributed in the hope that it will be useful,
+!   but WITHOUT ANY WARRANTY; without even the implied warranty of
+!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+!   See the GNU Lesser General Public License for more details.
 !
-! MESA is distributed in the hope that it will be useful,
-! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-! See the GNU Library General Public License for more details.
-!
-! You should have received a copy of the GNU Library General Public License
-! along with this software; if not, write to the Free Software
-! Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
    module kap_ctrls_io
 
-   use const_def
+   use const_def, only: dp
+   use utils_namelist, only: max_extra_inlists
    use kap_def
    use math_lib
 
    implicit none
 
-   public :: read_namelist, write_namelist, get_kap_controls, set_kap_controls
+   public :: read_kap_namelist, write_namelist, get_kap_controls, set_kap_controls
    private
 
    real(dp) :: Zbase
@@ -88,7 +83,7 @@
 
    logical, dimension(max_extra_inlists) :: read_extra_kap_inlist
    character (len=strlen), dimension(max_extra_inlists) :: extra_kap_inlist_name
-   
+
    ! User supplied inputs
    real(dp) :: kap_ctrl(10)
    integer :: kap_integer_ctrl(10)
@@ -97,7 +92,7 @@
 
    namelist /kap/ &
 
-      Zbase, & 
+      Zbase, &
 
       kap_file_prefix, kap_CO_prefix, kap_lowT_prefix, aesopus_filename, &
 
@@ -139,91 +134,54 @@
 
 
    ! read a "namelist" file and set parameters
-   subroutine read_namelist(handle, inlist, ierr)
+   subroutine read_kap_namelist(handle, inlist, ierr)
+      use utils_namelist, only: read_namelist, missing_namelist_warning
       integer, intent(in) :: handle
       character (len=*), intent(in) :: inlist
-      integer, intent(out) :: ierr ! 0 means AOK.
+      integer, intent(out) :: ierr  ! 0 means AOK.
       type (Kap_General_Info), pointer :: rq
-      include 'formats'
+
       call get_kap_ptr(handle,rq,ierr)
+
       if (ierr /= 0) return
+
       call set_default_controls
-      call read_controls_file(rq, inlist, 1, ierr)
+
+      if (inlist /= '') then
+         call read_namelist(inlist, read_kap_file, "kap", ierr, missing_namelist_warning)
+      end if
+
       if (ierr /= 0) return
-   end subroutine read_namelist
 
+      call store_controls(rq, ierr)
+   end subroutine read_kap_namelist
 
-   recursive subroutine read_controls_file(rq, filename, level, ierr)
-      use ISO_FORTRAN_ENV, only: IOSTAT_END
-      character(*), intent(in) :: filename
-      type (Kap_General_Info), pointer :: rq
-      integer, intent(in) :: level
-      integer, intent(out) :: ierr
-      logical, dimension(max_extra_inlists) :: read_extra
-      character (len=strlen), dimension(max_extra_inlists) :: extra
-      integer :: unit, i
+   subroutine read_kap_file(unit, iostat, iomsg, extra_inlists, extra_inlists_mask)
+      use const_def, only: strlen
+      use utils_namelist, only: max_extra_inlists
 
-      ierr = 0
-      if (level >= 10) then
-         write(*,*) 'ERROR: too many levels of nested extra controls inlist files'
-         ierr = -1
+      integer, intent(in) :: unit
+      integer, intent(out) :: iostat
+      character(len=strlen), intent(out) :: iomsg
+      character(len=strlen), dimension(max_extra_inlists), intent(out) :: extra_inlists
+      logical, dimension(max_extra_inlists), intent(out) :: extra_inlists_mask
+
+      integer :: i
+
+      read_extra_kap_inlist(:) = .false.
+
+      read(unit, nml=kap, iostat=iostat, iomsg=iomsg)
+
+      if (iostat /= 0) then
          return
       end if
 
-      if (len_trim(filename) > 0) then
-         open(newunit=unit, file=trim(filename), &
-            action='read', delim='quote', status='old', iostat=ierr)
-         if (ierr /= 0) then
-            if (level == 1) then
-               ierr = 0 ! no inlist file so just use defaults
-               call store_controls(rq, ierr)
-            else
-               write(*, *) 'Failed to open kap namelist file ', trim(filename)
-            end if
-            return
-         end if
-         read(unit, nml=kap, iostat=ierr)
-         close(unit)
-         if (ierr == IOSTAT_END) then ! end-of-file means didn't find an &kap namelist
-            ierr = 0
-            write(*, *) 'WARNING: Failed to find kap namelist in file: ', trim(filename)
-            call store_controls(rq, ierr)
-            close(unit)
-            return
-         else if (ierr /= 0) then
-            write(*, *)
-            write(*, *)
-            write(*, *)
-            write(*, *)
-            write(*, '(a)') 'Failed while trying to read kap namelist file: ' // trim(filename)
-            write(*, '(a)') 'Perhaps the following runtime error message will help you find the problem.'
-            write(*, *)
-            open(newunit=unit, file=trim(filename), action='read', delim='quote', status='old', iostat=ierr)
-            read(unit, nml=kap)
-            close(unit)
-            return
-         end if
-      end if
-
-      call store_controls(rq, ierr)
-
-      if (len_trim(filename) == 0) return
-
-      ! recursive calls to read other inlists
       do i=1, max_extra_inlists
-         read_extra(i) = read_extra_kap_inlist(i)
-         read_extra_kap_inlist(i) = .false.
-         extra(i) = extra_kap_inlist_name(i)
-         extra_kap_inlist_name(i) = 'undefined'
-   
-         if (read_extra(i)) then
-            call read_controls_file(rq, extra(i), level+1, ierr)
-            if (ierr /= 0) return
-         end if
+         extra_inlists(i) = extra_kap_inlist_name(i)
+         extra_inlists_mask(i) = read_extra_kap_inlist(i)
       end do
 
-   end subroutine read_controls_file
-
+   end subroutine read_kap_file
 
    subroutine set_default_controls
       include 'kap.defaults'
@@ -301,7 +259,7 @@
             write(0,*) ' num_kap_Zs = ', num_kap_Zs
             ierr = -1
             return
-         endif
+         end if
 
          num_kap_Xs(kap_user) = user_num_kap_Xs
          kap_Xs(:, kap_user) = user_kap_Xs
@@ -370,7 +328,7 @@
             write(0,*) ' num_kap_lowT_Zs = ', num_kap_lowT_Zs
             ierr = -1
             return
-         endif
+         end if
 
          num_kap_lowT_Xs(kap_lowT_user) = user_num_kap_lowT_Xs
          kap_lowT_Xs(:, kap_lowT_user) = user_kap_lowT_Xs
@@ -409,7 +367,7 @@
       if (ierr /= 0) then
          write(*,*) 'failed to open ' // trim(filename)
          return
-      endif
+      end if
       call get_kap_ptr(handle,rq,ierr)
       if (ierr /= 0) then
          close(iounit)
@@ -477,27 +435,27 @@
       ! First save current controls
       call set_controls_for_writing(rq)
 
-      ! Write namelist to temporay file
+      ! Write namelist to temporary file
       open(newunit=iounit,status='scratch')
       write(iounit,nml=kap)
       rewind(iounit)
 
-      ! Namelists get written in captials
+      ! Namelists get written in capitals
       upper_name = trim(StrUpCase(name))//'='
       val = ''
       ! Search for name inside namelist
-      do 
+      do
          read(iounit,'(A)',iostat=iostat) str
          ind = index(trim(str),trim(upper_name))
          if( ind /= 0 ) then
-            val = str(ind+len_trim(upper_name):len_trim(str)-1) ! Remove final comma and starting =
+            val = str(ind+len_trim(upper_name):len_trim(str)-1)  ! Remove final comma and starting =
             do i=1,len(val)
                if(val(i:i)=='"') val(i:i) = ' '
             end do
             exit
          end if
          if(is_iostat_end(iostat)) exit
-      end do   
+      end do
 
       if(len_trim(val) == 0 .and. ind==0 ) ierr = -1
 

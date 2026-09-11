@@ -2,6 +2,13 @@
 Overview of eos module
 ======================
 
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   defaults
+   interface
+
 The equation of state (EOS) is delivered by the ``eos`` module.  The
 MESA EOS combines different input sources in order to cover the wide
 range of conditions encountered during stellar evolution.  The most
@@ -33,7 +40,7 @@ both results are evaluated, blended, and returned.  Smooth blends are
 assured via the smoothness of the functions that define the component
 fractions.
 
-This approach means that that EOS components have an order of
+This approach means that EOS components have an order of
 precedence:
 
     (CMS) > Skye > PC > FreeEOS > OPAL/SCVH > HELM.
@@ -103,10 +110,10 @@ quantities.  See ``eos/public/eos_def.f90`` for more information.
      -
      - :math:`{\rm ergs \ cm^{3} \ g^{-2}}`
    * - :math:`dS/d\rho|_{T}`
-     - 
+     -
      - :math:`{\rm ergs \ cm^{3} \ g^{-2}  \ K^{-1}}`
    * - :math:`dS/dT|_{\rho}`
-     - 
+     -
      - :math:`{\rm ergs \ g^{-1}  \ K^{-2}}`
    * - :math:`\Gamma_1`
      - :math:`\equiv d{\rm ln}P/d{\rm ln}\rho|_S`
@@ -116,11 +123,10 @@ quantities.  See ``eos/public/eos_def.f90`` for more information.
      - none
 
 MESA also returns the temperature and density derivatives of these quantities.
-       
+
 
 Component EOSes
 ===============
-
 
 
 OPAL/SCVH
@@ -139,13 +145,13 @@ tables are for a H/He EOS and so only depend on :math:`X`.
 FreeEOS
 -------
 
-The FreeEOS |FreeEOS| tables are based on the FreeEOS code, version 2.2.1, 
-and utilize the EOS1 option suite.  FreeEOS is described as an "efficient 
-free-energy minimization technique that is suitable for physical conditions 
+The FreeEOS |FreeEOS| tables are based on the FreeEOS code, version 2.2.1,
+and utilize the EOS1 option suite.  FreeEOS is described as an "efficient
+free-energy minimization technique that is suitable for physical conditions
 in stellar interiors."  It provides results for arbitrary chemical composition
-that are thermodynamically consistent to machine precision.  The tables assume 
-a scaled-solar chemical composition and are parameterized by :math:`X` and 
-:math:`Z,` with tables provided up to :math:`Z=1.` FreeEOS covers a similar 
+that are thermodynamically consistent to machine precision.  The tables assume
+a scaled-solar chemical composition and are parameterized by :math:`X` and
+:math:`Z,` with tables provided up to :math:`Z=1.` FreeEOS covers a similar
 domain to the OPAL EOS.
 
 
@@ -207,13 +213,12 @@ CMS
 CMS is the EOS for dense H/He mixtures of |CMS|.
 
 
-
 .. |CMS| replace:: `Chabrier, Mazevet, & Soubiran (2019) <https://ui.adsabs.harvard.edu/abs/2019ApJ...872...51C>`__
 
 .. |SCVH| replace:: `(Saumon, Chabrier, & van Horn 1995) <https://ui.adsabs.harvard.edu/abs/1995ApJS...99..713S>`__
 
 .. |OPAL| replace:: `(Rogers & Nayfonov 2002) <https://ui.adsabs.harvard.edu/abs/2002ApJ...576.1064R>`__
-                    
+
 .. |HELM| replace:: `(Timmes & Swesty 2000) <https://ui.adsabs.harvard.edu/abs/2000ApJS..126..501T>`__
 
 .. |PC| replace:: `(Potekhin & Chabrier 2010) <https://ui.adsabs.harvard.edu/abs/2010CoPP...50...82P>`__

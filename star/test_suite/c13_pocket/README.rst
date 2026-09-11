@@ -4,6 +4,8 @@
 c13_pocket
 **********
 
+.. tags:: star, agb, thermal-pulse, c13-pocket, s-process, low-mass, partial-mixing-zone
+
 This test suite case shows a 2.0 |Msun|, :math:`Z = 0.01` thermally
 pulsing AGB star undergoing third dredge up.  It is a
 re-implementation of the example shown in Section 7.2.1 of |MESA I|.
@@ -44,7 +46,7 @@ thermal pulse and the :math:`^{13}{\rm C}` pocket is apparent.
 
 .. note::
 
-  When you run parts 0-2, the ``run_star_extras`` file attemps to
+  When you run parts 0-2, the ``run_star_extras`` file attempts to
   automatically do the analysis reported in Table 11 of |MESA I|.
   This can be useful for detailed comparisons between versions.
   Uncomment the parts in ``rn`` and then grep in the output for

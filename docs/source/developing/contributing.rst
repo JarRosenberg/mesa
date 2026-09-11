@@ -13,7 +13,7 @@ There are two ways to submit changes to MESA, depending on who you are.
 MESA developer
 --------------
 
-If you are a MESA developer then you will have commit access to the MESA repository on Github.
+If you are a MESA developer then you will have commit access to the MESA repository on GitHub.
 You must create an account on `GitHub <https://github.com/>`__.  The
 MESA organization is called `MESAHub <https://github.com/MESAHub/>`__.
 After you are registered on GitHub, you can be invited to the
@@ -26,7 +26,7 @@ Non-MESA developer
 For those who do not have commit access to the main MESA repository you will need to `fork <https://docs.github.com/en/github/collaborating-with-pull-requests/working-with-forks/about-forks>`__
 MESA and make your changes in your fork. Once you are happy with your changes you can submit a pull request
 against the main MESA repository. At this point your contributions will be reviewed by a MESA
-developer who may or may not accept the pull request. If they accept it then it will be merged 
+developer who may or may not accept the pull request. If they accept it then it will be merged
 into MESA.
 
 More details can be found in the `contribution documentation <../contributing.html>`__
@@ -42,7 +42,7 @@ When instructed to install git, it is likely simplest to do so using your system
 .. note::
    This documentation will mainly describe command line use of git.  However, there are many graphical git clients available.  For example, GitHub has its own `desktop app <https://desktop.github.com/>`__.  (See also :ref:`git-guis`).
 
-   
+
 Install Git LFS
 ---------------
 
@@ -63,11 +63,11 @@ clone over SSH, do::
 
 This will create the MESA repository in a directory named ``mesa``.
 
-For this to work you will need to have setup ssh keys and added them to your github account:
+For this to work you will need to have set up SSH keys and added them to your GitHub account:
 
-#. `Generate a ssh key <https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent>`__
+#. `Generate an SSH key <https://docs.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent>`__
 
-#. `Add a ssh key to Github <https://docs.github.com/en/github/authenticating-to-github/adding-a-new-ssh-key-to-your-github-account>`__
+#. `Add an SSH key to GitHub <https://docs.github.com/en/github/authenticating-to-github/adding-a-new-ssh-key-to-your-github-account>`__
 
 #. `Verify it works <https://docs.github.com/en/github/authenticating-to-github/testing-your-ssh-connection>`__
 
@@ -103,6 +103,8 @@ MESA development uses the following branching model:
 
 The line between what should be a feature branch / pull request and what's committed straight onto the main branch can be drawn based on how disruptive a change is expected to be. If it has the potential to break test suite cases, don't commit it directly to main.  Use a branch.
 
+If you are planning a backward-incompatible change, discuss it with with the broader developer team before substantial development begins.
+
 
 Making a commit
 ---------------
@@ -122,7 +124,7 @@ If you want to commit all your changes to files already tracked by git, you can 
 
   git commit -a -m <message>
 
-Note that this is different than ``svn commit``, as it only alters
+Note that this is different from ``svn commit``, as it only alters
 your local repository.  It does not transmit your changes to the
 remote repository.
 
@@ -162,7 +164,7 @@ Once you are ready to share your changes::
 The first argument is the remote repository (``origin`` = GitHub).
 The second argument is the branch name.  If you are making changes in
 the non-default branch (i.e., not ``main``), see :ref:`Branching`.
-  
+
 Fetching others changes
 -----------------------
 
@@ -224,7 +226,7 @@ characters, you only need enough of the hash to be unique. This is usually only 
 This will return your local repository to the state is was in the commit given by ``37cbee26``, but with your current uncommitted changes
 on top.
 
-  
+
 Restoring a file
 ----------------
 
@@ -246,7 +248,7 @@ directory (``.``) or a list of files (``*.f90``).
 ``git restore`` can also be used to restore a file from another commit::
 
   git restore --source=37cbee26 path/to/file
-  
+
 
 .. _branching:
 
@@ -313,7 +315,7 @@ Stashing changes
 ----------------
 
 Lets say you are working on the code and suddenly a bug report comes in and you decide to fix that code first before you finish your current work.
-Because your initial work is still in progress you want to save it but do not want to commit it yet. This is where 
+Because your initial work is still in progress you want to save it but do not want to commit it yet. This is where
 git stash comes in::
 
   git stash
@@ -329,7 +331,7 @@ it once you no longer need it::
 
   git stash drop
 
-You may have multiple stashes at once, in which case they are indexed by:: 
+You may have multiple stashes at once, in which case they are indexed by::
 
   git stash ${X}
 
@@ -341,13 +343,13 @@ Graphical interfaces
 --------------------
 
 Not everything needs to be done by command line. There are at least two GUI tools that are usually shipped with git,
-``git gui`` and ``gitk``. 
+``git gui`` and ``gitk``.
 ::
 
   git gui
 
 This provides a convenient interface for making commits. You can select which files to commit, which lines of which
-files, set the commit message, and make the commit. 
+files, set the commit message, and make the commit.
 ::
 
   gitk
@@ -397,12 +399,12 @@ have occurred on ``main``, it is recommended that you merge ``main`` into your
 branch (or rebase your branch to the tip of ``main``) before issuing the
 PR. This allows you to handle conflicts in advance and ensure that the
 test suite will remain passing after you merge your branch back into
-``main``. 
+``main``.
 
 When you merge ``main`` into your branch, it is also advisable to add ``[ci optional]`` to the commit message.
 That way the optional inlists will be tested when the commit is tested.
 
-     
+
 
 Making a pull request
 ---------------------

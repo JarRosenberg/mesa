@@ -1,14 +1,16 @@
 &binary_job
 
-   inlist_names(1) = 'inlist1' 
+   inlist_names(1) = 'inlist1'
    inlist_names(2) = 'inlist2'
 
    evolve_both_stars = .false.
 
+   ! pgbinary_flag = .true.
+
 / ! end of binary_job namelist
 
 &binary_controls
-         
+
    m1 = 5d0  ! donor mass in Msun
    m2 = 10d0 ! companion mass in Msun
    initial_period_in_days = 1d0
@@ -19,5 +21,6 @@
    limit_retention_by_mdot_edd = .true.
 
    max_tries_to_achieve = 0
-         
+
 / ! end of binary_controls namelist
+

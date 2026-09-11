@@ -1,36 +1,30 @@
 ! ***********************************************************************
 !
-!   Copyright (C) 2010  Ed Brown
+!   Copyright (C) 2010  Ed Brown & The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-!
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
- 
+
       module nuclide_set_mod
-      use chem_def   
-      use const_def
-      
+
+      use chem_def
+      use const_def, only: dp
+
       implicit none
 
-      contains      
+      contains
 
       function rank_in_set(iso, set)
          character(len=iso_name_length), intent(in) :: iso
@@ -43,7 +37,7 @@
          if (adjustl(iso) < adjustl(set(low)% nuclide) .or. adjustl(iso) > adjustl(set(high)% nuclide)) then
             rank_in_set = nuclide_not_found
             return
-         end if   
+         end if
          do i = 1, max_cycles
             if (high-low <=1) then
                if (adjustl(iso) == adjustl(set(high)% nuclide)) then
@@ -64,13 +58,13 @@
          end do
          rank_in_set = nuclide_not_found
       end function rank_in_set
-      
+
 
       subroutine sort_nuclide_set(set)
-         type(nuclide_set), dimension(:), intent(inout) :: set 
+         type(nuclide_set), dimension(:), intent(inout) :: set
          integer :: n, i, ir, j, l
          type(nuclide_set) :: ts
-   
+
          n = size(set)
          if (size(set) < 2) return
          l = n/2+1
@@ -107,13 +101,12 @@
          end do
 
          contains
-         
+
          logical function compare_lt(a, b)
             type(nuclide_set), intent(in) :: a, b
             compare_lt = (adjustl(a% nuclide) < adjustl(b% nuclide))
          end function compare_lt
-         
+
       end subroutine sort_nuclide_set
-      
 
       end module nuclide_set_mod

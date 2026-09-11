@@ -2,32 +2,25 @@
 !
 !   Copyright (C) 2012  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
-
 
       module hydro_chem_eqns
 
       use star_private_def
-      use const_def
+      use const_def, only: dp
       use utils_lib
 
       implicit none
@@ -35,9 +28,7 @@
       private
       public :: do_chem_eqns, do1_chem_eqns
 
-
       contains
-
 
       subroutine do_chem_eqns(s, nvar, ierr)
          type (star_info), pointer :: s
@@ -89,7 +80,7 @@
 
          dq = s% dq(k)
          dm = s% dm(k)
-         
+
          max_abs_residual = 0
          sum_dxdt_nuc = 0
 
@@ -109,8 +100,8 @@
 
          sum_dx_burning = 0
          sum_dx_mixing = 0
-         
-         do j=1,species ! composition equation for species j in cell k
+
+         do j=1,species  ! composition equation for species j in cell k
 
             !test_partials = (k == s% solver_test_partials_k .and. s% net_iso(ihe4) == j)
             test_partials = .false.
@@ -118,7 +109,7 @@
             i = s%nvar_hydro+j
 
             dxdt_actual = s% xa_sub_xa_start(j,k)/s% dt
-            
+
             doing_op_split_burn = s% op_split_burn .and. s% T_start(k) >= s% op_split_burn_min_T
             if (s% do_burn .and. .not. doing_op_split_burn) then
                dxdt_nuc = s% dxdt_nuc(j,k)
@@ -139,7 +130,7 @@
             eqn_scale = max(s% min_chem_eqn_scale, s% x_scale(i,k)/s% dt)
             residual = (dxdt_expected - dxdt_actual)/eqn_scale
             s% equ(i,k) = residual
-            
+
             if (abs(residual) > max_abs_residual) &
                max_abs_residual = abs(s% equ(i,k))
 
@@ -172,10 +163,10 @@
                   if (checking) call check_dequ(dequ,'d_dxdt_nuc_dx')
                   call e00(s, i, ii, k, nvar, dxdt_factor*dequ)
                end do
-               
+
                dequ_dlnd = s% d_dxdt_nuc_drho(j,k)*s% rho(k)/eqn_scale
                call e00(s, i, s% i_lnd, k, nvar, dxdt_factor*dequ_dlnd)
-               
+
                dequ_dlnT = s% d_dxdt_nuc_dT(j,k)*s% T(k)/eqn_scale
                call e00(s, i, s% i_lnT, k, nvar, dxdt_factor*dequ_dlnT)
 
@@ -202,7 +193,7 @@
 
             end if
 
-            if (test_partials) then   
+            if (test_partials) then
                s% solver_test_partials_dx_sink = s% net_iso(img24)
                s% solver_test_partials_val = s% dxdt_nuc(j,k)
                s% solver_test_partials_var = s% nvar_hydro + j
@@ -211,9 +202,9 @@
             end if
 
          end do
-         
+
          contains
-         
+
          subroutine check_dequ(dequ, str)
             real(dp), intent(in) :: dequ
             character (len=*), intent(in) :: str
@@ -230,6 +221,4 @@
 
       end subroutine do1_chem_eqns
 
-
       end module hydro_chem_eqns
-

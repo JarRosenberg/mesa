@@ -2,31 +2,24 @@
 !
 !   Copyright (C) 2010-2021  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
-
 module tdc_support
 
-use const_def
+use const_def, only: dp, pi, sqrt_2_div_3, boltz_sigma
 use num_lib
 use utils_lib
 use auto_diff
@@ -34,18 +27,26 @@ use auto_diff
 implicit none
 
 private
-public :: set_Y, Q_bisection_search, dQdZ_bisection_search, Af_bisection_search, &
-         convert, unconvert, safe_tanh, tdc_info, &
-         eval_Af, eval_xis, compute_Q
+public :: set_Y
+public :: Q_bisection_search
+public :: dQdZ_bisection_search
+public :: Af_bisection_search
+public :: convert
+public :: unconvert
+public :: safe_tanh
+public :: tdc_info
+public :: eval_Af
+public :: eval_xis
+public :: compute_Q
 
    !> Stores the information which is required to evaluate TDC-related quantities and which
    !! do not depend on Y.
    !!
    !! @param report Write debug output if true, not if false.
    !! @param mixing_length_alpha Mixing length parameter
-   !! @param alpha_TDC_DAMP TDC turbulent damping parameter
-   !! @param alpha_TDC_DAMPR TDC radiative damping parameter
-   !! @param alpha_TDC_PtdVdt TDC coefficient on P_turb*dV/dt. Physically should probably be 1.
+   !! @param TDC_alpha_D TDC turbulent damping parameter
+   !! @param TDC_alpha_R TDC radiative damping parameter
+   !! @param TDC_alpha_Pt TDC coefficient on P_turb*dV/dt. Physically should probably be 1.
    !! @param dt Time-step
    !! @param c0 A proportionality factor for the convective luminosity
    !! @param L luminosity
@@ -61,10 +62,10 @@ public :: set_Y, Q_bisection_search, dQdZ_bisection_search, Af_bisection_search,
    !! @param grada grada is the adiabatic dlnT/dlnP,
    !! @param Gamma Gamma is the MLT Gamma efficiency parameter, which we evaluate in steady state from MLT.
    type tdc_info
-      logical :: report
-      real(dp) :: mixing_length_alpha, alpha_TDC_DAMP, alpha_TDC_DAMPR, alpha_TDC_PtdVdt, dt
+      logical :: report, include_mlt_corr_to_TDC, use_TDC_enthalpy_flux_limiter
+      real(dp) :: mixing_length_alpha, TDC_alpha_C, TDC_alpha_S, TDC_alpha_D, TDC_alpha_R, TDC_alpha_Pt, dt, e
       type(auto_diff_real_tdc) :: A0, c0, L, L0, gradL, grada
-      type(auto_diff_real_star_order1) :: T, rho, dV, Cp, kap, Hp, Gamma
+      type(auto_diff_real_star_order1) :: T, rho, dV, Cp, kap, Hp, Gamma, Eq_div_w, P, h
    end type tdc_info
 
 contains
@@ -91,7 +92,7 @@ contains
    !! The search continues until the domain is narrowed to less than a width of bracket_tolerance,
    !! or until more than max_iter iterations have been taken. Because this is just used to get us in
    !! the right ballpark, bracket_tolerance is set quite wide, to 1.
-   !! 
+   !!
    !! There is a check at the start to verify that Q takes on opposite signs on either end of the
    !! domain. This is allows us to bail early if there is no root in the domain.
    !!
@@ -188,7 +189,7 @@ contains
    !!
    !! The search continues until the domain is narrowed to less than a width of bracket_tolerance (1d-4),
    !! or until more than max_iter iterations have been taken.
-   !! 
+   !!
    !! There is a check at the start to verify that dQ/dZ takes on opposite signs on either end of the
    !! domain. This is allows us to bail early if there is no root in the domain.
    !!
@@ -216,7 +217,7 @@ contains
       integer :: iter
 
       ! Set up
-      lower_bound_Z = lower_bound_Z_in!lower_bound_Z_in
+      lower_bound_Z = lower_bound_Z_in  !lower_bound_Z_in
       lower_bound_Z%d1val1 = 1d0
       upper_bound_Z = upper_bound_Z_in
       upper_bound_Z%d1val1 = 1d0
@@ -226,7 +227,7 @@ contains
       call compute_Q(info, Y, Q_lb, Af)
       if (Af == 0) then
          write(*,*) 'Z_lb, A0, Af', lower_bound_Z%val, info%A0%val, Af%val
-         call mesa_error(__FILE__,__LINE__,'bad call to tdc_support dQdZ_bisection_search: Af == 0.')
+         call mesa_error(__FILE__,__LINE__,'bad call to tdc_support dQdZ_bisection_search: Af == 0')
       end if
       dQdZ_lb = differentiate_1(Q_lb)
 
@@ -234,7 +235,7 @@ contains
       call compute_Q(info, Y, Q_ub, Af)
       if (Af == 0) then
          write(*,*) 'Z_ub, A0, Af', lower_bound_Z%val, info%A0%val, Af%val
-         call mesa_error(__FILE__,__LINE__,'bad call to tdc_support dQdZ_bisection_search: Af == 0.')
+         call mesa_error(__FILE__,__LINE__,'bad call to tdc_support dQdZ_bisection_search: Af == 0')
       end if
       dQdZ_ub = differentiate_1(Q_ub)
 
@@ -277,7 +278,8 @@ contains
          ! We only ever call this when Y < 0.
          ! In this regime, dQ/dZ can take on either sign, and has at most one stationary point.
 
-         if (info%report) write(*,*) 'Bisecting dQdZ. Z, dQdZ, Z_lb, dQdZ_lb, Z_ub, dQdZ_ub', Z%val, dQdZ%val, lower_bound_Z%val, dQdZ_lb%val, upper_bound_Z%val, dQdZ_ub%val
+         if (info%report) write(*,*) 'Bisecting dQdZ. Z, dQdZ, Z_lb, dQdZ_lb, Z_ub, dQdZ_ub', &
+                                      Z%val, dQdZ%val, lower_bound_Z%val, dQdZ_lb%val, upper_bound_Z%val, dQdZ_ub%val
 
          if (dQdZ > 0d0 .and. dQdZ_ub > 0d0) then
             upper_bound_Z = Z
@@ -296,7 +298,7 @@ contains
          if (upper_bound_Z - lower_bound_Z < bracket_tolerance) then
             Z = (upper_bound_Z + lower_bound_Z) / 2d0
             call compute_Q(info, Y, Q, Af)
-            return         
+            return
          end if
       end do
 
@@ -313,7 +315,7 @@ contains
    !!
    !! The search continues until the domain is narrowed to less than a width of bracket_tolerance (1d-4),
    !! or until more than max_iter iterations have been taken.
-   !! 
+   !!
    !! There is a check at the start to verify that Af == 0 at the most-negative end of the domain.
    !! This is allows us to bail early if there is no root in the domain.
    !!
@@ -348,7 +350,7 @@ contains
 
       Y = set_Y(.false., upper_bound_Z)
       call compute_Q(info, Y, Q, Af)
-      if (Af > 0) then ! d(Af)/dZ < 0, so if Af(upper_bound_Z) > 0 there's no solution in this interval.
+      if (Af > 0) then  ! d(Af)/dZ < 0, so if Af(upper_bound_Z) > 0 there's no solution in this interval.
          ierr = 1
          return
       end if
@@ -374,7 +376,7 @@ contains
          ! Y < 0 so increasing Y means decreasing Z.
          ! d(Af)/dY > 0 so d(Af)/dZ < 0.
 
-         if (Af > 0d0) then ! Means we are at too-low Z.
+         if (Af > 0d0) then  ! Means we are at too-low Z.
             lower_bound_Z = Z
          else
             upper_bound_Z = Z
@@ -437,7 +439,7 @@ contains
    !! no longer needed. This allows the output of the TDC solver to be passed back to the star solver.
    !!
    !! @param K_in, input, an auto_diff_real_tdc variable
-   !! @param K, output, an auto_diff_real_star_order1 variable.      
+   !! @param K, output, an auto_diff_real_star_order1 variable.
    type(auto_diff_real_star_order1) function unconvert(K_in) result(K)
       type(auto_diff_real_tdc), intent(in) :: K_in
       K%val = K_in%val
@@ -457,6 +459,7 @@ contains
       type(auto_diff_real_tdc), intent(in) :: Y
       type(auto_diff_real_tdc), intent(out) :: Q, Af
       type(auto_diff_real_tdc) :: xi0, xi1, xi2, Y_env
+      real(dp), parameter :: x_ALFAS = (1.d0/2.d0)*sqrt_2_div_3
 
       ! Y = grad-gradL
       ! Gamma=(grad-gradE)/(gradE-gradL)
@@ -467,14 +470,14 @@ contains
       ! We only use Y_env /= Y when Y > 0 (i.e. the system is convectively unstable)
       ! because we only have a Gamma from MLT in that case.
       ! so when Y < 0 we just use Y_env = Y.
-      if (Y > 0) then
-         Y_env = Y * convert(info%Gamma/(1+info%Gamma))
+      if (Y > 0 .and. info%include_mlt_corr_to_TDC) then
+         Y_env = Y * convert(info%Gamma/(1d0+info%Gamma))
       else
          Y_env = Y
       end if
 
       ! Y_env sets the acceleration of blobs.
-      call eval_xis(info, Y_env, xi0, xi1, xi2)          
+      call eval_xis(info, Y_env, xi0, xi1, xi2)
       Af = eval_Af(info%dt, info%A0, xi0, xi1, xi2)
 
       ! Y_env sets the convective flux but not the radiative flux.
@@ -507,7 +510,7 @@ contains
    !! @param xi0 Output, the constant term in the convective velocity equation.
    !! @param xi1 Output, the prefactor of the linear term in the convective velocity equation.
    !! @param xi2 Output, the prefactor of the quadratic term in the convective velocity equation.
-   subroutine eval_xis(info, Y, xi0, xi1, xi2) 
+   subroutine eval_xis(info, Y, xi0, xi1, xi2)
       ! eval_xis sets up Y with partial wrt Z
       ! so results come back with partials wrt Z
       type(tdc_info), intent(in) :: info
@@ -515,23 +518,85 @@ contains
       type(auto_diff_real_tdc), intent(out) :: xi0, xi1, xi2
       type(auto_diff_real_tdc) :: S0, D0, DR0
       type(auto_diff_real_star_order1) :: gammar_div_alfa, Pt0, dVdt
+      type(auto_diff_real_tdc) :: X, FL, scale
       real(dp), parameter :: x_ALFAS = (1.d0/2.d0)*sqrt_2_div_3
       real(dp), parameter :: x_CEDE  = (8.d0/3.d0)*sqrt_2_div_3
       real(dp), parameter :: x_ALFAP = 2.d0/3.d0
       real(dp), parameter :: x_GAMMAR = 2.d0*sqrt(3.d0)
 
-      S0 = convert(x_ALFAS*info%mixing_length_alpha*info%Cp*info%T/info%Hp)*info%grada
-      S0 = S0*Y
-      D0 = convert(info%alpha_TDC_DAMP*x_CEDE/(info%mixing_length_alpha*info%Hp))
-      gammar_div_alfa = info%alpha_TDC_DAMPR*x_GAMMAR/(info%mixing_length_alpha*info%Hp)
+      ! flux-limiter scale factor from Wuchterl & Feuchtinger form
+      ! X ~ G/F, with G ∝ α α_s c_p Y_env and F = √(2/3)·w/T, w = E + P/rho
+      ! Here Y is already Y_env (from compute_Q), so:
+      ! X = α α_s x_ALFAS * Y_env / sqrt(2/3)
+      ! scale = 1       for small X  (linear regime)
+      ! scale ~ FL(X)/X for large X  (saturating regime)
+
+      scale = 1d0
+      if (Y > 0d0 .and. info%use_TDC_enthalpy_flux_limiter) then
+         ! X = G/F
+         X = convert(info%Cp*info%T/info%h)*info%mixing_length_alpha * info%TDC_alpha_S * x_ALFAS * Y / sqrt_2_div_3
+         FL = flux_limiter_function(X)
+         ! Avoid 0/0 or tiny/tiny; for X ≈ 0, FL ≈ X so scale ~ 1 anyway.
+         if (abs(X%val) >= 0.95d0) then
+            scale = FL / X
+         else
+            scale = 1d0
+         end if
+      end if
+
+      S0 = convert(info%TDC_alpha_S * x_ALFAS * info%mixing_length_alpha*info%Cp*info%T/info%Hp)*info%grada
+      if (info%use_TDC_enthalpy_flux_limiter) then
+         S0 = S0 * (scale * Y) + convert(info%Eq_div_w)
+      else ! no flux limiting
+         S0 = S0*Y + convert(info%Eq_div_w)
+      end if
+
+      D0 = convert(info%TDC_alpha_D*x_CEDE/(info%mixing_length_alpha*info%Hp))
+      gammar_div_alfa = info%TDC_alpha_R*x_GAMMAR/(info%mixing_length_alpha*info%Hp)
       DR0 = convert(4d0*boltz_sigma*pow2(gammar_div_alfa)*pow3(info%T)/(pow2(info%rho)*info%Cp*info%kap))
-      Pt0 = info%alpha_TDC_PtdVdt*x_ALFAP*info%rho
+      Pt0 = info%TDC_alpha_Pt*x_ALFAP*info%rho
       dVdt = info%dV/info%dt
 
       xi0 = S0
       xi1 = -(DR0 + convert(Pt0*dVdt))
       xi2 = -D0
    end subroutine eval_xis
+
+   type(auto_diff_real_tdc) function flux_limiter_function(X) result(FL) ! should be c2 continuous
+     type(auto_diff_real_tdc), intent(in) :: X
+     real(dp), parameter :: X0    = 0.95_dp         ! start of transition
+     real(dp), parameter :: delta = 0.05_dp         ! width of transition
+     real(dp), parameter :: X1    = 1d0 !X0 + delta      ! end of transition
+
+     type(auto_diff_real_tdc) :: s, p
+
+     ! Region 1: purely linear, FL = X
+     if (X%val < X0) then ! should not be encountered
+        FL = X
+
+     ! Region 3: saturated, FL = 1
+     else if (X%val >= X1) then
+        FL = 1.0_dp
+
+     ! Region 2: smooth C² transition between the two
+     else
+        ! Normalized coordinate in [0,1]
+        s = (X - X0) / (X1 - X0)
+
+        ! Quintic "smootherstep" polynomial:
+        ! p(s) = 10 s^3 - 15 s^4 + 6 s^5
+        ! p(0)=0, p(1)=1, p'(0)=p'(1)=0, p''(0)=p''(1)=0
+        p = pow3(s) * (10.0_dp + s * (-15.0_dp + 6.0_dp * s))
+
+        ! Blend between line FL=X and flat FL=1
+        ! At s=0:  FL = X
+        ! At s=1:  FL = 1
+        ! Because p', p'' vanish at 0 and 1, FL, FL', FL'' all match.
+        FL = X + (1.0_dp - X) * p
+     end if
+   end function flux_limiter_function
+
+
 
    !! Calculates the solution to the TDC velocity equation.
    !! The velocity equation is
@@ -542,7 +607,7 @@ contains
    !! The xi0/1/2 variables are constants for purposes of solving this equation.
    !!
    !! An important related parameter is J:
-   !! 
+   !!
    !! J^2 = xi1^2 - 4 * xi0 * xi2
    !!
    !! When J^2 > 0 the solution for w is hyperbolic in time.
@@ -559,26 +624,26 @@ contains
    !! @param A0 convection speed from the start of the step (cm/s)
    !! @param xi0 The constant term in the convective velocity equation.
    !! @param xi1 The prefactor of the linear term in the convective velocity equation.
-   !! @param xi2 The prefactor of the quadratic term in the convective velocity equation.            
+   !! @param xi2 The prefactor of the quadratic term in the convective velocity equation.
    !! @param Af Output, the convection speed at the end of the step (cm/s)
    function eval_Af(dt, A0, xi0, xi1, xi2) result(Af)
-      real(dp), intent(in) :: dt    
+      real(dp), intent(in) :: dt
       type(auto_diff_real_tdc), intent(in) :: A0, xi0, xi1, xi2
-      type(auto_diff_real_tdc) :: Af ! output
-      type(auto_diff_real_tdc) :: J2, J, Jt4, num, den, y_for_atan, root 
+      type(auto_diff_real_tdc) :: Af  ! output
+      type(auto_diff_real_tdc) :: J2, J, Jt4, num, den, y_for_atan, root
 
       J2 = pow2(xi1) - 4d0 * xi0 * xi2
 
-      if (J2 > 0d0) then ! Hyperbolic branch
-         J = sqrt(abs(J2)) ! Only compute once we know J2 is not 0
+      if (J2 > 0d0) then  ! Hyperbolic branch
+         J = sqrt(abs(J2))  ! Only compute once we know J2 is not 0
          Jt4 = 0.25d0 * dt * J
          num = safe_tanh(Jt4) * (2d0 * xi0 + A0 * xi1) + A0 * J
          den = safe_tanh(Jt4) * (xi1 + 2d0 * A0 * xi2) - J
-         Af = num / den 
+         Af = num / den
          if (Af < 0d0) then
             Af = -Af
          end if
-      else if (J2 < 0d0) then ! Trigonometric branch
+      else if (J2 < 0d0) then  ! Trigonometric branch
          J = sqrt(abs(J2))  ! Only compute once we know J2 is not 0
          Jt4 = 0.25d0 * dt * J
 
@@ -601,14 +666,14 @@ contains
          end if
 
          if (Jt4 < root) then
-            num = -xi1 + J * tan(Jt4 + atan(y_for_atan / J)) 
+            num = -xi1 + J * tan(Jt4 + atan(y_for_atan / J))
             den = 2d0 * xi2
             Af = num / den
          else
             Af = 0d0
          end if
-      else ! if (J2 == 0d0) then         
-         Af = A0            
+      else  ! if (J2 == 0d0) then
+         Af = A0
       end if
 
    end function eval_Af

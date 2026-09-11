@@ -2,31 +2,25 @@
 !
 !   Copyright (C) 2010-2021  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 
 module tdc
 
-use const_def
+use const_def, only: dp, sqrt_2_div_3
 use num_lib
 use utils_lib
 use auto_diff
@@ -38,7 +32,6 @@ private
 public :: get_TDC_solution
 
 contains
-
 
    !> Computes the outputs of time-dependent convection theory following the model specified in
    !! Radek Smolec's thesis [https://users.camk.edu.pl/smolec/phd_smolec.pdf], which in turn
@@ -54,13 +47,15 @@ contains
    !! @param Y_face The superadiabaticity (dlnT/dlnP - grada, output).
    !! @param tdc_num_iters Number of iterations taken in the TDC solver.
    !! @param ierr Tracks errors (output).
-   subroutine get_TDC_solution(info, scale, Zlb, Zub, conv_vel, Y_face, tdc_num_iters, ierr)
+   !! @param Y_face_guess Candidate superadiabaticity for the local solve. Non-positive values disable seeding.
+   subroutine get_TDC_solution(info, scale, Zlb, Zub, conv_vel, Y_face, tdc_num_iters, Y_face_guess, ierr)
       type(tdc_info), intent(in) :: info
       real(dp), intent(in) :: scale
       type(auto_diff_real_tdc), intent(in) :: Zlb, Zub
       type(auto_diff_real_star_order1),intent(out) :: conv_vel, Y_face
       integer, intent(out) :: tdc_num_iters, ierr
-      
+      real(dp), intent(in) :: Y_face_guess
+
       logical :: Y_is_positive
       type(auto_diff_real_tdc) :: Af, Y, Y0, Y1, Z0, Z1, radY
       type(auto_diff_real_tdc) :: Q, Q0
@@ -71,7 +66,7 @@ contains
       ierr = 0
       if (info%mixing_length_alpha == 0d0 .or. info%dt <= 0d0) then
          call mesa_error(__FILE__,__LINE__,'bad call to TDC get_TDC_solution')
-      end if         
+      end if
 
       ! Determine the sign of the solution.
       !
@@ -102,9 +97,10 @@ contains
       ! Start down the chain of logic...
       if (Y_is_positive) then
          ! If Y > 0 then Q(Y) is monotone and we can jump straight to the search.
-         call bracket_plus_Newton_search(info, scale, Y_is_positive, Zlb, Zub, Y_face, Af, tdc_num_iters, ierr)
-         Y = convert(Y_face)
+         call bracket_plus_Newton_search(info, scale, Y_is_positive, Zlb, Zub, Y_face, Af, tdc_num_iters, &
+            Y_face_guess, ierr)
          if (ierr /= 0) return
+         Y = convert(Y_face)
          if (info%report) write(*,*) 'Y is positive, Y=',Y_face%val
       else
          if (info%report) write(*,*) 'Y is negative.'
@@ -165,7 +161,7 @@ contains
                   ! ierr /= 0 should be impossible, because we checked the necessary conditions
                   ! for the bisection search above. Nonetheless, bugs can crop up, so we leave this
                   ! check in here and leave the checks in Af_bisection_search.
-                  if (ierr /= 0) return 
+                  if (ierr /= 0) return
                   Y0 = set_Y(.false., Z0)
                   call compute_Q(info, Y0, Q, Af)
                   if (info%report) write(*,*) 'Bisected Af. Y0=',Y0%val,'Af(Y0)=',Af%val
@@ -179,21 +175,23 @@ contains
                   Y1 = set_Y(.false., Z1)
                   if (info%report) write(*,*) 'Bisected dQdZ, found root, ',Y1%val
                   call compute_Q(info, Y1, Q, Af)
-                  if (Q < 0) then ! Means there are no roots with Af > 0.
+                  if (Q < 0) then  ! Means there are no roots with Af > 0.
                      if (info%report) write(*,*) 'Root has Q<0, Q=',Q%val,'Y=',radY%val
                      Y = radY
                   else
                      if (info%report) write(*,*) 'Root has Q>0. Q(Y1)=',Q%val
                      ! Do a search over [lower_bound, Z1]. If we find a root, that's the root closest to zero so call it done.
                      if (info%report) write(*,*) 'Searching from Y=',-exp(Zlb%val),'to Y=',-exp(Z1%val)
-                     call bracket_plus_Newton_search(info, scale, Y_is_positive, Zlb, Z1, Y_face, Af, tdc_num_iters, ierr)
+                     call bracket_plus_Newton_search(info, scale, Y_is_positive, Zlb, Z1, Y_face, Af, tdc_num_iters, &
+                        0d0, ierr)
                      Y = convert(Y_face)
                      if (info%report) write(*,*) 'ierr',ierr, tdc_num_iters
                      if (ierr /= 0) then
                         if (info%report) write(*,*) 'No root found. Searching from Y=',-exp(Z1%val),'to Y=',-exp(Z0%val)
                         ! Do a search over [Z1, Z0]. If we find a root, that's the root closest to zero so call it done.
                         ! Note that if we get to this stage there is (mathematically) guaranteed to be a root, modulo precision issues.
-                        call bracket_plus_Newton_search(info, scale, Y_is_positive, Z1, Z0, Y_face, Af, tdc_num_iters, ierr)
+                        call bracket_plus_Newton_search(info, scale, Y_is_positive, Z1, Z0, Y_face, Af, tdc_num_iters, &
+                           0d0, ierr)
                         Y = convert(Y_face)
                      end if
                      if (info%report) write(*,*) 'Y=',Y%val
@@ -201,11 +199,12 @@ contains
                else
                   if (info%report) write(*,*) 'Bisected dQdZ, no root found.'
                   call compute_Q(info, Y0, Q, Af)
-                  if (Q > 0) then ! Means there's a root in [Y0,0] so we bracket search from [lower_bound,Z0]
-                     call bracket_plus_Newton_search(info, scale, Y_is_positive, Zlb, Z0, Y_face, Af, tdc_num_iters, ierr)
+                  if (Q > 0) then  ! Means there's a root in [Y0,0] so we bracket search from [lower_bound,Z0]
+                     call bracket_plus_Newton_search(info, scale, Y_is_positive, Zlb, Z0, Y_face, Af, tdc_num_iters, &
+                        0d0, ierr)
                      Y = convert(Y_face)
                      if (info%report) write(*,*) 'Q(Y0) > 0, bisected and found Y=',Y%val
-                  else ! Means there's no root in [Y0,0] so the only root is radY.
+                  else  ! Means there's no root in [Y0,0] so the only root is radY.
                      if (info%report) write(*,*) 'Q(Y0) < 0, Y=',radY%val
                      Y = radY
                   end if
@@ -218,7 +217,7 @@ contains
       ! Process Y into the various outputs.
       call compute_Q(info, Y, Q, Af)
       Y_face = unconvert(Y)
-      conv_vel = sqrt_2_div_3*unconvert(Af)   
+      conv_vel = sqrt_2_div_3*unconvert(Af)
 
    end subroutine get_TDC_solution
 
@@ -234,7 +233,9 @@ contains
    !! @param Y_face The superadiabaticity (dlnT/dlnP - grada, output).
    !! @param tdc_num_iters Number of iterations taken in the TDC solver.
    !! @param ierr Tracks errors (output).
-   subroutine bracket_plus_Newton_search(info, scale, Y_is_positive, Zlb, Zub, Y_face, Af, tdc_num_iters, ierr)
+   !! @param Y_face_guess Candidate superadiabaticity for the local solve. Non-positive values disable seeding.
+   subroutine bracket_plus_Newton_search(info, scale, Y_is_positive, Zlb, Zub, Y_face, Af, tdc_num_iters, &
+         Y_face_guess, ierr)
       type(tdc_info), intent(in) :: info
       logical, intent(in) :: Y_is_positive
       real(dp), intent(in) :: scale
@@ -243,7 +244,8 @@ contains
       type(auto_diff_real_tdc), intent(out) :: Af
       integer, intent(out) :: tdc_num_iters
       integer, intent(out) :: ierr
-      
+      real(dp), intent(in) :: Y_face_guess
+
       type(auto_diff_real_tdc) :: Y, Z, Q, Qc, Z_new, correction, lower_bound_Z, upper_bound_Z
       type(auto_diff_real_tdc) :: dQdZ
       integer :: iter, line_iter
@@ -260,12 +262,14 @@ contains
       lower_bound_Z = Zlb
       upper_bound_Z = Zub
 
+      call try_seeded_positive_Y_bracket(info, Y_is_positive, Zlb, Zub, lower_bound_Z, upper_bound_Z, Y_face_guess)
+
       ! Perform bisection search.
       call Q_bisection_search(info, Y_is_positive, lower_bound_Z, upper_bound_Z, Z, ierr)
       if (ierr /= 0) return
 
       ! Set up Z from bisection search
-      Z%d1val1 = 1d0 ! Set derivative dZ/dZ=1 for Newton iterations.
+      Z%d1val1 = 1d0  ! Set derivative dZ/dZ=1 for Newton iterations.
       if (info%report) write(*,*) 'Z from bisection search', Z%val
       if (info%report) write(*,*) 'lower_bound_Z, upper_bound_Z',lower_bound_Z%val,upper_bound_Z%val
 
@@ -275,12 +279,16 @@ contains
       ! Initialize starting values for TDC Newton iterations.
       dQdz = 0d0
       converged = .false.
-      have_derivatives = .false. ! Tracks if we've done at least one Newton iteration.
+      have_derivatives = .false.  ! Tracks if we've done at least one Newton iteration.
                                  ! Need to do this before returning to endow Y with partials
                                  ! with respect to the structure variables.
       do iter = 1, max_iter
          Y = set_Y(Y_is_positive, Z)
          call compute_Q(info, Y, Q, Af)
+         if (is_bad(Q%val)) then
+            ierr = 1
+            exit
+         end if
 
          if (abs(Q%val)/scale <= residual_tolerance .and. have_derivatives) then
             ! Can't exit on the first iteration, otherwise we have no derivative information.
@@ -336,7 +344,9 @@ contains
 
             call compute_Q(info, Y, Qc, Af)
 
-            if (abs(Qc) < abs(Q)) then
+            if (is_bad(Qc%val)) then
+               correction = 0.5d0 * correction
+            else if (abs(Qc) < abs(Q)) then
                exit
             else
                correction = 0.5d0 * correction
@@ -345,7 +355,7 @@ contains
 
          if (info%report) write(*,3) 'i, li, Z_new, Z, low_bnd, upr_bnd, Q, dQdZ, corr', iter, line_iter, &
             Z_new%val, Z%val, lower_bound_Z%val, upper_bound_Z%val, Q%val, dQdZ%val, correction%val
-         Z_new%d1val1 = 1d0 ! Ensures that dZ/dZ = 1.
+         Z_new%d1val1 = 1d0  ! Ensures that dZ/dZ = 1.
          Z = Z_new
 
          Y = set_Y(Y_is_positive,Z)
@@ -382,7 +392,41 @@ contains
 
       ! Unpack output
       Y_face = unconvert(Y)
-      tdc_num_iters = iter          
+      tdc_num_iters = iter
    end subroutine bracket_plus_Newton_search
+
+
+   subroutine try_seeded_positive_Y_bracket(info, Y_is_positive, Zlb, Zub, lower_bound_Z, upper_bound_Z, Y_face_guess)
+      type(tdc_info), intent(in) :: info
+      logical, intent(in) :: Y_is_positive
+      type(auto_diff_real_tdc), intent(in) :: Zlb, Zub
+      type(auto_diff_real_tdc), intent(inout) :: lower_bound_Z, upper_bound_Z
+      real(dp), intent(in) :: Y_face_guess
+
+      type(auto_diff_real_tdc) :: Af, Q_lb, Q_ub, Y, Z_seed, Z_seed_lb, Z_seed_ub
+      ! Try a local bracket within a factor exp(seed_bracket_half_width) of the seed.
+      real(dp), parameter :: seed_bracket_half_width = 3d0
+
+      if (.not. Y_is_positive) return
+      if (is_bad(Y_face_guess) .or. Y_face_guess <= 0d0) return
+
+      Z_seed = log(Y_face_guess)
+      if (is_bad(Z_seed%val)) return
+      if (Z_seed%val < Zlb%val .or. Z_seed%val > Zub%val) return
+
+      Z_seed_lb = max(Zlb%val, Z_seed%val - seed_bracket_half_width)
+      Z_seed_ub = min(Zub%val, Z_seed%val + seed_bracket_half_width)
+
+      Y = set_Y(Y_is_positive, Z_seed_lb)
+      call compute_Q(info, Y, Q_lb, Af)
+      Y = set_Y(Y_is_positive, Z_seed_ub)
+      call compute_Q(info, Y, Q_ub, Af)
+
+      if (is_bad(Q_lb%val) .or. is_bad(Q_ub%val)) return
+      if (Q_lb * Q_ub > 0d0) return
+
+      lower_bound_Z = Z_seed_lb
+      upper_bound_Z = Z_seed_ub
+   end subroutine try_seeded_positive_Y_bracket
 
 end module tdc

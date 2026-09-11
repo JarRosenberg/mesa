@@ -2,24 +2,21 @@
 !
 !   Copyright (C) 2010  The MESA Team
 !
-!   this file is part of mesa.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   mesa is free software; you can redistribute it and/or modify
-!   it under the terms of the gnu general library public license as published
-!   by the free software foundation; either version 2 of the license, or
-!   (at your option) any later version.
+!   This program is distributed in the hope that it will be useful,
+!   but WITHOUT ANY WARRANTY; without even the implied warranty of
+!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+!   See the GNU Lesser General Public License for more details.
 !
-!   mesa is distributed in the hope that it will be useful, 
-!   but without any warranty; without even the implied warranty of
-!   merchantability or fitness for a particular purpose.  see the
-!   gnu library general public license for more details.
-!
-!   you should have received a copy of the gnu library general public license
-!   along with this software; if not, write to the free software
-!   foundation, inc., 59 temple place, suite 330, boston, ma 02111-1307 usa
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
- 
+
       module run_star_extras
 
       use star_lib
@@ -27,15 +24,15 @@
       use const_def
       use math_lib
       use auto_diff
-      
+
       implicit none
-      
+
       include 'test_suite_extras_def.inc'
-      
+
       contains
 
       include 'test_suite_extras.inc'
-      
+
       subroutine extras_controls(id, ierr)
          integer, intent(in) :: id
          integer, intent(out) :: ierr
@@ -51,7 +48,7 @@
          s% how_many_extra_history_columns => how_many_extra_history_columns
          s% data_for_extra_history_columns => data_for_extra_history_columns
          s% how_many_extra_profile_columns => how_many_extra_profile_columns
-         s% data_for_extra_profile_columns => data_for_extra_profile_columns  
+         s% data_for_extra_profile_columns => data_for_extra_profile_columns
          s% other_photo_read => extras_photo_read
          s% other_photo_write => extras_photo_write
       end subroutine extras_controls
@@ -69,8 +66,8 @@
          integer, intent(in) :: id, iounit
          !write(iounit) example_of_data_to_save_in_photos
       end subroutine extras_photo_write
-      
-      
+
+
       subroutine extras_startup(id, restart, ierr)
          integer, intent(in) :: id
          logical, intent(in) :: restart
@@ -81,8 +78,8 @@
          if (ierr /= 0) return
          call test_suite_startup(s, restart, ierr)
       end subroutine extras_startup
-      
-      
+
+
       subroutine extras_after_evolve(id, ierr)
          integer, intent(in) :: id
          integer, intent(out) :: ierr
@@ -97,18 +94,18 @@
          max_mass_conv_core = s% x_ctrl(2)
 
          mass_conv_core = s% mass_conv_core
-         
-         if ((mass_conv_core .lt. min_mass_conv_core) &
-              .or. (mass_conv_core .gt. max_mass_conv_core)) then
+
+         if ((mass_conv_core < min_mass_conv_core) &
+              .or. (mass_conv_core > max_mass_conv_core)) then
             write(*,*) 'bad value for mass_conv_core at termination'
             write(*,*) 'min allowed value', min_mass_conv_core
             write(*,*) 'mass_conv_core', mass_conv_core
-            write(*,*) 'max allowed value', max_mass_conv_core 
+            write(*,*) 'max allowed value', max_mass_conv_core
          else
             write(*,*) 'Test passed: mass_conv_core within specified range'
             write(*,*) 'mass_conv_core', mass_conv_core
-         endif
- 
+         end if
+
          call test_suite_after_evolve(s, ierr)
 
       end subroutine extras_after_evolve
@@ -133,7 +130,7 @@
          ierr = 0
          call star_ptr(id, s, ierr)
          if (ierr /= 0) return
-         extras_check_model = keep_going         
+         extras_check_model = keep_going
       end function extras_check_model
 
 
@@ -146,8 +143,8 @@
          if (ierr /= 0) return
          how_many_extra_history_columns = 0
       end function how_many_extra_history_columns
-      
-      
+
+
       subroutine data_for_extra_history_columns(id, n, names, vals, ierr)
          integer, intent(in) :: id, n
          character (len=maxlen_history_column_name) :: names(n)
@@ -159,7 +156,7 @@
          if (ierr /= 0) return
       end subroutine data_for_extra_history_columns
 
-      
+
       integer function how_many_extra_profile_columns(id)
          use star_def, only: star_info
          integer, intent(in) :: id
@@ -170,8 +167,8 @@
          if (ierr /= 0) return
          how_many_extra_profile_columns = 0
       end function how_many_extra_profile_columns
-      
-      
+
+
       subroutine data_for_extra_profile_columns(id, n, nz, names, vals, ierr)
          use star_def, only: star_info, maxlen_profile_column_name
          use const_def, only: dp
@@ -185,7 +182,7 @@
          call star_ptr(id, s, ierr)
          if (ierr /= 0) return
       end subroutine data_for_extra_profile_columns
-      
+
 
       ! returns either keep_going or terminate.
       integer function extras_finish_step(id)
@@ -197,7 +194,7 @@
          if (ierr /= 0) return
          extras_finish_step = keep_going
       end function extras_finish_step
-      
+
 
       end module run_star_extras
-      
+

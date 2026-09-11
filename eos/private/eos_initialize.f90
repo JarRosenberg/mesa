@@ -2,25 +2,18 @@
 !
 !   Copyright (C) 2010  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-!
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
@@ -29,8 +22,7 @@
       implicit none
 
       contains
-            
-      
+
       subroutine Init_eos( &
            eosDT_cache_dir_in, &
            use_cache, ierr)
@@ -40,8 +32,8 @@
          use const_def, only: mesa_data_dir, mesa_caches_dir, mesa_temp_caches_dir
          character(*), intent(IN) :: eosDT_cache_dir_in
          logical, intent(in) :: use_cache
-         integer, intent(OUT) :: ierr ! 0 means AOK.
-         !integer, parameter :: imax = 261, jmax = 101  
+         integer, intent(OUT) :: ierr  ! 0 means AOK.
+         !integer, parameter :: imax = 261, jmax = 101
             ! dimensions of small version of helm table
          !integer, parameter :: imax = 1081, jmax = 401
             ! dimensions of medium version of helm table; 40 points per decade
@@ -65,20 +57,19 @@
             eosDT_temp_cache_dir = trim(mesa_temp_caches_dir) // '/eosDT_cache'
             if(use_mesa_temp_cache) call mkdir(eosDT_temp_cache_dir)
          end if
-         
+
          call alloc_helm_table(eos_ht, imax, jmax, ierr)
          if (ierr /= 0) return
-         
+
          call read_helm_table(eos_ht, &
             eosDT_data_dir, eosDT_cache_dir, eosDT_temp_cache_dir, use_cache_for_eos, ierr)
          if (ierr /= 0) return
 
          call eos_def_init
          ! replace defaults from eos_def_init by argument
-         
+
          eos_root_is_initialized = .true.
-      
+
       end subroutine Init_eos
-      
-      
+
       end module eos_initialize

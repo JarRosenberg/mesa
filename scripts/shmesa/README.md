@@ -12,7 +12,7 @@ To use, simply call: `shmesa`
  \__ \ | | | |  | | |___ ___) / ___ \
  |___/_| |_|_|  |_|_____|____/_/   \_\
 
-Usage: shmesa [work|change|defaults|cp|grep|extras|zip|help] [arguments]
+Usage: shmesa [work|change|defaults|cp|grep|extras|zip|version|help] [arguments]
 
 Subcommands:
   work      copy the work directory to the current location
@@ -22,6 +22,7 @@ Subcommands:
   grep      search the MESA source code for a given string
   extras    fill in the full run_star_extras.f90 template
   zip       prepare a MESA directory for sharing
+  version   print the version of MESA
   help      display this helpful message
   -h        get additional details about any of the above
 ```
@@ -41,7 +42,6 @@ You can use this for example to make a grid of models, and e.g. include the outp
 # copy over a new work directory 
 shmesa work "grid_dir"
 cd grid_dir
-./mk
 
 # output asteroseismic quantities in `LOGS/history.data` 
 shmesa defaults delta_nu nu_max
@@ -53,7 +53,7 @@ for M in 1.0 1.5 2.0; do
             initial_mass $M \
             Zbase $Z \
             initial_z $Z
-        ./star inlist_project 
+        ./rn
         mv LOGS "M='$M'_'Z='$Z'" 
     done 
 done 
@@ -101,7 +101,7 @@ There's instructions inside the code for adding a new bash subprogram to this dr
     shmesa_template () {
         if shmesa_check_h_flag "$@"; then
             echo "Usage: mesa funcname arg [optional arg]"
-            echo "put discription here"
+            echo "put description here"
             return 0
         fi
 

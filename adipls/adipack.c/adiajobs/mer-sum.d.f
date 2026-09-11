@@ -10,7 +10,7 @@ c  note: if the same mode is present on both files, the mode
 c  from the  f i r s t  file is used.
 c
 c  if the same mode appears several times in one of the files,
-c  only the  f i r s t  occurence is included.
+c  only the  f i r s t  occurrence is included.
 c
 c  Double precision version
 c  ++++++++++++++++++++++++
@@ -120,7 +120,7 @@ c
       else if(icasin.eq.2) then
         xl1=cs1(1)
       else
-        xl1=dfloat(l1)
+        xl1=dble(l1)
       end if
 c
 c  test for the same mode
@@ -176,7 +176,7 @@ c
       else if(icasin.eq.2) then
         xl2=cs2(1)
       else
-        xl2=dfloat(l2)
+        xl2=dble(l2)
       end if
 c
 c  test for the same mode

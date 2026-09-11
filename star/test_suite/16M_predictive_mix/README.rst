@@ -4,6 +4,8 @@
 16M_predictive_mix
 ******************
 
+.. tags:: star, predictive-mixing, convective-core, massive-star, main-sequence
+
 This test suite example re-creates the 16-solar mass main-sequence
 evolution with the inclusion of predictive mixing (using the Ledoux
 criterion), as detailed in Section 2 of the MESA IV instrument paper
@@ -11,7 +13,7 @@ criterion), as detailed in Section 2 of the MESA IV instrument paper
 
 This test case has two parts. Click to see a larger view of a plot.
 
-* Part 1 (``inlist_start``) creates a 16 Msun pre-main-sequence model and evolves it for 10 time steps.
+* Part 1 (``inlist_start``) creates a 16 |Msun| pre-main-sequence model and evolves it for 10 time steps.
 
 * Part 2 (``inlist_16M_predictive_mix``) continues the evolution until core hydrogen depletion (mass fraction h1_center < 1e-6).
 
@@ -30,10 +32,8 @@ pgstar commands used for the plots above:
 
    file_white_on_black_flag = .true. ! white_on_black flags -- true means white foreground color on black background
    file_device = 'png'            ! png
-   file_extension = 'png'
 
    !file_device = 'vcps'          ! postscript
-   !file_extension = 'ps'
 
     pgstar_interval = 10
     file_digits = 8
@@ -45,11 +45,11 @@ pgstar commands used for the plots above:
    Kipp_win_width = 12
    Kipp_win_aspect_ratio = 0.75
    Kipp_txt_scale = 0.9
-   Kipp_title = ''      
+   Kipp_title = ''
 
    ! y axis limits
    Kipp_mass_max = 16.0
-   Kipp_mass_min = 0 
+   Kipp_mass_min = 0
    Kipp_show_mass_boundaries = .true.
 
    ! x axis limits
@@ -72,6 +72,4 @@ pgstar commands used for the plots above:
  / ! end of pgstar namelist
 
 
-
 Last-Updated: 28May2021 (MESA ebecc10) by fxt
-

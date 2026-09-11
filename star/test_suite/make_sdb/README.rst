@@ -4,7 +4,9 @@
 make_sdb
 ********
 
-This test case shows an example of making a 0.4 Msun, Z=0.02 metallicity, helium model - a B-type subdwarf (sdB) star.
+.. tags:: star, hot-subdwarf, helium-star, envelope-stripping, common-envelope
+
+This test case shows an example of making a 0.4 |Msun|, Z=0.02 metallicity, helium model - a B-type subdwarf (sdB) star.
 
 This test case has 1 part. Click to see a larger version of a plot.
 
@@ -22,10 +24,8 @@ pgstar commands used for the plot above:
 
   file_white_on_black_flag = .true. ! white_on_black flags -- true means white foreground color on black background
   !file_device = 'png'            ! png
-  !file_extension = 'png'
 
   file_device = 'vcps'          ! postscript
-  file_extension = 'ps'
 
   pgstar_interval = 10
 

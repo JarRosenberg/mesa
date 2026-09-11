@@ -2,53 +2,37 @@
 !
 !   Copyright (C) 2010-2019  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-!
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 module atm_T_tau_varying
-  
-  ! Uses
 
-  use const_def
+  use const_def, only: dp, ln10, cgas
   use math_lib
   use utils_lib, only: mesa_error
 
-  ! No implicit typing
-
   implicit none
 
-  ! Access specifiers
-
   private
-
   public :: eval_T_tau_varying
   public :: build_T_tau_varying
-
-  ! Procedures
 
 contains
 
   ! Evaluate atmosphere data from T-tau relation with varying opacity
-  
+
   subroutine eval_T_tau_varying( &
        tau_surf, L, R, M, cgrav, &
        T_tau_id, eos_proc, kap_proc, &
@@ -102,9 +86,9 @@ contains
     real(dp) :: dlnP_dlnTeff
 
     ierr = 0
-    
+
     ! Sanity checks
-    
+
     if (L <= 0._dp .OR. R <= 0._dp .OR. M <= 0._dp) then
        ierr = -1
        return
@@ -128,7 +112,7 @@ contains
        if (ierr /= 0) then
           write(*,*) 'atm: Call to eval_data failed in atm_t_tau_varying'
           return
-       endif
+       end if
 
        dlnT_dL = 0._dp
        dlnT_dlnR = 0._dp
@@ -141,7 +125,7 @@ contains
        dlnP_dlnkap = 0._dp
 
     else
- 
+
        ! Partials required, use finite differencing in Teff (we could
        ! in principle get dlnT_dlnTeff from the T-tau relation, but
        ! for consistency with dln_dlnTeff we use the same finite
@@ -155,12 +139,12 @@ contains
        !$OMP SECTIONS
 
        !$OMP SECTION
-            
+
        call eval_data( &
             tau_surf, exp(lnTeff), g, &
             T_tau_id, eos_proc, kap_proc, errtol, max_steps, &
             lnT, lnP, ierr)
-            
+
        !$OMP SECTION
 
        call eval_data( &
@@ -182,13 +166,13 @@ contains
        if (ierr /= 0) then
           write(*,*) 'Call to eval_data failed in atm_t_tau_varying_opacity'
           return
-       endif
+       end if
 
        ! Set up the partials
 
        dlnTeff_dlnR = -0.5_dp
        dlnTeff_dL = 0.25_dp/L
-         
+
        dlnT_dlnTeff = (lnT_p - lnT_m) / (lnTeff_p - lnTeff_m)
        dlnT_dL = dlnT_dlnTeff*dlnTeff_dL
        dlnT_dlnR = dlnT_dlnTeff*dlnTeff_dlnR
@@ -201,18 +185,15 @@ contains
        dlnP_dlnM = 0._dp
        dlnP_dlnkap = 0._dp
 
-    endif
-         
-    ! Finish
+    end if
 
     return
 
   end subroutine eval_T_tau_varying
 
-  !****
-       
+
   ! Evaluate atmosphere data from T-tau relation with varying opacity
-  
+
   subroutine eval_data( &
        tau_surf, Teff, g, &
        T_tau_id, eos_proc, kap_proc, errtol, max_steps, &
@@ -258,13 +239,10 @@ contains
 
     end do try_loop
 
-    ! Finish
-
     return
 
   end subroutine eval_data
 
-  !****
 
   subroutine eval_data_try( &
        tau_surf, Teff, g, tau_outer, &
@@ -322,7 +300,7 @@ contains
     integer           :: idid
 
     ierr = 0
-        
+
     ! Allocate work arrays for the integrator
 
     call dopri5_work_sizes(NUM_VARS, NRDENS, liwork, lwork)
@@ -346,20 +324,20 @@ contains
     ! Pgas from low-density ideal gas law)
 
     lnTeff = log(Teff)
-  
+
     call eval_T_tau(T_tau_id, tau_outer, Teff, lnT, ierr)
     if (ierr /= 0) then
        write(*,*) 'atm: Call to eval_T_tau failed in eval_data_try'
        return
     end if
-    
+
     T_outer = exp(lnT)
     Pgas_outer = cgas*RHO_OUTER*T_outer
     P_outer = Pgas_outer + radiation_pressure(T_outer)
     lnP = log(P_outer)
 
     y(1) = lnP
-    
+
     ! Integrate inward from tau_outer to tau_surf
 
     lntau_outer = log(tau_outer)
@@ -372,11 +350,11 @@ contains
 
     call dopri5( &
          NUM_VARS, eval_fcn, lntau_outer, y, lntau_surf, &
-         dlntau, DLNTAU_MAX, max_steps, & 
-         rtol, atol, 1, & 
-         eval_solout, IOUT, & 
-         work, lwork, iwork, liwork, & 
-         LRPAR, rpar, LIPAR, ipar, & 
+         dlntau, DLNTAU_MAX, max_steps, &
+         rtol, atol, 1, &
+         eval_solout, IOUT, &
+         work, lwork, iwork, liwork, &
+         LRPAR, rpar, LIPAR, ipar, &
          LOUT, idid)
     if (idid < 0) then
        write(*,*) 'Call to dopri5 failed in eval_data_try: idid=', idid
@@ -387,7 +365,7 @@ contains
     ! Store the final pressure and temperature
 
     lnP = y(1)
-    
+
     call eval_T_tau(T_tau_id, tau_surf, Teff, lnT, ierr)
     if (ierr /= 0) then
        write(*,*) 'atm: Call to eval_T_tau failed in eval_data_try'
@@ -397,8 +375,6 @@ contains
     ! Deallocate arrays
 
     deallocate(work, iwork)
-
-    ! Finish
 
     return
 
@@ -463,19 +439,16 @@ contains
           write(*,*) 'atm: Call to kap_proc failed in eval_fcn'
           return
        end if
-      
+
       ! Set up the rhs for the hydrostatic eqm equation
        ! dlnP/dlntau = tau*g/P*kappa
 
        f(1) = tau*g/(kap*exp(lnP))
 
-      ! Finish
-
       return
 
     end subroutine eval_fcn
 
-    !****
 
     subroutine eval_solout( &
          nr, xold, x, n, y, rwork_y, iwork_y, interp_y, lrpar, rpar, lipar, ipar, irtrn)
@@ -490,6 +463,7 @@ contains
       interface
          real(dp) function interp_y(i, s, rwork_y, iwork_y, ierr)
            use const_def, only: dp
+           implicit none
            integer, intent(in) :: i
            real(dp), intent(in) :: s
            real(dp), intent(inout), target :: rwork_y(*)
@@ -497,9 +471,9 @@ contains
            integer, intent(out) :: ierr
          end function interp_y
       end interface
-      integer, intent(out) :: irtrn ! < 0 causes solver to return to calling program.
+      integer, intent(out) :: irtrn  ! < 0 causes solver to return to calling program.
 
-      irtrn = 0 ! for ifort
+      irtrn = 0  ! for ifort
 
       ! Dummy routine that's never called
 
@@ -509,7 +483,6 @@ contains
 
   end subroutine eval_data_try
 
-  !****
 
   ! Build atmosphere structure data from T-tau relation with varying
   ! opacity
@@ -578,8 +551,8 @@ contains
        return
     end if
 
-    if (dlntau <= 0.) then
-       write(*,*) 'Invalid dlntau in build_atm_uniform:', dlntau
+    if (dlogtau <= 0._dp) then
+       write(*,*) 'Invalid dlogtau in build_atm_uniform:', dlogtau
        call mesa_error(__FILE__,__LINE__)
     end if
 
@@ -587,7 +560,7 @@ contains
 
     g = cgrav*M/(R*R)
 
-    ! Allocte atm_structure at its initial size
+    ! Allocate atm_structure at its initial size
 
     allocate(atm_structure(num_results_for_build_atm,INIT_NUM_PTS))
 
@@ -633,11 +606,11 @@ contains
 
     call dopri5( &
          NUM_VARS, build_fcn, lntau_surf, y, lntau_outer, &
-         dlntau, dlntau_max, MAX_STEPS, & 
-         rtol, atol, 1, & 
-         build_solout, IOUT, & 
-         work, lwork, iwork, liwork, & 
-         LRPAR, rpar, LIPAR, ipar, & 
+         dlntau, dlntau_max, MAX_STEPS, &
+         rtol, atol, 1, &
+         build_solout, IOUT, &
+         work, lwork, iwork, liwork, &
+         LRPAR, rpar, LIPAR, ipar, &
          LOUT, idid)
     if (idid < 0) then
        write(*,*) 'atm: Call to dopri5 failed in build_T_tau_varying: idid=', idid
@@ -688,7 +661,7 @@ contains
       ! Set up the rhs for the optical depth and hydrostatic
       ! equilibrium equations
       ! dr/dlntau = -tau/(kappa*rho)
-      ! 
+      !
 
       tau = exp(x)
       P = exp(y(2))
@@ -698,11 +671,8 @@ contains
       f(1) = -tau/(kap*rho)
       f(2) = tau*g/(kap*P)
 
-      ! Finish
-
     end subroutine build_fcn
 
-    !****
 
     subroutine build_solout( &
          nr, xold, x, n, y, rwork_y, iwork_y, interp_y, lrpar, rpar, lipar, ipar, irtrn)
@@ -719,6 +689,7 @@ contains
       interface
          real(dp) function interp_y(i, s, rwork_y, iwork_y, ierr)
            use const_def, only: dp
+           implicit none
            integer, intent(in) :: i
            real(dp), intent(in) :: s
            real(dp), intent(inout), target :: rwork_y(*)
@@ -733,6 +704,7 @@ contains
       real(dp) :: atm_structure_sgl(num_results_for_build_atm)
 
       ierr = 0
+      irtrn = 0
 
       ! Evaluate structure data
 
@@ -757,13 +729,10 @@ contains
 
       atm_structure(:,atm_structure_num_pts) = atm_structure_sgl
 
-      ! Finish
-
       return
 
     end subroutine build_solout
 
-    !***
 
     subroutine build_data(lntau, delta_r, lnP, atm_structure_sgl, ierr)
 
@@ -822,19 +791,19 @@ contains
           write(*,*) 'atm: Call to kap_proc failed in build_data'
           return
        end if
-      
+
       ! Evaluate radiative temperature gradient
 
       gradr = eval_Paczynski_gradr(exp(lnT), exp(lnP), exp(lnRho), tau, kap, L, M, R, cgrav)
 
       ! Store data
 
-      atm_structure_sgl(atm_xm) = 0._dp ! We assume negligible mass in the atmosphere
+      atm_structure_sgl(atm_xm) = 0._dp  ! We assume negligible mass in the atmosphere
       atm_structure_sgl(atm_delta_r) = delta_r
       atm_structure_sgl(atm_lnP) = lnP
       atm_structure_sgl(atm_lnd) = lnRho
       atm_structure_sgl(atm_lnT) = lnT
-      atm_structure_sgl(atm_gradT) = gradr ! by assumption, atm is radiative
+      atm_structure_sgl(atm_gradT) = gradr  ! by assumption, atm is radiative
       atm_structure_sgl(atm_kap) = kap
       atm_structure_sgl(atm_gamma1) = res(i_gamma1)
       atm_structure_sgl(atm_grada) = res(i_grad_ad)

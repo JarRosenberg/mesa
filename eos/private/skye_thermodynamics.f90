@@ -1,3 +1,22 @@
+! ***********************************************************************
+!
+!   Copyright (C) 2022  The MESA Team
+!
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
+!
+!   This program is distributed in the hope that it will be useful,
+!   but WITHOUT ANY WARRANTY; without even the implied warranty of
+!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+!   See the GNU Lesser General Public License for more details.
+!
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+! ***********************************************************************
+
 module skye_thermodynamics
    use math_lib
    use auto_diff
@@ -77,7 +96,7 @@ module skye_thermodynamics
       cp = cv * gam1 / chid
 
       ! Sound speed
-      cs = clight * sqrt(gam1 / (1d0 + (dens / p) * (e + clight**2)))
+      cs = clight * sqrt(gam1 / (1d0 + (dens / p) * (e + clight*clight)))
    end subroutine compute_derived_quantities
 
    !> Computes thermodynamic quantities from Skye and packs them into the EOS return vectors.
@@ -102,6 +121,7 @@ module skye_thermodynamics
    !! @param d_dlnT The derivative of the EOS return vector with respect to lnT.
    subroutine pack_for_export(F_ideal_ion, F_coul, F_rad, F_ele, temp, dens, xnefer, etaele, abar, zbar, &
                                           phase, latent_ddlnT, latent_ddlnRho, res, d_dlnRho, d_dlnT, ierr)
+      use const_def, only: dp, crad, avo
       use eos_def
       type(auto_diff_real_2var_order3), intent(in) :: F_ideal_ion, F_coul, F_rad, F_ele, temp, dens, xnefer, etaele
       type(auto_diff_real_2var_order3), intent(in) :: phase, latent_ddlnT, latent_ddlnRho
@@ -126,14 +146,14 @@ module skye_thermodynamics
 
       ! Compute base thermodynamic quantities
       call thermodynamics_from_free_energy(F_gas, temp, dens, sgas, egas, pgas)
-      
+
       ! Write the radiation terms explicitly to avoid having rho^2/rho^2 term that
       ! auto_diff gives for prad when calling thermodynamics_from_free_energy on F_rad.
       ! This avoids some subtractions for quantities that should be 0 like chid.
       prad = crad * pow4(temp) / 3d0
       erad = crad * pow4(temp) / dens
       srad = 4d0 * crad * pow3(temp) / (3d0 * dens)
-      
+
       p = prad + pgas
       e = erad + egas
       s = srad + sgas
@@ -146,7 +166,7 @@ module skye_thermodynamics
       lnS = log(s)
       lnE = log(e)
       lnPgas = log(pgas)
-      
+
       ! assuming complete ionization
       mu = abar / (1d0 + zbar)
       lnfree_e = log(max(1d-99, xnefer)/(avo*dens))
@@ -192,7 +212,7 @@ module skye_thermodynamics
       d_dlnT(i_eta) = etaele%d1val1 * temp%val
       d_dlnT(i_phase) = phase%d1val1 * temp%val
       d_dlnT(i_latent_ddlnT) = latent_ddlnT%d1val1 * temp%val
-      d_dlnT(i_latent_ddlnRho) = latent_ddlnRho%d1val1 * temp%val     
+      d_dlnT(i_latent_ddlnRho) = latent_ddlnRho%d1val1 * temp%val
 
       d_dlnRho(i_lnS) = lnS%d1val2 * dens%val
       d_dlnRho(i_lnE) = lnE%d1val2 * dens%val

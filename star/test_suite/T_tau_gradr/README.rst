@@ -4,6 +4,8 @@
 T_tau_gradr
 ***********
 
+.. tags:: star, atm, atmosphere, t-tau-relation, radiative-gradient, surface-boundary-condition
+
 .. |Ttau| replace:: :math:`T(\tau)`
 .. |tau| replace:: :math:`\tau`
 
@@ -36,7 +38,7 @@ there are two possibly benign explanations.
    in which case the temperature gradient won't follow the (radiative)
    |Ttau| relation.  The sum can be restricted to smaller optical
    depths.
-   
+
 If the test fails because ``T_rms`` is much larger (orders of magnitude
 larger) than the tolerance, then there might be a bug
 in the implementation of the ``T_tau_gradr_factor``.

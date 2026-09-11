@@ -13,42 +13,44 @@ Ensure your system meets the minimum hardware requirements
 
 The minimum system requirements for MESA are:
 
--  Mac or Linux operating system
+-  macOS or Linux operating system
 -  64-bit processor
 -  8 GB RAM
 -  20 GB free disk space
 -  Windows users should :ref:`follow the instructions here <windows-install:Installing MESA on Windows>`.
 
-Most laptop or desktop computers built in the last three years will 
+Most laptop or desktop computers built in the last three years will
 satisfy these requirements.
-
-Ensure you have Python (3.5 or newer) installed on your system
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-.. warning:: As of r24.08.1, building MESA now requires Python (3.5 or newer) to be installed.
 
 Install the MESA SDK
 ^^^^^^^^^^^^^^^^^^^^
 
 Before you install MESA, you need to get the prerequisites. The `MESA
 SDK <http://user.astro.wisc.edu/~townsend/static.php?ref=mesasdk>`__
-simplifies this process by providing a prebuilt set of compilers and
-run-time libraries that should make your MESA install go
+simplifies this process by providing a pre-built set of compilers and
+run-time libraries that should make your MESA installation go
 smoothly. Visit the `MESA SDK website
 <http://user.astro.wisc.edu/~townsend/static.php?ref=mesasdk>`__ for
 the details of setting it up.
+
+.. warning::
+
+   The MESA SDK itself has a few dependencies you may need
+   to install manually, including `binutils`, `make`,
+   `Perl`, `Python`, `X11`, `Z` and `C` shell on Linux and `Xcode`,
+   `Xcode command line tools` and `Xquartz` on Mac. See "prerequisites"
+   section on the `MESA SDK website
+   <http://user.astro.wisc.edu/~townsend/static.php?ref=mesasdk>`__
+   for a complete and updated list including how to install them.
+
 
 If you would prefer to use ifort (the MESA SDK uses gfortran), that is
 also an option, so long as you use ifort 14 or later. Even if you choose
 to use ifort, you should still visit the MESA SDK website to get a feel
 for the other MESA requirements.
 
-Not using the MESA SDK means you'll need to replace the file
-:file:`$MESA_DIR/utils/makefile_header` with a version customized to your
-system. There's a template to get you started at
-:file:`$MESA_DIR/utils/makefile_header_non_mesasdk`.
-
 Regardless of whether you use the MESA SDK or ifort, and whether your
-machine runs MacOS or linux, the output of MESA should be bit-for-bit
+machine runs macOS or Linux, the output of MESA should be bit-for-bit
 identical.  If it's not, this is considered to be a bug. (This has
 been the case since Release 5819 in early January 2014.)
 
@@ -62,7 +64,7 @@ The simplest way to get the MESA software is to download a zip file of
 the `latest MESA release <https://doi.org/10.5281/zenodo.2602941>`__.
 
 The compressed file is about 2GB, so don't worry if it takes a little
-while to download.  
+while to download.
 
 The unzipped and installed package will be large, so make sure you have
 at least 20 GB free on your disk.
@@ -73,7 +75,7 @@ free to rename it, just make sure to set MESA_DIR accordingly (see the
 next section).
 
 You can also download zip files of `older MESA releases <https://doi.org/10.5281/zenodo.2602941>`__.
-If you plan to do so, please read :ref:`this FAQ entry <faq:Installing Older Versions of MESA>`.
+If you plan to do so, please read :ref:`this FAQ entry <faq:Installing Older (before 25.XX) Versions of MESA>`.
 
 .. _environment:
 
@@ -82,9 +84,9 @@ Set your environment variables
 
 The easiest way to make sure that your system is always configured
 appropriately is to define the necessary environment variables in
-your `shell start-up file <https://kb.iu.edu/d/abdy>`__. The file that
-you need to edit will depend on `which shell you're using
-<http://askubuntu.com/questions/590899/how-to-check-which-shell-am-i-using>`__.
+your `shell start-up file <https://servicenow.iu.edu/kb?id=kb_article_view&sysparm_article=KB0023946>`__.
+The file that you need to edit will depend on `which shell you're using
+<https://askubuntu.com/questions/590899/how-do-i-check-which-shell-i-am-using>`__.
 You can find out by running ``echo $0``. The default on most Linux
 distros is bash, in which case you need to edit ``$HOME/.bashrc``. If
 you don't set the environment variables in your shell start-up file,
@@ -98,11 +100,11 @@ startup file in an existing one).
 Here is an example from a machine that uses bash as its shell (and hence
 uses export to set variables):
 
-.. code-block:: bash
+.. code-block:: shell
 
     # set MESA_DIR to be the directory to which you downloaded MESA
     # The directory shown is only an example and must be modified for your particular system.
-    export MESA_DIR=/Users/jschwab/Software/mesa-r21.12.1
+    export MESA_DIR=/Users/my_username/Software/mesa-r24.08.1
 
     # set OMP_NUM_THREADS to be the number of cores on your machine
     export OMP_NUM_THREADS=2
@@ -112,15 +114,23 @@ uses export to set variables):
     export MESASDK_ROOT=/Applications/mesasdk
     source $MESASDK_ROOT/bin/mesasdk_init.sh
 
-    # add shmesa (the MESA command line tool) to your PATH 
+    # add shmesa (the MESA command line tool) to your PATH
     export PATH=$PATH:$MESA_DIR/scripts/shmesa
 
+Note: On some versions of macOS (15.2/15.3),
+if you see the error
+`ld: library 'z' not found`
+on a Mac you may also need to add:
+
+.. code-block:: shell
+
+    export SDKROOT=$(xcrun --sdk macosx --show-sdk-path)
 
 If your machine uses csh as its shell, use ``setenv`` instead of ``export``.
-    
+
 One caveat is that if you initialize the MESA SDK in your shell
 profile, you'll always be using the MESA SDK supplied version of gcc
-which may be a compatibility issue if you work with other other codes.
+which may cause compatibility issues if you work with other codes.
 Alternative (unsupported) initialization scripts are available `here
 <https://github.com/jschwab/mesa-init>`__.
 

@@ -2,24 +2,18 @@
 !
 !   Copyright (C) 2014-2019  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
@@ -90,7 +84,8 @@
       integer, parameter :: p_radius_cm = p_radius_km + 1
       integer, parameter :: p_radius = p_radius_cm + 1
       integer, parameter :: p_logR = p_radius + 1
-      integer, parameter :: p_log_q = p_logR + 1
+      integer, parameter :: p_psi_roche = p_logR + 1
+      integer, parameter :: p_log_q = p_psi_roche + 1
       integer, parameter :: p_q = p_log_q + 1
       integer, parameter :: p_log_dq = p_q + 1
       integer, parameter :: p_dq = p_log_dq + 1
@@ -142,7 +137,7 @@
 
       integer, parameter :: p_cell_internal_energy_fraction_start = p_dlogR + 1
       integer, parameter :: p_cell_internal_energy_fraction = p_cell_internal_energy_fraction_start + 1
-      
+
       integer, parameter :: p_log_rel_E_err = p_cell_internal_energy_fraction + 1
       integer, parameter :: p_ergs_error_integral = p_log_rel_E_err + 1
       integer, parameter :: p_ergs_rel_error_integral = p_ergs_error_integral + 1
@@ -277,7 +272,7 @@
 
       integer, parameter :: p_eps_diffusion = p_log_eps_WD_sedimentation + 1
       integer, parameter :: p_log_eps_diffusion = p_eps_diffusion + 1
-      
+
       integer, parameter :: p_log_e_field = p_log_eps_diffusion + 1
       integer, parameter :: p_e_field = p_log_e_field + 1
       integer, parameter :: p_log_g_field_element_diffusion = p_e_field + 1
@@ -348,7 +343,7 @@
       integer, parameter :: p_dkap_dlnrho_face = p_ye + 1
       integer, parameter :: p_dkap_dlnT_face = p_dkap_dlnrho_face + 1
       integer, parameter :: p_opacity = p_dkap_dlnt_face + 1
-      
+
       integer, parameter :: p_deps_dlnd_face = p_opacity + 1
       integer, parameter :: p_deps_dlnT_face = p_deps_dlnd_face + 1
       integer, parameter :: p_d_epsnuc_dlnd = p_deps_dlnT_face + 1
@@ -356,7 +351,7 @@
       integer, parameter :: p_d_lnepsnuc_dlnT = p_d_lnepsnuc_dlnd + 1
       integer, parameter :: p_d_epsnuc_dlnT = p_d_lnepsnuc_dlnT + 1
       integer, parameter :: p_eps_nuc_start = p_d_epsnuc_dlnT + 1
-      integer, parameter :: p_signed_log_eps_nuc = p_eps_nuc_start + 1 
+      integer, parameter :: p_signed_log_eps_nuc = p_eps_nuc_start + 1
 
 
       integer, parameter :: p_log_abs_eps_nuc = p_signed_log_eps_nuc + 1
@@ -380,11 +375,12 @@
       integer, parameter :: p_extra_grav = p_extra_omegadot + 1
       integer, parameter :: p_extra_heat = p_extra_grav + 1
       integer, parameter :: p_div_v = p_extra_heat + 1
-      integer, parameter :: p_d_v_div_r_dm = p_div_v + 1 
+      integer, parameter :: p_d_v_div_r_dm = p_div_v + 1
       integer, parameter :: p_d_v_div_r_dr = p_d_v_div_r_dm + 1
 
       integer, parameter :: p_dvdt_grav = p_d_v_div_r_dr + 1
-      integer, parameter :: p_dvdt_dPdm = p_dvdt_grav + 1
+      integer, parameter :: p_grav_eff = p_dvdt_grav + 1
+      integer, parameter :: p_dvdt_dPdm = p_grav_eff + 1
       integer, parameter :: p_du = p_dvdt_dPdm + 1
       integer, parameter :: p_P_face = p_du + 1
 
@@ -407,7 +403,7 @@
       integer, parameter :: p_eps_mdot = p_ergs_mdot + 1
 
       integer, parameter :: p_dm_eps_grav = p_eps_mdot + 1
-      
+
       integer, parameter :: p_log_xm_div_delta_m = p_dm_eps_grav + 1
       integer, parameter :: p_xm_div_delta_m = p_log_xm_div_delta_m + 1
       integer, parameter :: p_eps_grav = p_xm_div_delta_m + 1
@@ -433,7 +429,7 @@
       integer, parameter :: p_log_mlt_Gamma = p_log_gradT_div_gradr + 1
       integer, parameter :: p_log_mlt_vc = p_log_mlt_Gamma + 1
       integer, parameter :: p_conv_vel_div_mlt_vc = p_log_mlt_vc + 1
-      integer, parameter :: p_mlt_vc = p_conv_vel_div_mlt_vc + 1      
+      integer, parameter :: p_mlt_vc = p_conv_vel_div_mlt_vc + 1
       integer, parameter :: p_mlt_D = p_mlt_vc + 1
       integer, parameter :: p_mlt_gradT = p_mlt_D + 1
       integer, parameter :: p_mlt_log_abs_Y = p_mlt_gradT + 1
@@ -466,12 +462,12 @@
       integer, parameter :: p_conv_vel = p_log_D_mix + 1
       integer, parameter :: p_dt_times_conv_vel_div_mixing_length = p_conv_vel + 1
       integer, parameter :: p_log_dt_times_conv_vel_div_mixing_length = p_dt_times_conv_vel_div_mixing_length + 1
-      
+
       integer, parameter :: p_log_lambda_RTI_div_Hrho = p_log_dt_times_conv_vel_div_mixing_length + 1
       integer, parameter :: p_lambda_RTI = p_log_lambda_RTI_div_Hrho + 1
       integer, parameter :: p_dPdr_info = p_lambda_RTI + 1
       integer, parameter :: p_dRhodr_info = p_dPdr_info + 1
-      
+
       integer, parameter :: p_source_plus_alpha_RTI = p_dRhodr_info + 1
       integer, parameter :: p_log_source_RTI = p_source_plus_alpha_RTI + 1
       integer, parameter :: p_log_source_plus_alpha_RTI = p_log_source_RTI + 1
@@ -577,8 +573,9 @@
 
       integer, parameter :: p_total_energy_sign = p_cs_at_cell_bdy + 1
       integer, parameter :: p_total_energy = p_total_energy_sign + 1
-      
-      integer, parameter :: p_Ptrb = p_total_energy + 1
+      integer, parameter :: p_dwork_dm = p_total_energy + 1
+
+      integer, parameter :: p_Ptrb = p_dwork_dm + 1
       integer, parameter :: p_log_Ptrb = p_Ptrb + 1
       integer, parameter :: p_log_w = p_log_Ptrb + 1
       integer, parameter :: p_w = p_log_w + 1
@@ -602,7 +599,18 @@
       integer, parameter :: p_Lt = p_Lc_div_L + 1
       integer, parameter :: p_Lt_div_L = p_Lt + 1
 
-      integer, parameter :: p_rsp_log_erad = p_Lt_div_L + 1
+      integer, parameter :: p_reconstructed_T_face = p_Lt_div_L + 1
+      integer, parameter :: p_reconstructed_rho_face = p_reconstructed_T_face + 1
+      integer, parameter :: p_reconstructed_P_face = p_reconstructed_rho_face + 1
+      integer, parameter :: p_reconstructed_Cp_face = p_reconstructed_P_face + 1
+      integer, parameter :: p_reconstructed_ChiRho_face = p_reconstructed_Cp_face + 1
+      integer, parameter :: p_reconstructed_ChiT_face = p_reconstructed_ChiRho_face + 1
+      integer, parameter :: p_reconstructed_grada_face = p_reconstructed_ChiT_face + 1
+      integer, parameter :: p_reconstructed_opacity_face = p_reconstructed_grada_face + 1
+      integer, parameter :: p_reconstructed_scale_height_face = p_reconstructed_opacity_face + 1
+      integer, parameter :: p_reconstructed_gradr_face = p_reconstructed_scale_height_face + 1
+
+      integer, parameter :: p_rsp_log_erad = p_reconstructed_gradr_face + 1
       integer, parameter :: p_rsp_erad = p_rsp_log_erad + 1
       integer, parameter :: p_rsp_logEt = p_rsp_erad + 1
       integer, parameter :: p_rsp_Et = p_rsp_logEt + 1
@@ -698,7 +706,7 @@
       integer, parameter :: p_tau_qhse = p_tau_conv + 1
       integer, parameter :: p_tau_epsnuc = p_tau_qhse + 1
       integer, parameter :: p_tau_cool = p_tau_epsnuc + 1
-      
+
       integer, parameter :: p_max_abs_xa_corr = p_tau_cool + 1
       integer, parameter :: p_log_zFe = p_max_abs_xa_corr + 1
       integer, parameter :: p_zFe = p_log_zFe + 1
@@ -708,9 +716,13 @@
       integer, parameter :: p_RTI_du_diffusion_kick = p_dPdr_dRhodr_info + 1
       integer, parameter :: p_log_du_kick_div_du = p_RTI_du_diffusion_kick + 1
 
-      integer, parameter :: p_lum_rad_div_L_Edd_sub_fourPrad_div_PchiT = p_log_du_kick_div_du + 1
-      
-      integer, parameter :: p_col_id_max = p_lum_rad_div_L_Edd_sub_fourPrad_div_PchiT
+      integer, parameter :: p_Frad_div_cUrad = p_log_du_kick_div_du + 1
+      integer, parameter :: p_lum_rad_div_L_Edd_sub_fourPrad_div_PchiT = p_Frad_div_cUrad + 1
+
+      integer, parameter :: p_flux_limit_R = p_lum_rad_div_L_Edd_sub_fourPrad_div_PchiT + 1
+      integer, parameter :: p_flux_limit_lambda = p_flux_limit_R + 1
+
+      integer, parameter :: p_col_id_max = p_flux_limit_lambda
 
       character (len=maxlen_profile_column_name) :: profile_column_name(p_col_id_max)
       type (integer_dict), pointer :: profile_column_names_dict
@@ -758,7 +770,7 @@
          profile_column_name(p_r_div_g) = 'r_div_g'
          profile_column_name(p_g_div_r) = 'g_div_r'
          profile_column_name(p_net_nuclear_energy) = 'net_nuclear_energy'
-         
+
          profile_column_name(p_eps_nuc_plus_nuc_neu) = 'eps_nuc_plus_nuc_neu'
          profile_column_name(p_eps_nuc_minus_non_nuc_neu) = 'eps_nuc_minus_non_nuc_neu'
          profile_column_name(p_net_energy) = 'net_energy'
@@ -783,6 +795,7 @@
          profile_column_name(p_rmid) = 'rmid'
          profile_column_name(p_logR_cm) = 'logR_cm'
          profile_column_name(p_logR) = 'logR'
+         profile_column_name(p_psi_roche) = 'psi_roche'
          profile_column_name(p_log_q) = 'log_q'
          profile_column_name(p_q) = 'q'
          profile_column_name(p_dq) = 'dq'
@@ -930,7 +943,7 @@
          profile_column_name(p_rho_times_r3) = 'rho_times_r3'
          profile_column_name(p_v_times_t_div_r) = 'v_times_t_div_r'
          profile_column_name(p_v_div_r) = 'v_div_r'
-         
+
          profile_column_name(p_log_c_div_tau) = 'log_c_div_tau'
          profile_column_name(p_log_v_escape) = 'log_v_escape'
          profile_column_name(p_v_div_v_escape) = 'v_div_v_escape'
@@ -967,7 +980,7 @@
 
          profile_column_name(p_eps_diffusion) = 'eps_diffusion'
          profile_column_name(p_log_eps_diffusion) = 'log_eps_diffusion'
-         
+
          profile_column_name(p_log_e_field) = 'log_e_field'
          profile_column_name(p_e_field) = 'e_field'
          profile_column_name(p_log_g_field_element_diffusion) = 'log_g_field_element_diffusion'
@@ -1073,6 +1086,7 @@
          profile_column_name(p_d_v_div_r_dm) = 'd_v_div_r_dm'
          profile_column_name(p_d_v_div_r_dr) = 'd_v_div_r_dr'
          profile_column_name(p_dvdt_grav) = 'dvdt_grav'
+         profile_column_name(p_grav_eff) = 'grav_eff'
          profile_column_name(p_dvdt_dPdm) = 'dvdt_dPdm'
          profile_column_name(p_du) = 'du'
          profile_column_name(p_P_face) = 'P_face'
@@ -1091,7 +1105,7 @@
          profile_column_name(p_ergs_eps_grav_plus_eps_mdot) = 'ergs_eps_grav_plus_eps_mdot'
          profile_column_name(p_ergs_mdot) = 'ergs_mdot'
          profile_column_name(p_eps_mdot) = 'eps_mdot'
-         
+
          profile_column_name(p_log_xm_div_delta_m) = 'log_xm_div_delta_m'
          profile_column_name(p_xm_div_delta_m) = 'xm_div_delta_m'
          profile_column_name(p_eps_grav) = 'eps_grav'
@@ -1152,7 +1166,7 @@
          profile_column_name(p_lambda_RTI) = 'lambda_RTI'
          profile_column_name(p_dPdr_info) = 'dPdr_info'
          profile_column_name(p_dRhodr_info) = 'dRhodr_info'
-         
+
          profile_column_name(p_source_plus_alpha_RTI) = 'source_plus_alpha_RTI'
          profile_column_name(p_source_minus_alpha_RTI) = 'source_minus_alpha_RTI'
          profile_column_name(p_log_source_RTI) = 'log_source_RTI'
@@ -1249,6 +1263,7 @@
 
          profile_column_name(p_total_energy_sign) = 'total_energy_sign'
          profile_column_name(p_total_energy) = 'total_energy'
+         profile_column_name(p_dwork_dm) = 'dwork_dm'
 
          profile_column_name(p_Ptrb) = 'Ptrb'
          profile_column_name(p_log_Ptrb) = 'log_Ptrb'
@@ -1273,6 +1288,16 @@
          profile_column_name(p_Lc_div_L) = 'Lc_div_L'
          profile_column_name(p_Lt) = 'Lt'
          profile_column_name(p_Lt_div_L) = 'Lt_div_L'
+         profile_column_name(p_reconstructed_T_face) = 'reconstructed_T_face'
+         profile_column_name(p_reconstructed_rho_face) = 'reconstructed_rho_face'
+         profile_column_name(p_reconstructed_P_face) = 'reconstructed_P_face'
+         profile_column_name(p_reconstructed_Cp_face) = 'reconstructed_Cp_face'
+         profile_column_name(p_reconstructed_ChiRho_face) = 'reconstructed_ChiRho_face'
+         profile_column_name(p_reconstructed_ChiT_face) = 'reconstructed_ChiT_face'
+         profile_column_name(p_reconstructed_grada_face) = 'reconstructed_grada_face'
+         profile_column_name(p_reconstructed_opacity_face) = 'reconstructed_opacity_face'
+         profile_column_name(p_reconstructed_scale_height_face) = 'reconstructed_scale_height_face'
+         profile_column_name(p_reconstructed_gradr_face) = 'reconstructed_gradr_face'
 
          profile_column_name(p_rsp_Et) = 'rsp_Et'
          profile_column_name(p_rsp_logEt) = 'rsp_logEt'
@@ -1308,7 +1333,7 @@
          profile_column_name(p_cell_ie_div_star_ie) = 'cell_ie_div_star_ie'
          profile_column_name(p_log_cell_specific_IE) = 'log_cell_specific_IE'
          profile_column_name(p_log_cell_ie_div_star_ie) = 'log_cell_ie_div_star_ie'
-         
+
          profile_column_name(p_cell_specific_PE) = 'cell_specific_PE'
          profile_column_name(p_cell_specific_KE) = 'cell_specific_KE'
          profile_column_name(p_cell_IE_div_IE_plus_KE) = 'cell_IE_div_IE_plus_KE'
@@ -1395,13 +1420,17 @@
          profile_column_name(p_tau_epsnuc) = 'tau_epsnuc'
          profile_column_name(p_tau_cool) = 'tau_cool'
 
+         profile_column_name(p_Frad_div_cUrad) = 'Frad_div_cUrad'
          profile_column_name(p_lum_rad_div_L_Edd_sub_fourPrad_div_PchiT) = 'lum_rad_div_L_Edd_sub_fourPrad_div_PchiT'
+
+         profile_column_name(p_flux_limit_R) = 'flux_limit_R'
+         profile_column_name(p_flux_limit_lambda) = 'flux_limit_lambda'
 
          cnt = 0
          do i=1,p_col_id_max
             if (len_trim(profile_column_name(i)) == 0) then
                write(*,*) 'missing name for profile column id', i
-               if (i > 1) write(*,*) 'following ' // trim(profile_column_name(max(1,i-1))) ! bp: get rid of bogus compiler warning
+               if (i > 1) write(*,*) 'following ' // trim(profile_column_name(max(1,i-1)))  ! bp: get rid of bogus compiler warning
                write(*,'(A)')
                cnt = cnt+1
             end if
@@ -1441,7 +1470,4 @@
          do_get_profile_id = value
       end function do_get_profile_id
 
-
-
       end module star_profile_def
-

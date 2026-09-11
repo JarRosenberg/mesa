@@ -1,6 +1,25 @@
+! ***********************************************************************
+!
+!   Copyright (C) 2022  The MESA Team
+!
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
+!
+!   This program is distributed in the hope that it will be useful,
+!   but WITHOUT ANY WARRANTY; without even the implied warranty of
+!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+!   See the GNU Lesser General Public License for more details.
+!
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+! ***********************************************************************
+
 ! from Frank Timmes' site, http://www.cococubed.com/code_pages/fermi_dirac.shtml
 
-!..routine dfermi gets the fermi-dirac functions and their derivaties
+!..routine dfermi gets the fermi-dirac functions and their derivatives
 !..routine fdfunc1 forms the integrand of the fermi-dirac functions
 !..routine fdfunc2 same as fdfunc but with the change of variable z**2=x
 !..routine dqleg010 does 10 point gauss-legendre integration  9 fig accuracy
@@ -16,7 +35,7 @@ module gauss_fermi
 
    use const_def, only: dp
    use math_lib
-      
+
    implicit none
 
    private
@@ -26,12 +45,12 @@ module gauss_fermi
 contains
 
    subroutine dfermi(dk,eta,theta,fd,fdeta,fdtheta)
-!..this routine computes the fermi-dirac integrals of 
+!..this routine computes the fermi-dirac integrals of
 !..index dk, with degeneracy parameter eta and relativity parameter theta.
 !..input is dk the real(dp) index of the fermi-dirac function,
 !..eta the degeneracy parameter, and theta the relativity parameter.
 !..    theta = (k * T)/(mass_electron * c^2), k = Boltzmann const.
-!..the output is fd is computed by applying three 10-point 
+!..the output is fd is computed by applying three 10-point
 !..gauss-legendre and one 10-point gauss-laguerre rules over
 !..four appropriate subintervals. the derivative with respect to eta is
 !..output in fdeta, and the derivative with respct to theta is in fdtheta.
@@ -77,11 +96,11 @@ contains
 
 !   definition of xi:
       eta1=sg*(eta-d)
-      if (eta1.le.5.d1) then
+      if (eta1<=5.d1) then
         xi=log(1.d0+exp(eta1))/sg
       else
         xi=eta-d
-      endif
+      end if
       xi2=xi*xi
 
 !   definition of the x_i:
@@ -95,7 +114,7 @@ contains
       s3=x1+x3
       s12=sqrt(s1)
 
-!   quadrature integrations: 
+!   quadrature integrations:
 
 ! 9 significant figure accuracy
 !      call dqleg010(fdfunc2, 0.d0,  s12, res1, dres1, ddres1, par,3)
@@ -130,11 +149,11 @@ contains
       fdtheta = ddres1 + ddres2 + ddres3 + ddres4
       return
    end subroutine dfermi
-   
+
    subroutine fdfunc1(x,par,n,fd,fdeta,fdtheta)
 !..
 !..forms the fermi-dirac integrand and its derivatives with eta and theta.
-!..on input x is the integration variable, par(1) is the real(dp) 
+!..on input x is the integration variable, par(1) is the real(dp)
 !..index, par(2) is the degeneravy parameter, and par(3) is the relativity
 !..parameter. on output fd is the integrand, fdeta is the derivative
 !..with respect to eta, and fdtheta is the derivative with respect to theta.
@@ -153,11 +172,11 @@ contains
       dxst  = sqrt(1.0d0 + 0.5d0*x*theta)
 
 !   avoid overflow in the exponentials at large x
-      if ((x-eta) .lt. 1.0d2) then
+      if ((x-eta) < 1.0d2) then
        factor  = exp(x-eta)
        denom   = factor + 1.0d0
        fd      = xdk * dxst / denom
-       fdeta   = fd * factor / denom 
+       fdeta   = fd * factor / denom
        denom2  = 4.0d0 * dxst * denom
        fdtheta = xdkp1 / denom2
 
@@ -167,7 +186,7 @@ contains
        fdeta    = fd
        denom2   = 4.0d0 * dxst
        fdtheta  = xdkp1/denom2 * factor
-      endif
+      end if
 
       return
    end subroutine fdfunc1
@@ -176,7 +195,7 @@ contains
 !..
 !..forms the fermi-dirac integrand and its derivatives with eta and theta,
 !..when the z**2=x variable change has been made.
-!..on input x is the integration variable, par(1) is the real(dp) 
+!..on input x is the integration variable, par(1) is the real(dp)
 !..index, par(2) is the degeneravy parameter, and par(3) is the relativity
 !..parameter. on output fd is the integrand, fdeta is the derivative
 !..with respect to eta, and fdtheta is the derivative with respect to theta.
@@ -195,10 +214,10 @@ contains
       dxst  = sqrt(1.0d0 + 0.5d0 * xsq * theta)
 
 !   avoid an overflow in the denominator at large x:
-      if ((xsq-eta) .lt. 1.d2) then
+      if ((xsq-eta) < 1.d2) then
        factor  = exp(xsq - eta)
        denom   = factor + 1.0d0
-       fd      = 2.0d0 * xdk * dxst/denom 
+       fd      = 2.0d0 * xdk * dxst/denom
        fdeta   = fd * factor/denom
        denom2  = 4.0d0 * dxst * denom
        fdtheta = 2.0d0 * xdkp1/denom2
@@ -206,10 +225,10 @@ contains
       else
        factor  = exp(eta - xsq)
        fd      = 2.0d0 * xdk * dxst * factor
-       fdeta   = fd 
+       fdeta   = fd
        denom2  = 4.0d0 * dxst
        fdtheta = 2.0d0 * xdkp1/denom2 * factor
-      endif
+      end if
 
       return
    end subroutine fdfunc2
@@ -221,7 +240,7 @@ contains
 !..on input f is the name of the subroutine containing the integrand,
 !..a is the lower end point of the interval, b is the higher end point,
 !..par is an array of constant parameters to be passed to subroutine f,
-!..and n is the length of the par array. on output res is the 
+!..and n is the length of the par array. on output res is the
 !..approximation from applying the 10-point gauss-legendre rule,
 !..dres is the derivative with respect to eta, and ddres is the
 !..derivative with respect to theta.
@@ -229,7 +248,14 @@ contains
 !..note: since the number of nodes is even, zero is not an abscissa.
 !..
 !..declare
-      external f
+      interface
+        subroutine f(absc1, par, n, fval1, dfval1, ddfval1)
+            use const_def, only: dp
+            implicit none
+            integer :: n
+            real(dp) :: absc1, par(n), fval1, dfval1, ddfval1
+        end subroutine f
+      end interface
       integer :: j, n
       real(dp) :: a,b,res,dres,ddres,par(n)
       real(dp) :: absc1,absc2,center,hlfrun,wg(5),xg(5)
@@ -276,7 +302,7 @@ contains
         res   = res + (fval1 + fval2)*wg(j)
         dres  = dres + (dfval1 + dfval2)*wg(j)
         ddres = ddres + (ddfval1 + ddfval2)*wg(j)
-      enddo
+      end do
       res   = res * hlfrun
       dres  = dres * hlfrun
       ddres = ddres * hlfrun
@@ -290,7 +316,7 @@ contains
 !..on input f is the name of the subroutine containing the integrand,
 !..a is the lower end point of the interval, b is the higher end point,
 !..par is an array of constant parameters to be passed to subroutine f,
-!..and n is the length of the par array. on output res is the 
+!..and n is the length of the par array. on output res is the
 !..approximation from applying the 20-point gauss-legendre rule,
 !..dres is the derivative with respect to eta, and ddres is the
 !..derivative with respect to theta.
@@ -298,7 +324,14 @@ contains
 !..note: since the number of nodes is even, zero is not an abscissa.
 !..
 !..declare
-      external f
+      interface
+        subroutine f(absc1, par, n, fval1, dfval1, ddfval1)
+            use const_def, only: dp
+            implicit none
+            integer :: n
+            real(dp) :: absc1, par(n), fval1, dfval1, ddfval1
+        end subroutine f
+      end interface
       integer :: j,n
       real(dp) :: a,b,res,dres,ddres,par(n)
       real(dp) :: absc1,absc2,center,hlfrun,wg(10),xg(10)
@@ -358,7 +391,7 @@ contains
         res   = res + (fval1 + fval2)*wg(j)
         dres  = dres + (dfval1 + dfval2)*wg(j)
         ddres = ddres + (ddfval1 + ddfval2)*wg(j)
-      enddo
+      end do
       res   = res * hlfrun
       dres  = dres * hlfrun
       ddres = ddres * hlfrun
@@ -372,7 +405,7 @@ contains
 !..on input f is the name of the subroutine containing the integrand,
 !..a is the lower end point of the interval, b is the higher end point,
 !..par is an array of constant parameters to be passed to subroutine f,
-!..and n is the length of the par array. on output res is the 
+!..and n is the length of the par array. on output res is the
 !..approximation from applying the 40-point gauss-legendre rule,
 !..dres is the derivative with respect to eta, and ddres is the
 !..derivative with respect to theta.
@@ -380,7 +413,14 @@ contains
 !..note: since the number of nodes is even, zero is not an abscissa.
 !..
 !..declare
-      external f
+      interface
+        subroutine f(absc1, par, n, fval1, dfval1, ddfval1)
+            use const_def, only: dp
+            implicit none
+            integer :: n
+            real(dp) :: absc1, par(n), fval1, dfval1, ddfval1
+        end subroutine f
+      end interface
       integer :: j,n
       real(dp) :: a,b,res,dres,ddres,par(n)
       real(dp) :: absc1,absc2,center,hlfrun,wg(20),xg(20)
@@ -459,7 +499,7 @@ contains
         res   = res + (fval1 + fval2)*wg(j)
         dres  = dres + (dfval1 + dfval2)*wg(j)
         ddres = ddres + (ddfval1 + ddfval2)*wg(j)
-      enddo
+      end do
       res   = res * hlfrun
       dres  = dres * hlfrun
       ddres = ddres * hlfrun
@@ -473,7 +513,7 @@ contains
 !..on input f is the name of the subroutine containing the integrand,
 !..a is the lower end point of the interval, b is the higher end point,
 !..par is an array of constant parameters to be passed to subroutine f,
-!..and n is the length of the par array. on output res is the 
+!..and n is the length of the par array. on output res is the
 !..approximation from applying the 80-point gauss-legendre rule,
 !..dres is the derivative with respect to eta, and ddres is the
 !..derivative with respect to theta.
@@ -481,7 +521,14 @@ contains
 !..note: since the number of nodes is even, zero is not an abscissa.
 !..
 !..declare
-      external f
+      interface
+        subroutine f(absc1, par, n, fval1, dfval1, ddfval1)
+            use const_def, only: dp
+            implicit none
+            integer :: n
+            real(dp) :: absc1, par(n), fval1, dfval1, ddfval1
+        end subroutine f
+      end interface
       integer :: j,n
       real(dp) :: a,b,res,dres,ddres,par(n)
       real(dp) :: absc1,absc2,center,hlfrun,wg(40),xg(40)
@@ -601,7 +648,7 @@ contains
         res   = res + (fval1 + fval2)*wg(j)
         dres  = dres + (dfval1 + dfval2)*wg(j)
         ddres = ddres + (ddfval1 + ddfval2)*wg(j)
-      enddo
+      end do
       res   = res * hlfrun
       dres  = dres * hlfrun
       ddres = ddres * hlfrun
@@ -612,16 +659,23 @@ contains
 !..
 !..10 point gauss-laguerre rule for the fermi-dirac function.
 !..on input f is the external function defining the integrand
-!..f(x)=g(x)*w(x), where w(x) is the gaussian weight 
-!..w(x)=exp(-(x-a)/b) and g(x) a smooth function, 
+!..f(x)=g(x)*w(x), where w(x) is the gaussian weight
+!..w(x)=exp(-(x-a)/b) and g(x) a smooth function,
 !..a is the lower end point of the interval, b is the higher end point,
 !..par is an array of constant parameters to be passed to the function f,
-!..and n is the length of the par array. on output res is the 
-!..approximation from applying the 10-point gauss-laguerre rule. 
+!..and n is the length of the par array. on output res is the
+!..approximation from applying the 10-point gauss-laguerre rule.
 !..since the number of nodes is even, zero is not an abscissa.
 !..
 !..declare
-      external f
+      interface
+        subroutine f(absc, par, n, fval, dfval, ddfval)
+            use const_def, only: dp
+            implicit none
+            integer :: n
+            real(dp) :: absc, par(n), fval, dfval, ddfval
+        end subroutine f
+      end interface
       integer :: j,n
       real(dp) :: a,b,res,dres,ddres,par(n)
       real(dp) :: absc,wg(10),xg(10),fval,dfval,ddfval
@@ -630,7 +684,7 @@ contains
 ! the abscissae and weights are given for the interval (0,+inf).
 ! xg     - abscissae of the 10-point gauss-laguerre rule
 ! wg     - weights of the 10-point gauss rule. since f yet
-!          includes the weight function, the values in wg 
+!          includes the weight function, the values in wg
 !          are actually exp(xg) times the standard
 !          gauss-laguerre weights
 !
@@ -674,7 +728,7 @@ contains
        res   = res + fval*wg(j)
        dres  = dres + dfval*wg(j)
        ddres = ddres + ddfval*wg(j)
-      enddo
+      end do
       res   = res*b
       dres  = dres*b
       ddres = ddres*b
@@ -685,16 +739,23 @@ contains
 !..
 !..20 point gauss-laguerre rule for the fermi-dirac function.
 !..on input f is the external function defining the integrand
-!..f(x)=g(x)*w(x), where w(x) is the gaussian weight 
-!..w(x)=dexp(-(x-a)/b) and g(x) a smooth function, 
+!..f(x)=g(x)*w(x), where w(x) is the gaussian weight
+!..w(x)=dexp(-(x-a)/b) and g(x) a smooth function,
 !..a is the lower end point of the interval, b is the higher end point,
 !..par is an array of constant parameters to be passed to the function f,
-!..and n is the length of the par array. on output res is the 
-!..approximation from applying the 20-point gauss-laguerre rule. 
+!..and n is the length of the par array. on output res is the
+!..approximation from applying the 20-point gauss-laguerre rule.
 !..since the number of nodes is even, zero is not an abscissa.
 !..
 !..declare
-      external f
+      interface
+        subroutine f(absc, par, n, fval, dfval, ddfval)
+            use const_def, only: dp
+            implicit none
+            integer :: n
+            real(dp) :: absc, par(n), fval, dfval, ddfval
+        end subroutine f
+      end interface
       integer :: j,n
       real(dp) :: a,b,res,dres,ddres,par(n)
       real(dp) :: absc,wg(20),xg(20),fval,dfval,ddfval
@@ -703,7 +764,7 @@ contains
 ! the abscissae and weights are given for the interval (0,+inf).
 ! xg     - abscissae of the 20-point gauss-laguerre rule
 ! wg     - weights of the 20-point gauss rule. since f yet
-!          includes the weight function, the values in wg 
+!          includes the weight function, the values in wg
 !          are actually exp(xg) times the standard
 !          gauss-laguerre weights
 !
@@ -767,7 +828,7 @@ contains
        res   = res + fval*wg(j)
        dres  = dres + dfval*wg(j)
        ddres = ddres + ddfval*wg(j)
-      enddo
+      end do
       res   = res*b
       dres  = dres*b
       ddres = ddres*b
@@ -778,16 +839,23 @@ contains
 !..
 !..20 point gauss-laguerre rule for the fermi-dirac function.
 !..on input f is the external function defining the integrand
-!..f(x)=g(x)*w(x), where w(x) is the gaussian weight 
-!..w(x)=dexp(-(x-a)/b) and g(x) a smooth function, 
+!..f(x)=g(x)*w(x), where w(x) is the gaussian weight
+!..w(x)=dexp(-(x-a)/b) and g(x) a smooth function,
 !..a is the lower end point of the interval, b is the higher end point,
 !..par is an array of constant parameters to be passed to the function f,
-!..and n is the length of the par array. on output res is the 
-!..approximation from applying the 20-point gauss-laguerre rule. 
+!..and n is the length of the par array. on output res is the
+!..approximation from applying the 20-point gauss-laguerre rule.
 !..since the number of nodes is even, zero is not an abscissa.
 !..
 !..declare
-      external f
+      interface
+        subroutine f(absc, par, n, fval, dfval, ddfval)
+            use const_def, only: dp
+            implicit none
+            integer :: n
+            real(dp) :: absc, par(n), fval, dfval, ddfval
+        end subroutine f
+      end interface
       integer :: j,n
       real(dp) :: a,b,res,dres,ddres,par(n)
       real(dp) :: absc,wg(40),xg(40),fval,dfval,ddfval
@@ -796,7 +864,7 @@ contains
 ! the abscissae and weights are given for the interval (0,+inf).
 ! xg     - abscissae of the 20-point gauss-laguerre rule
 ! wg     - weights of the 20-point gauss rule. since f yet
-!          includes the weight function, the values in wg 
+!          includes the weight function, the values in wg
 !          are actually exp(xg) times the standard
 !          gauss-laguerre weights
 !
@@ -901,7 +969,7 @@ contains
        res   = res + fval*wg(j)
        dres  = dres + dfval*wg(j)
        ddres = ddres + ddfval*wg(j)
-      enddo
+      end do
       res   = res*b
       dres  = dres*b
       ddres = ddres*b
@@ -912,16 +980,23 @@ contains
 !..
 !..20 point gauss-laguerre rule for the fermi-dirac function.
 !..on input f is the external function defining the integrand
-!..f(x)=g(x)*w(x), where w(x) is the gaussian weight 
-!..w(x)=dexp(-(x-a)/b) and g(x) a smooth function, 
+!..f(x)=g(x)*w(x), where w(x) is the gaussian weight
+!..w(x)=dexp(-(x-a)/b) and g(x) a smooth function,
 !..a is the lower end point of the interval, b is the higher end point,
 !..par is an array of constant parameters to be passed to the function f,
-!..and n is the length of the par array. on output res is the 
-!..approximation from applying the 20-point gauss-laguerre rule. 
+!..and n is the length of the par array. on output res is the
+!..approximation from applying the 20-point gauss-laguerre rule.
 !..since the number of nodes is even, zero is not an abscissa.
 !..
 !..declare
-      external f
+      interface
+        subroutine f(absc, par, n, fval, dfval, ddfval)
+            use const_def, only: dp
+            implicit none
+            integer :: n
+            real(dp) :: absc, par(n), fval, dfval, ddfval
+        end subroutine f
+      end interface
       integer :: j,n
       real(dp) :: a,b,res,dres,ddres,par(n)
       real(dp) :: absc,wg(80),xg(80),fval,dfval,ddfval
@@ -930,7 +1005,7 @@ contains
 ! the abscissae and weights are given for the interval (0,+inf).
 ! xg     - abscissae of the 20-point gauss-laguerre rule
 ! wg     - weights of the 20-point gauss rule. since f yet
-!          includes the weight function, the values in wg 
+!          includes the weight function, the values in wg
 !          are actually exp(xg) times the standard
 !          gauss-laguerre weights
 !
@@ -1114,7 +1189,7 @@ contains
        res   = res + fval*wg(j)
        dres  = dres + dfval*wg(j)
        ddres = ddres + ddfval*wg(j)
-      enddo
+      end do
       res   = res*b
       dres  = dres*b
       ddres = ddres*b

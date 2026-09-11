@@ -2,36 +2,32 @@
 !
 !   Copyright (C) 2010-2024  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 module thermohaline
 
-   use const_def, only: dp, no_mixing, thermohaline_mixing
+   use const_def, only: dp, no_mixing, thermohaline_mixing, one_third, pi, pi4, qe, amu, boltzm, crad, clight, arg_not_provided
    use num_lib
    use math_lib
    use chem_def, only: chem_isos
    use fingering_modes
    use parasite_model
    use turb_def
+   use utils_lib
+   use auto_diff
 
    implicit none
 
@@ -91,7 +87,7 @@ contains
       integer, intent(in)          :: thermohaline_FRG24_N
       type(th_info_t), intent(out) :: th_info
       integer, intent(out)         :: ierr
-      
+
       include 'formats'
 
       ierr = 0
@@ -102,7 +98,7 @@ contains
       call set_info_strat(grada, gradr, gradL_composition_term, thermohaline_r_ext, th_info)
 
       ! Check for sensible Prandtl number
- 
+
       if (th_info%Pr < 0._dp) then
          write(*, *) 'warning: get_thermohaline_info being called when Pr < 0'
          return
@@ -127,7 +123,7 @@ contains
       th_info%mixing_type = thermohaline_mixing
 
       ! Dispatch to the various implementations
-      
+
       select case (thermohaline_option)
 
       case ('Kippenhahn')
@@ -140,7 +136,7 @@ contains
          call set_info_TGS11(th_info)
 
       case ('Brown_Garaud_Stellmach_13')
-         
+
          call set_info_BGS13(th_info, ierr)
 
       case ('Harrington_Garaud_19')
@@ -195,13 +191,13 @@ contains
 
       ! Log Lambda for pure H (equation 10 from Proffitt Michaud 93)
 
-      loglambdah = -19.26d0 - 0.5d0*log(rho) + 1.5d0*log(T) - 0.5d0*log(1d0 + 0.5d0*(1+XH1)) 
+      loglambdah = -19.26d0 - 0.5d0*log(rho) + 1.5d0*log(T) - 0.5d0*log(1d0 + 0.5d0*(1+XH1))
 
       ! From Spitzer "Physics of Fully Ionized Gases equation 5-54
-      ! Assumes pure H. Still trying to work out what it would be for a mixture. 
+      ! Assumes pure H. Still trying to work out what it would be for a mixture.
 
       nu_rad = 4d0*crad*pow4(T)/(15d0*clight*opacity*pow2(rho)) ! radiative viscosity
-      nu_mol = 0.406d0*sqrt(amu)*pow(boltzm*T,2.5d0)/(qe4*loglambdah*rho) 
+      nu_mol = 0.406d0*sqrt(amu)*pow(boltzm*T,2.5d0)/(qe4*loglambdah*rho)
       nu = nu_mol + nu_rad   ! total viscosity
 
       ! The following is from Proffitt & Michaud, 1993.
@@ -219,7 +215,7 @@ contains
          ! This is if the driving chemical is NOT He.
          ! Log Lambda for H-dominant chem mixture (equation 10)
 
-         loglambdacx = loglambdah - log(chemz)  
+         loglambdacx = loglambdah - log(chemz)
 
          ! Log Lambda for He-dominant chem mixture (equation 10)
 
@@ -240,11 +236,11 @@ contains
             (XH1*sqrt(acx)*ccx + (1-XH1)*sqrt(acy)*ccy)
 
       else
-         
+
          ! Log Lambda for H-He mixture (equation 10)
 
          loglambdah = -19.26d0 - log(2d0) - 0.5d0*log(rho) + &
-            1.5d0*log(T) - 0.5d0*log(1d0 + 0.5d0*(1+XH1)) 
+            1.5d0*log(T) - 0.5d0*log(1d0 + 0.5d0*(1+XH1))
 
          ! Calculation of C_ij coeffs (equation 12)
 
@@ -253,7 +249,7 @@ contains
          ! My formula (see notes) based on Proffitt and Michaud 1993
 
          K_C = (Bcoeff*pow(T,2.5d0)/(rho*ccy))*(3+XH1)/((1+XH1)*(3+5*XH1)*(0.7d0+0.3d0*XH1))
-      
+
       endif
 
       ! Magnetic stuff
@@ -295,7 +291,7 @@ contains
 !      print *,'set strat:',th_info%R_0, th_info%r, th_info%R_0_prime, th_info%r_prime, gradL_composition_term
 
    end subroutine set_info_strat
-      
+
    !****
 
    subroutine set_info_KRT80(grada, gradr, gradL_composition_term, rho, Cp, &
@@ -324,14 +320,14 @@ contains
    subroutine set_info_TGS11(th_info)
 
       type(th_info_t), intent(inout) :: th_info
-      
+
       ! Set components of th_info following Traxler, Garaud, &
       ! Stellmach, ApJ Letters, 728:L29 (2011). Also see
       ! Denissenkov. ApJ 723:563–579, 2010.
 
       th_info%D_thrm = 101._dp*sqrt(th_info%K_C*th_info%nu)* &
          exp(-3.6_dp*th_info%r)*pow(1._dp - th_info%r, 1.1_dp) ! eqn. (24)
-      
+
    end subroutine set_info_TGS11
 
    !****
@@ -340,7 +336,7 @@ contains
 
       type(th_info_t), intent(inout) :: th_info
       integer, intent(out)           :: ierr
-      
+
       ! Set components of th_info following Brown, Garaud, &
       ! Stellmach, ApJ 768:34 (2013)
 
@@ -362,7 +358,7 @@ contains
       integer, intent(out)           :: ierr
 
       real(dp), parameter :: K_B = 1.24_dp
-      
+
       ! Set componets of th_info following Harrington & Garaud, ApJ
       ! Letters, 870:L5 (2019; HG19)
 
@@ -392,7 +388,7 @@ contains
    end subroutine set_info_HG19
 
    !****
-  
+
    subroutine set_info_FRG24(safety, nks, N, th_info, ierr)
 
       integer, intent(in)            :: safety
@@ -405,7 +401,7 @@ contains
 
       real(dp), allocatable :: k_z(:)
       integer :: j
-      
+
       ! Set components of th_info following Fraser, Reifenstein, &
       ! Garaud, ApJ 964:184 (2024; FRG24)
 
@@ -501,7 +497,7 @@ contains
       Nu_C =  1d0 + KB * pow2(w) / (tau * (lam_hat + tau * l2_hat))
 
    end function Nu_C
-   
+
    !****
 
    ! Solver for HG19's eqn. 32
@@ -525,7 +521,7 @@ contains
       real(dp), pointer :: rpar(:) => null() ! not used, but needed to pass to safe_root_with_brackets
       integer, pointer  :: ipar(:) => null() ! not used, but needed to pass to safe_root_with_brackets
       integer :: lrpar = 0, lipar = 0        ! not used, but needed to pass to safe_root_with_brackets
-      
+
       l_hat = sqrt(l2_hat)
 
       w0 = MAX(sqrt(2.0_dp*H_B), 2.0_dp * PI * lam_hat/l_hat)
@@ -565,7 +561,7 @@ contains
             RHS2 = sqrt(w)
 
             f = LHS - (RHS1*RHS2)
-            df_dx = w - 0.5_dp * (CH*lam_hat/(0.42_dp*l_hat))**1.5_dp / sqrt(w)         
+            df_dx = w - 0.5_dp * (CH*lam_hat/(0.42_dp*l_hat))**1.5_dp / sqrt(w)
 
          end associate
 
@@ -575,9 +571,9 @@ contains
 
    end subroutine solve_hg19_eqn32
 
-         
-         
-         
+
+
+
    ! end subroutine solve_hg19_eqn32
 
    ! !****
@@ -621,7 +617,7 @@ contains
    !      RHS2 = sqrt(w)
 
    !      f = LHS - (RHS1*RHS2)
-   !      df_dx = w - 0.5_dp * (CH*lam_hat/(0.42_dp*lhat))**1.5_dp / sqrt(w)         
+   !      df_dx = w - 0.5_dp * (CH*lam_hat/(0.42_dp*lhat))**1.5_dp / sqrt(w)
 
    !    end associate
 

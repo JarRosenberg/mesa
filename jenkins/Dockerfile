@@ -14,12 +14,13 @@ RUN apt-get update && \
       git-lfs \
       python3 \
       ruby \
+      parallel \
       && \
     apt-get autoremove --purge -y && \
     apt-get autoclean -y && \
     rm -rf /var/cache/apt/* /var/lib/apt/lists/*
-RUN curl -L https://zenodo.org/records/13768913/files/mesasdk-x86_64-linux-24.7.1.tar.gz | \
+RUN curl -L http://user.astro.wisc.edu/~townsend/resource/download/mesasdk/mesasdk-x86_64-linux-26.3.2.tar.gz | \
     tar xzf - -C /opt/
-ENV MESASDK_ROOT=/opt/mesasdk
+ENV MESASDK_ROOT=/opt/mesasdk-26.3.2
 RUN bash $MESASDK_ROOT/bin/mesasdk_init.sh
-RUN gem install mesa_test
+RUN gem install mesa_test -v 1.2.0

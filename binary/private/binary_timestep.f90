@@ -2,31 +2,25 @@
 !
 !   Copyright (C) 2010-2019  Pablo Marchant & The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 
       module binary_timestep
 
-      use const_def
+      use const_def, only: dp, msun, secyer
       use math_lib
       use star_lib
       use star_def
@@ -36,7 +30,7 @@
 
       contains
 
-      subroutine set_star_timesteps(b) ! sets the smallest next timestep for all stars
+      subroutine set_star_timesteps(b)  ! sets the smallest next timestep for all stars
          type (binary_info), pointer :: b
          integer :: i, l
          real(dp) :: dt_min
@@ -99,13 +93,13 @@
             end if
             b% have_to_reduce_timestep_due_to_j = .false.
          end if
-         
+
       end subroutine set_star_timesteps
 
       integer function binary_pick_next_timestep(b)
          type (binary_info), pointer :: b
          type (star_info), pointer :: s
-         
+
          real(dp) :: &
             env_change, dtm, dtj, dta, dtr, dte, dtdm, &
             j_change, sep_change, rel_gap_change, e_change, set_dt, &
@@ -137,19 +131,19 @@
             else
                env_change = 0
             end if
-            
+
             if (b% rl_relative_gap_old(b% d_i) /= 0) then
                rel_gap_change = b% rl_relative_gap_old(b% d_i) - b% rl_relative_gap(b% d_i)
             else
                rel_gap_change = 0
             end if
-            
+
             if (b% angular_momentum_j_old /= 0) then
                j_change = b% angular_momentum_j - b% angular_momentum_j_old
             else
                j_change = 0
             end if
-            
+
             if (b% separation_old /= 0) then
                sep_change = b% separation - b% separation_old
             else
@@ -167,7 +161,7 @@
             sep_change = 0
             e_change = 0
          end if
-   
+
          ! get limits for dt based on relative changes
          if (b% fj > 0) then
             rel_change = abs(j_change/b% angular_momentum_j)
@@ -193,7 +187,7 @@
             end if
             dtm = s% time_step/(rel_change/(b% fm * b% time_delta_coeff)+1d-99)
          end if
-         
+
          if (b% fr > 0) then
             rel_change = abs(rel_gap_change/max(abs(b% rl_relative_gap(b% d_i)), b% fr_limit))
             if (.not. b% ignore_hard_limits_this_step .and. &
@@ -287,7 +281,7 @@
             call mesa_error(__FILE__,__LINE__,'Something wrong in binary timestep')
          end if
 
-         if (set_dt < 1d-7) set_dt = 1d-7 ! there's a limit to everything
+         if (set_dt < 1d-7) set_dt = 1d-7  ! there's a limit to everything
 
          b% max_timestep = exp10(b% dt_softening_factor*log10(b% max_timestep) + &
              (1-b% dt_softening_factor)*log10(set_dt*secyer))
@@ -324,8 +318,8 @@
          end if
 
          b% ignore_hard_limits_this_step = .false.
-         
+
       end function binary_pick_next_timestep
-      
+
 
       end module binary_timestep

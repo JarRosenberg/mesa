@@ -2,56 +2,52 @@
 !
 !   Copyright (C) 2006, 2007-2019  Frank Timmes & The MESA Team
 !
-!   This file is part of MESA.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   MESA is free software; you can redistribute it and/or modify
-!   it under the terms of the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License, or
-!   (at your option) any later version.
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
-!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-!   GNU Library General Public License for more details.
+!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
       module helm_alloc
-      use const_def, only: dp, use_mesa_temp_cache
+
+         use const_def, only: dp, use_mesa_temp_cache
       use math_lib
-      
+
       implicit none
 
-
       contains
-            
-      
+
       subroutine alloc_helm_table(h, imax, jmax, ierr)
          ! This routine allocates a Helm_Table and places pointer to it in h.
          ! It also allocates the arrays in the Helm_Table record.
-         
+
          use eos_def
-         
+
          type (Helm_Table), pointer :: h
          integer, intent(in) :: imax, jmax
-         integer, intent(out) :: ierr ! 0 means AOK.
-         
+         integer, intent(out) :: ierr  ! 0 means AOK.
+
          ierr = 0
-         
+
          allocate(h,stat=ierr)
          if (ierr /= 0) return
-         
+
          h% imax = imax
-         h% jmax = jmax 
+         h% jmax = jmax
          h% with_coulomb_corrections = .true.
-         
+
          call alloc_1d_array(h% d, imax)
          call alloc_1d_array(h% t, jmax)
-         
+
          !..for the helmholtz free energy tables
          call alloc_2d_array(h% f, imax, jmax)
          call alloc_2d_array(h% fd, imax, jmax)
@@ -62,7 +58,7 @@
          call alloc_2d_array(h% fddt, imax, jmax)
          call alloc_2d_array(h% fdtt, imax, jmax)
          call alloc_2d_array(h% fddtt, imax, jmax)
-         
+
          !..for the pressure derivative with density tables
          call alloc_2d_array(h% dpdf, imax, jmax)
          call alloc_2d_array(h% dpdfd, imax, jmax)
@@ -80,14 +76,14 @@
          call alloc_2d_array(h% xfd, imax, jmax)
          call alloc_2d_array(h% xft, imax, jmax)
          call alloc_2d_array(h% xfdt, imax, jmax)
-            
+
          !..for storing the differences
          call alloc_1d_array(h% dt_sav, jmax)
          call alloc_1d_array(h% dt2_sav, jmax)
          call alloc_1d_array(h% dti_sav, jmax)
          call alloc_1d_array(h% dt2i_sav, jmax)
          call alloc_1d_array(h% dt3i_sav, jmax)
-         
+
          call alloc_1d_array(h% dd_sav, imax)
          call alloc_1d_array(h% dd2_sav, imax)
          call alloc_1d_array(h% ddi_sav, imax)
@@ -95,30 +91,30 @@
          call alloc_1d_array(h% dd3i_sav, imax)
 
          contains
-         
+
          subroutine alloc_1d_array(ptr,sz)
             real(dp), dimension(:), pointer :: ptr
-            integer, intent(in) :: sz        
+            integer, intent(in) :: sz
             allocate(ptr(sz),stat=ierr)
          end subroutine alloc_1d_array
-         
+
          subroutine alloc_2d_array(ptr,sz1,sz2)
             real(dp), dimension(:,:), pointer :: ptr
-            integer, intent(in) :: sz1,sz2         
+            integer, intent(in) :: sz1,sz2
             allocate(ptr(sz1,sz2),stat=ierr)
          end subroutine alloc_2d_array
-      
-      
+
+
       end subroutine alloc_helm_table
-      
-      
+
+
       subroutine setup_td_deltas(h, imax, jmax)
          use eos_def
          type (Helm_Table), pointer :: h
          integer, intent(in) :: imax, jmax
          integer :: i, j
-         real(dp) dth,dt2,dti,dt2i,dt3i,dd,dd2,ddi,dd2i,dd3i
-         !..construct the temperature and density deltas and their inverses 
+         real(dp) :: dth,dt2,dti,dt2i,dt3i,dd,dd2,ddi,dd2i,dd3i
+         !..construct the temperature and density deltas and their inverses
          do j=1,jmax-1
             dth         = h% t(j+1) - h% t(j)
             dt2         = dth * dth
@@ -142,22 +138,21 @@
             h% ddi_sav(i)  = ddi
             h% dd2i_sav(i) = dd2i
             h% dd3i_sav(i) = dd3i
-         enddo
+         end do
       end subroutine setup_td_deltas
 
 
       subroutine read_helm_table(h, data_dir, cache_dir, temp_cache_dir, use_cache, ierr)
       use eos_def
       use utils_lib, only: mv, switch_str
-      
-      implicit none
+
 
       type (Helm_Table), pointer :: h
       character(*), intent(IN) :: data_dir, cache_dir, temp_cache_dir
       logical, intent(IN) :: use_cache
       integer, intent(out) :: ierr
 
-!..this routine reads the helmholtz eos file, and 
+!..this routine reads the helmholtz eos file, and
 !..must be called once before the helmeos routine is invoked.
 
 !..declare local variables
@@ -166,19 +161,19 @@
       character (len=26) :: s26
       real(dp), target :: vec_ary(20)
       real(dp), pointer :: vec(:)
-      integer          i,j,k,ios,imax,jmax,n
-      real(dp) tsav,dsav
+      integer          :: i,j,k,ios,imax,jmax,n
+      real(dp) :: tsav,dsav
       logical, parameter :: dmp = .false.
-      
+
        ierr = 0
        vec => vec_ary
-       
+
 !..read the normal helmholtz free energy table
        h% logtlo   = 3.0d0
        h% logthi   = 13.0d0
        h% logdlo   = -12.0d0
        h% logdhi   = 15.0d0
-       
+
        h% templo = exp10(h% logtlo)
        h% temphi = exp10(h% logthi)
        h% denlo = exp10(h% logdlo)
@@ -190,21 +185,21 @@
        h% logtstpi = 1.0d0/h% logtstp
        h% logdstp  = (h% logdhi - h% logdlo)/real(imax-1,kind=dp)
        h% logdstpi = 1.0d0/h% logdstp
-       
+
        ios = -1
        if (use_cache) then
          write(filename,'(2a)') trim(cache_dir), '/helm_table.bin'
          open(unit=19,file=trim(filename), &
                action='read',status='old',iostat=ios,form='unformatted')
        end if
-       
-       if (ios .eq. 0) then
-         
+
+       if (ios == 0) then
+
           read(19) imax
           read(19) jmax
-         
+
          if (imax /= h% imax .or. jmax /= h% jmax) then
-            ios = 1 ! wrong cached info
+            ios = 1  ! wrong cached info
          else
              read(19) h% f(1:imax,1:jmax)
              read(19) h% fd(1:imax,1:jmax)
@@ -227,33 +222,33 @@
              read(19) h% xfd(1:imax,1:jmax)
              read(19) h% xft(1:imax,1:jmax)
              read(19) h% xfdt(1:imax,1:jmax)
-         
+
             do j=1,jmax
                tsav = h% logtlo + (j-1)*h% logtstp
                h% t(j) = exp10(tsav)
-            enddo
+            end do
             do i=1,imax
                dsav = h% logdlo + (i-1)*h% logdstp
                h% d(i) = exp10(dsav)
-            enddo
+            end do
          end if
-         
+
          close(unit=19)
        end if
 
-       if (ios .ne. 0) then
-         
+       if (ios /= 0) then
+
           write(filename,'(2a)') trim(data_dir), '/helm_table.dat'
-          write(*,*) 'read  ', trim(filename) 
-         
+          write(*,*) 'read  ', trim(filename)
+
           ios = 0
           open(unit=19,file=trim(filename),action='read',status='old',iostat=ios)
-          if (ios .ne. 0) then 
+          if (ios /= 0) then
             write(*,'(3a,i6)') 'failed to open ', trim(filename), ' : ios ', ios
             ierr = -1
             return
           end if
-         
+
           do j=1,jmax
             tsav = h% logtlo + (j-1)*h% logtstp
             h% t(j) = exp10(tsav)
@@ -282,8 +277,8 @@
                   end do
                   write(*,'(A)')
                end if
-            enddo
-          enddo
+            end do
+          end do
 
          !..read the pressure derivative with density table
           do j=1,jmax
@@ -305,8 +300,8 @@
                end do
                write(*,'(A)')
             end if
-           enddo
-          enddo
+           end do
+          end do
 
          !..read the electron chemical potential table
           do j=1,jmax
@@ -328,8 +323,8 @@
                end do
                write(*,'(A)')
             end if
-           enddo
-          enddo
+           end do
+          end do
 
          !..read the number density table
           do j=1,jmax
@@ -351,24 +346,24 @@
                end do
                write(*,'(A)')
             end if
-           enddo
-          enddo
+           end do
+          end do
 
           close(unit=19)
           !..write cachefile
-          
+
           if (dmp) call mesa_error(__FILE__,__LINE__,'helm_alloc')
-          
+
           ios = -1
           if (use_cache) then
             write(filename,'(2a)') trim(cache_dir), '/helm_table.bin'
             write(temp_filename,'(2a)') trim(temp_cache_dir), '/helm_table.bin'
-            write(*,*) 'write ', trim(filename) 
+            write(*,*) 'write ', trim(filename)
             open(unit=19,file=trim(switch_str(temp_filename, filename, use_mesa_temp_cache)),  &
              status='replace', iostat=ios,action='write',form='unformatted')
           end if
-          
-          if (ios == 0) then      
+
+          if (ios == 0) then
              write(19) imax
              write(19) jmax
              write(19) h% f(1:imax,1:jmax)
@@ -393,28 +388,26 @@
              write(19) h% xft(1:imax,1:jmax)
              write(19) h% xfdt(1:imax,1:jmax)
              close(unit=19)
-             
+
              if (use_mesa_temp_cache) call mv(temp_filename,filename,.true.)
-             
-          end if            
-       
-       end if 
+
+          end if
+
+       end if
 
        call setup_td_deltas(h, imax, jmax)
 
       end subroutine read_helm_table
 
 
-
-
       subroutine free_helm_table(h)
          use eos_def
-         
+
          type (Helm_Table), pointer :: h
-         
+
          call do_free(h% d)
          call do_free(h% t)
-         
+
          call do_free2(h% f)
          call do_free2(h% fd)
          call do_free2(h% ft)
@@ -454,25 +447,22 @@
          call do_free(h% ddi_sav)
          call do_free(h% dd2i_sav)
          call do_free(h% dd3i_sav)
-         
+
          deallocate(h)
          nullify(h)
-         
+
          contains
-         
+
          subroutine do_free(array_ptr)
             real(dp), pointer :: array_ptr(:)
             if (associated(array_ptr)) deallocate(array_ptr)
          end subroutine do_free
-         
+
          subroutine do_free2(array_ptr)
             real(dp), pointer :: array_ptr(:,:)
             if (associated(array_ptr)) deallocate(array_ptr)
          end subroutine do_free2
 
-
       end subroutine free_helm_table
-      
-      
 
       end module helm_alloc

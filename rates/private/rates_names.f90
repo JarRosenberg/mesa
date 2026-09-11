@@ -2,43 +2,37 @@
 !
 !   Copyright (C) 2010  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
       module rates_names
 
       use utils_lib, only: mesa_error
-      
+
       implicit none
-      
-      
+
+
       contains
-      
+
       subroutine set_reaction_names
          use rates_def
          integer :: i, cnt
-         
+
          cnt = 0
          reaction_Name(:) = ''
-      
+
          reaction_Name(ir1212) = 'r1212'
          reaction_Name(ir1216) = 'r1216'
          reaction_Name(ir1216_to_mg24) = 'r1216_to_mg24'
@@ -241,10 +235,10 @@
          reaction_Name(irneut_to_prot) = 'rneut_to_prot'
          reaction_Name(irni56ec_to_fe54) = 'rni56ec_to_fe54'
          reaction_Name(irni56ec_to_fe56) = 'rni56ec_to_fe56'
-         
+
          reaction_Name(irni56ec_to_co56) = 'rni56ec_to_co56'
-         reaction_Name(irco56ec_to_fe56) = 'rco56ec_to_fe56'      
-            
+         reaction_Name(irco56ec_to_fe56) = 'rco56ec_to_fe56'
+
          reaction_Name(irni56gp_aux) = 'rni56gp_aux'
          reaction_Name(irni56gp_to_fe52) = 'rni56gp_to_fe52'
          reaction_Name(irni56gprot_aux) = 'rni56gprot_aux'
@@ -352,14 +346,14 @@
          reaction_Name(ir_al26_1_to_al26_2) = 'r_al26-1_to_al26-2'
          reaction_Name(ir_al26_2_to_al26_1) = 'r_al26-2_to_al26-1'
 
-         !reaction_Name(i) = ''     
+         !reaction_Name(i) = ''
 
          cnt = 0
          do i=1,num_predefined_reactions
             if (len_trim(reaction_Name(i)) == 0) then
                write(*,*) 'missing name for reaction', i
                if (i > 1) write(*,*) 'following ' // trim(reaction_Name(i-1))
-               write(*,*) 
+               write(*,*)
                cnt = cnt+1
             end if
          end do
@@ -368,7 +362,7 @@
 
       end subroutine set_reaction_names
 
-         
+
       end module rates_names
 
 

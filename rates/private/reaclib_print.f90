@@ -2,30 +2,24 @@
 !
 !   Copyright (C) 2010  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
- 
+
       module reaclib_print
       use rates_def
-      
+
       implicit none
 
       contains
@@ -49,7 +43,7 @@
                rates% inverse_part(:, i)
          end do
       end subroutine write_reaction_data
-      
+
 
       subroutine pretty_print_reactions(unitno, rates, nuclides, ierr)
          integer, intent(in) :: unitno
@@ -70,8 +64,8 @@
             if (pass == 1) write(unitno,'(/,a,/)') 'reverse reactions'
          end do
       end subroutine pretty_print_reactions
-      
-      
+
+
       subroutine do_pretty_print_reaction(unitno, i, rates, nuclides, reverse, str, ierr)
          integer, intent(in) :: unitno, i
          type(reaction_data), intent(in) :: rates
@@ -112,9 +106,9 @@
             write(unitno,fmt='(a)') trim(str_nxt)
             str = str_nxt
          end if
-         
+
          contains
-         
+
          subroutine write_n_to_m(n,m)
             integer, intent(in) :: n, m
             integer :: j
@@ -136,8 +130,8 @@
                end do
             end if
          end subroutine write_n_to_m
-         
-         
+
+
       end subroutine do_pretty_print_reaction
 
 
@@ -160,8 +154,8 @@
             if (pass == 1) write(unitno,'(/,a,/)') 'reverse reactions'
          end do
       end subroutine print_short_format_reactions
-      
-      
+
+
       subroutine do_print_short_format_reaction(unitno, i, rates, nuclides, reverse, str, ierr)
          use reaclib_support, only: get1_reaction_handle
          integer, intent(in) :: unitno, i
@@ -170,28 +164,28 @@
          logical, intent(in) :: reverse
          character (len=100), intent(inout) :: str
          integer, intent(out) :: ierr
-         
+
          character (len=100) :: str_nxt
          integer :: chapter, num_in, num_out
-         
+
          ierr = 0
          str = ''
-         
+
          if (reverse .and. &
             (rates% reaction_flag(i) == 'w' .or. rates% reaction_flag(i) == 'e')) return
-         
+
          chapter = rates% chapter(i)
          num_in = Nin(chapter)
          num_out = Nout(chapter)
-         
+
          call get1_reaction_handle( &
             num_in, num_out, rates% pspecies(:,i), nuclides, reverse, &
-            rates% reaction_flag(i), str_nxt)         
+            rates% reaction_flag(i), str_nxt)
          if (trim(str_nxt) /= trim(str) .and. len_trim(str_nxt) > 0) then
             write(unitno,fmt='(a)') trim(str_nxt)
             str = str_nxt
          end if
-         
+
       end subroutine do_print_short_format_reaction
 
 

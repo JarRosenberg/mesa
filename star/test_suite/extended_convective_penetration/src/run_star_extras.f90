@@ -1,24 +1,21 @@
-    ! ***********************************************************************
-    !
-    !   Copyright (C) 2010  The MESA Team
-    !
-    !   this file is part of mesa.
-    !
-    !   mesa is free software; you can redistribute it and/or modify
-    !   it under the terms of the gnu general library public license as published
-    !   by the free software foundation; either version 2 of the license, or
-    !   (at your option) any later version.
-    !
-    !   mesa is distributed in the hope that it will be useful,
-    !   but without any warranty; without even the implied warranty of
-    !   merchantability or fitness for a particular purpose.  see the
-    !   gnu library general public license for more details.
-    !
-    !   you should have received a copy of the gnu library general public license
-    !   along with this software; if not, write to the free software
-    !   foundation, inc., 59 temple place, suite 330, boston, ma 02111-1307 usa
-    !
-    ! ***********************************************************************
+! ***********************************************************************
+!
+!   Copyright (C) 2010  The MESA Team
+!
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
+!
+!   This program is distributed in the hope that it will be useful,
+!   but WITHOUT ANY WARRANTY; without even the implied warranty of
+!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+!   See the GNU Lesser General Public License for more details.
+!
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+! ***********************************************************************
 
     module run_star_extras
 
@@ -53,13 +50,13 @@
          s% how_many_extra_history_columns => how_many_extra_history_columns
          s% data_for_extra_history_columns => data_for_extra_history_columns
          s% how_many_extra_profile_columns => how_many_extra_profile_columns
-         s% data_for_extra_profile_columns => data_for_extra_profile_columns           
-        
+         s% data_for_extra_profile_columns => data_for_extra_profile_columns
+
         if (s% job% create_pre_main_sequence_model) return
-        
+
         s% other_adjust_mlt_gradT_fraction => other_adjust_mlt_gradT_fraction_Peclet
         s% other_overshooting_scheme => extended_convective_penetration
-        
+
     end subroutine extras_controls
 
     subroutine extras_startup(id, restart, ierr)
@@ -93,8 +90,8 @@
          if (ierr /= 0) return
          how_many_extra_history_columns = 0
       end function how_many_extra_history_columns
-      
-      
+
+
       subroutine data_for_extra_history_columns(id, n, names, vals, ierr)
          integer, intent(in) :: id, n
          character (len=maxlen_history_column_name) :: names(n)
@@ -106,7 +103,7 @@
          if (ierr /= 0) return
       end subroutine data_for_extra_history_columns
 
-      
+
       integer function how_many_extra_profile_columns(id)
          use star_def, only: star_info
          integer, intent(in) :: id
@@ -117,8 +114,8 @@
          if (ierr /= 0) return
          how_many_extra_profile_columns = 0
       end function how_many_extra_profile_columns
-      
-      
+
+
       subroutine data_for_extra_profile_columns(id, n, nz, names, vals, ierr)
          use star_def, only: star_info, maxlen_profile_column_name
          use const_def, only: dp
@@ -132,7 +129,7 @@
          call star_ptr(id, s, ierr)
          if (ierr /= 0) return
       end subroutine data_for_extra_profile_columns
-      
+
 
       integer function extras_check_model(id)
          integer, intent(in) :: id
@@ -141,10 +138,10 @@
          ierr = 0
          call star_ptr(id, s, ierr)
          if (ierr /= 0) return
-         extras_check_model = keep_going         
+         extras_check_model = keep_going
       end function extras_check_model
-      
-      
+
+
     subroutine extras_after_evolve(id, ierr)
         use num_lib
         integer, intent(in) :: id
@@ -164,7 +161,7 @@
         if (ierr /= 0) return
 
         call test_suite_after_evolve(s, ierr)
-        
+
         if (s% job% create_pre_main_sequence_model) return
 
         write(*,'(A)')
@@ -172,7 +169,7 @@
         k2 = 0
         k3 = 0
         k4 = 0
-        
+
         do k = s% nz, 1, -1
            if (s% m(k) > 0.8_dp*Msun .and. k1 == 0) k1 = k
            if (s% m(k) > 0.95_dp*Msun .and. k2 == 0) k2 = k
@@ -231,7 +228,7 @@
                 okay = .false.
             end if
         end subroutine check_int
-      
+
     end subroutine extras_after_evolve
 
 
@@ -294,8 +291,8 @@
                 f = 0.0_dp
                 f0 = 0.0_dp
                 f2 = 0.0_dp
-            endif
-        endif
+            end if
+        end if
 
         ! Evaluate convective boundary (_cb) parameters
         call star_eval_conv_bdy_r(s, i, r_cb, ierr)
@@ -319,13 +316,13 @@
             k_a = k_ob+1
             k_b = s%nz
             dk = 1
-        endif
+        end if
 
         if (f > 0.0_dp) then
             r_step = f*Hp_cb
         else
             r_step = 0.0_dp
-        endif
+        end if
 
         face_loop : do k = k_a, k_b, dk
             ! Evaluate the extended convective penetration factor
@@ -334,7 +331,7 @@
                 dr = r - r_ob
             else
                 dr = r_ob - r
-            endif
+            end if
 
             if (dr < r_step .AND. f > 0.0_dp) then  ! step factor
                 factor = 1.0_dp
@@ -343,8 +340,8 @@
                     factor = exp(-2.0_dp*(dr-r_step)/(f2*Hp_cb))
                 else
                     factor = 0.0_dp
-                endif
-            endif
+                end if
+            end if
 
             ! Store the diffusion coefficient and velocity
             D(k) = (D0 + Delta0*D_ob)*factor
@@ -360,7 +357,7 @@
             if (D(k) < s%overshoot_D_min) then
                 k_b = k
                 exit face_loop
-            endif
+            end if
 
         end do face_loop
 
@@ -393,12 +390,12 @@
 
         if(is_bad(s% D_mix(1))) return
 
-        if (s%num_conv_boundaries < 1) then ! Is zero at initialisation of the run
+        if (s%num_conv_boundaries < 1) then  ! Is zero at initialisation of the run
            if (DEBUG) then
               write(*,*) 'runstarex_gradT: skip since there are no convective boundaries'
            end if
            return
-        endif
+        end if
 
         do k= s%nz, 1, -1
             if (s%D_mix(k) <= s% min_D_mix) exit
@@ -407,7 +404,7 @@
 
             if (Peclet_number >= 100.0_dp) then
                 fraction = 1.0_dp
-            else if (Peclet_number .le. 0.01_dp) then
+            else if (Peclet_number <= 0.01_dp) then
                 fraction = 0.0_dp
             else
                 fraction = (safe_log10(Peclet_number)+2.0_dp)/4.0_dp

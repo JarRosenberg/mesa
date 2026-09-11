@@ -4,6 +4,8 @@
 ns_he
 *****
 
+.. tags:: star, compact-remnant, neutron-star, neutron-star-envelope, accretion, helium-burning, helium-flash, thermonuclear-runaway
+
 This test case shows an example of a helium flash within a neutron star envelope.
 
 This test case has 1 part. Click to see a larger version of a plot.
@@ -23,15 +25,13 @@ pgstar commands used for the plot above:
 
   file_white_on_black_flag = .true. ! white_on_black flags -- true means white foreground color on black background
   !file_device = 'png'            ! png
-  !file_extension = 'png'
 
   file_device = 'vcps'          ! postscript
-  file_extension = 'ps'
 
   pgstar_interval = 10
   pgstar_grid_title_disp = 1.8
 
-  Abundance_xaxis_name = 'logxm' 
+  Abundance_xaxis_name = 'logxm'
   Abundance_xaxis_reversed = .true.
   Abundance_xmin = -12.0
   Abundance_xmax = -8.0
@@ -150,13 +150,13 @@ pgstar commands used for the plot above:
   Grid2_num_cols = 7
   Grid2_num_rows = 8
   Grid2_num_plots = 5
-  
+
   Grid2_win_flag = .true.
   Grid2_win_width = 16
   Grid2_win_aspect_ratio = 0.6
-  
+
   Grid2_file_flag = .true.
-  Grid2_file_dir = 'pgstar_out' 
+  Grid2_file_dir = 'pgstar_out'
   Grid2_file_prefix = 'grid_'
   Grid2_file_interval = 10000
   Grid2_file_width = 20

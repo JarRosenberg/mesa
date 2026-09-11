@@ -2,46 +2,32 @@
 !
 !   Copyright (C) 2010-2019  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 module math_io
 
-  ! Uses
-
-  use const_lib, only: dp
-
-  ! No implicit typing
+  use const_def, only: dp
 
   implicit none
-
-  ! Access specifiers
 
   private
 
   public :: str_to_vector
   public :: str_to_double
   public :: double_to_str
-
-  ! Procedures
 
 contains
 
@@ -91,11 +77,10 @@ contains
        j = k+1
 
     end do
-       
+
   end subroutine str_to_vector
 
-  !****
-      
+
   subroutine str_to_double (str, x, ierr)
 
     character(*), intent(in) :: str
@@ -105,8 +90,7 @@ contains
     read(str, *, ROUND='COMPATIBLE', IOSTAT=ierr) x
 
   end subroutine str_to_double
-         
-  !****
+
 
   subroutine double_to_str (x, str)
 
@@ -119,5 +103,5 @@ contains
 100 format(1PD26.16)
 
   end subroutine double_to_str
-  
+
 end module math_io

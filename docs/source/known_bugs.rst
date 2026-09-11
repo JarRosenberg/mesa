@@ -5,10 +5,128 @@
 Known bugs
 **********
 
-This page lists a number of known bugs or issues in released versions of MESA. Where possible 
-we will also list work arounds, but for some bugs the only option will be to update to
-a newer version of MESA. Note this list is NOT comprehensive, users should check this first if they have an 
-issue but it may not be complete.
+This page lists a number of known bugs or issues in released versions of MESA. Where possible
+we will also list workarounds, but for some bugs the only option will be to update to
+a newer version of MESA. Note this list is NOT comprehensive; users should check this first if they have an
+issue, but it may not be complete.
+
+r26.4.1
+=======
+
+.. _duplicate_n14ag_rate_bug:
+
+Net: duplicate ``n14(a,g)f18(e+nu)o18`` reaction
+------------------------------------------------
+
+The ``cno_extras_o18_to_mg26.net`` and ``pp_cno_extras_o18_ne22.net``
+networks included both the explicit ``r_n14_ag_f18`` and ``r_f18_wk_o18``
+reactions and the approximate ``rn14ag_to_o18`` reaction. This double counted
+the ``n14(a,g)f18(e+nu)o18`` flow. The
+``cno_extras_o18_to_mg26_plus_fe56.net`` network was also affected because it
+includes ``cno_extras_o18_to_mg26.net``.
+
+This affects released MESA versions from ``r15140`` through ``r26.4.1`` and is
+fixed in the main branch after ``r26.4.1``. As a workaround, remove the
+approximate reaction after the hot CNO and ``o18`` extensions have been added::
+
+   remove_reaction(rn14ag_to_o18)
+
+See `gh-1056 <https://github.com/MESAHub/mesa/issues/1056>`_.
+
+.. _drag_energy_u_flag_bug:
+
+Star: drag energy could be included with ``u_flag``
+---------------------------------------------------
+
+In releases ``r24.03.1`` through ``r26.4.1``, setting ``u_flag = .true.``
+with a nonzero ``drag_coefficient`` and ``use_drag_energy = .true.`` could
+inject spurious energy. The drag energy source was evaluated even though the
+corresponding drag force only applies when ``v_flag = .true.``.
+
+This is fixed in the main branch after ``r26.4.1``. As a workaround, set
+``use_drag_energy = .false.`` when using ``u_flag``.
+
+.. _plasmon_weinberg_angle_bug:
+
+Neu: plasmon neutrino cooling used a hardcoded Weinberg angle
+-------------------------------------------------------------
+
+The plasmon neutrino cooling rate used a hardcoded prefactor calculated with a
+Weinberg angle of 0.2319, while all other neutrino cooling processes used
+calculated prefactors taking the Weinberg angle as input, with default value
+0.22290. Thus, modifying the value of the Weinberg angle resulted in changes to
+neutrino cooling processes except for the plasmon neutrinos.
+
+This affects all released MESA versions through ``r26.4.1`` and was found and
+fixed by user Garv Chauhan in `gh-998 <https://github.com/MESAHub/mesa/pull/998>`_.
+Plasmon neutrinos now use the same Weinberg angle as all other processes, and
+changing its value will affect the corresponding cooling rate. Changes to the plasmon neutrino prefactor for MESA's default Weinberg angle result in small numerical differences for stars where plasmon neutrino cooling is significant.
+
+.. _freedman_lowt_z_bug:
+
+Kap: ``lowT_Freedman11`` used ``[M/H]`` labels as ``Z``
+-------------------------------------------------------
+
+The ``lowT_Freedman11`` opacity option used the Freedman table labels
+``0.01``, ``0.02``, ``0.04``, ``0.10``, ``0.20``, ``0.63``, and ``1.00`` as
+metal mass fractions.  These labels correspond to ``[M/H]`` not
+MESA's metal mass fraction ``Z``.  The opacity routines incorrectly interpolated in ``Z``,
+using the ``[M/H]`` labels as the interpolation grid.
+
+This has been fixed in the main branch after ``r26.4.1``.  The fix updates the
+``lowT_Freedman11`` ``Z`` grid to use the correct corresponding metal mass fractions.
+See `gh-993 <https://github.com/MESAHub/mesa/pull/993>`_.
+
+If applying these fixes to an existing checkout, rerun the opacity preprocessor
+to regenerate the tables; this is not done by a normal MESA install::
+
+   cd $MESA_DIR/kap/preprocessor
+   ./build_data_and_export
+
+.. _overshoot_other_alpha_mlt_bug:
+
+Diffusive overshooting: ``other_alpha_mlt`` ignored
+---------------------------------------------------
+
+Diffusive overshooting (overmixing) routines did not respect changes to the
+mixing length set by ``other_alpha_mlt``, and used the ``mixing_length_alpha``
+instead.
+
+This is fixed in `gh-1003 <https://github.com/MESAHub/mesa/pull/1003>`_.
+
+.. _report_max_infall_inside_fe_core_bug:
+
+Controls: ``report_max_infall_inside_fe_core`` is ignored
+---------------------------------------------------------
+
+The parameter ``report_max_infall_inside_fe_core`` was ignored in versions r25.12.1 and r26.4.1 and always had it's default value. See `gh-981 https://github.com/MESAHub/mesa/pull/981`_.
+
+r25.12.1
+========
+
+.. _colors_zbase_bug:
+
+Colors: atmosphere metallicity selected from ``Zbase``
+------------------------------------------------------
+
+In ``r25.12.1``, the new colors module could select atmosphere metallicity from ``Zbase`` instead
+of the current photospheric ``[M/H]`` from ``Z/X``. This could return solar-metallicity colors and
+SEDs for non-solar models, especially for metal-poor stars.
+
+This is fixed in ``r26.4.1``. Update to ``r26.4.1`` or newer.
+
+See `gh-938 <https://github.com/MESAHub/mesa/issues/938>`_.
+
+.. _reverse_rate_mass_exponent_bug:
+
+Rates: incorrect mass exponent in reverse detailed balance
+----------------------------------------------------------
+
+Versions ``r24.08.1`` and ``r25.12.1`` could use an incorrect exponent on the reactant/product mass ratio when computing reverse rates from detailed balance in ``rates/private/reaclib_support.f90``. The mass ratio should always enter as ``(m_in/m_out)^(3/2)``. This is most relevant at higher temperatures in excess of ``2 GK`` during advanced burning stages, when reverse detailed-balance rates become important.
+
+This affects reactions with ``Ni-No`` not equal to 1, including common ``Ni-No = 0`` cases and photodisintegration cases. In practice, common ``2 <-> 2`` exchange reactions and ``3 <-> 1`` reverse rates are affected. Standard ``2 <-> 1`` capture and photo pairs are not changed by this specific exponent bug.
+
+This is fixed in ``r26.4.1``. Update to ``r26.4.1`` or newer. Users who need the patch directly can also refer to `gh-975 <https://github.com/MESAHub/mesa/pull/975>`_. See also `gh-974 <https://github.com/MESAHub/mesa/issues/974>`_.
 
 r23.05.1
 ========
@@ -26,7 +144,8 @@ in this grid of models will impact the central H abundance for initial masses be
 This bug affects versions r15140 through r23.05.1, and will be fixed in the next release.
 For current MESA releases impacted by this bug, the following steps provide a workaround with a patched ZAMS file:
 
-- Download this updated ZAMS model file: :download:`zams_z2m2_y28_patched.data <https://github.com/MESAHub/mesa/raw/main/docs/source/assets/zams_z2m2_y28_patched.data>`
+- Download this updated ZAMS model file:
+  `zams_z2m2_y28_patched.data <https://github.com/MESAHub/mesa/raw/main/docs/source/assets/zams_z2m2_y28_patched.data>`__
 - Copy the file into ``$MESA_DIR/data/star_data/zams_models``
 - Use the following setting in the ``&controls`` section of your inlists for models where
   you want to use the patched ZAMS file:
@@ -41,18 +160,18 @@ r22.11.1
 Rates
 -----
 
-There has been a bug present in the rate ``r_c12_to_he4_he4_he4`` in r22.05.1 and r22.11.1. 
-This causes an excessive amount of C12 to be burnt during core helium burning. 
+There has been a bug present in the rate ``r_c12_to_he4_he4_he4`` in r22.05.1 and r22.11.1.
+This causes an excessive amount of C12 to be burnt during core helium burning.
 We strongly recommend that users update to the latest MESA.
 
 See `gh-526 <https://github.com/MESAHub/mesa/issues/526>`_
 
-There is a bug in the rate selection code that certain endothermic weak reactions are not added to the nuclear network. These are 
+There is a bug in the rate selection code that certain endothermic weak reactions are not added to the nuclear network. These are
 r_be10_wk-minus_b10, r_ni66_wk-minus_cu66, and r_h3_wk-minus_he3. Other weak reactions with heavier parents may also be affected.
 
 A separate issue also meant we are missing the rate r_he4_ap_li7 as the reverse rate of r_li7_pa_he4.
 
-Both issues will effect previous versions of MESA as well.
+Both issues will affect previous versions of MESA as well.
 
 Both issues have been fixed in the git main branch.
 
@@ -63,7 +182,7 @@ RTI
 
 A bug has existed since shortly after r15140 where RTI mixing will be effectively zero in a model even with the ``RTI_flag=.true.``
 
-This has now been fixed in the git main.
+This has now been fixed in the git main branch.
 
 See `gh-503 <https://github.com/MESAHub/mesa/issues/503>`_
 
@@ -91,13 +210,13 @@ Sometimes MESA will crash with an error similar to this:
 .. code-block:: shell
 
     s%top_conv_bdy(i)= F
-    D(k)   0.0000000000000000    
-    s%D_mix(k-1)   1.1101956346180402    
-    s%overshoot_D_min   100.00000000000000    
+    D(k)   0.0000000000000000
+    s%D_mix(k-1)   1.1101956346180402
+    s%overshoot_D_min   100.00000000000000
     Invalid location for overshoot boundary: cz_bdy_dq, dq= -0.13040604669743103        1.4532774141478022E-003
             0 terminate reason: nonzero_ierr
 
-This bug effects many previous versions of MESA as well. This has been fixed in `gh-400 <https://github.com/MESAHub/mesa/issues/400>`_ .
+This bug affects many previous versions of MESA as well. This has been fixed in `gh-400 <https://github.com/MESAHub/mesa/issues/400>`_ .
 The solution is to update to a newer MESA version.
 
 
@@ -125,15 +244,15 @@ immediately crashes and prints a backtrace containing:
     #1  0x99a523 in __interp_1d_misc_MOD_do_interp_values
 
 The solution for now is to remove all files in ``$MESA_DIR/data/rates_data/cache/`` before
-each MESA run, you may also find that changing the number of OMP threads also fixes the problem.
+each MESA run. You may also find that changing the number of OMP threads also fixes the problem.
 
 See `gh-360 <https://github.com/MESAHub/mesa/issues/360>`_
 
-  
+
 Atmosphere in pulse data
 ------------------------
 
-The control ``add_atmosphere_to_pulse_data`` does not work properly with an Eddington atmosphere (the default), and also crashes if ``atm_T_tau_opacity = 'varying'`` is set. 
+The control ``add_atmosphere_to_pulse_data`` does not work properly with an Eddington atmosphere (the default), and also crashes if ``atm_T_tau_opacity = 'varying'`` is set.
 
 See `gh-375 <https://github.com/MESAHub/mesa/issues/375>`_
 
@@ -145,9 +264,9 @@ If you get an error:
 
 .. code-block:: shell
 
-    bad filter name: 
+    bad filter name:
 
-First check that the name matches in your history_columns .list file and your color file. Next check for non-printing characters history_columns.list in the filter name. This can bee checked with:
+First check that the name matches in your history_columns .list file and your color file. Next check for non-printing characters in history_columns.list in the filter name. This can be checked with:
 
 .. code-block:: shell
 
@@ -180,5 +299,3 @@ r12778
 
 r12115
 ======
-
-

@@ -2,36 +2,30 @@
 !
 !   Copyright (C) 2010-2019  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
- 
+
       module reaclib_support
       use rates_def
       use math_lib
       use chem_lib
-      
+
       implicit none
 
       contains
-      
+
 
       subroutine set_up_network_information(rates)
          type(reaction_data), intent(inout) :: rates
@@ -56,19 +50,19 @@
          ! mark the end of the last chapter
          rates% bookmarks(2,current_chapter) = rates% nreactions
       end subroutine set_up_network_information
-      
+
 
       subroutine assign_weights(rates)
          type(reaction_data), intent(inout) :: rates
          integer :: i, i1, i2, i3, i4
-         
+
          include 'formats'
 
          ! check for allocation
          if (.not.associated(rates% weight)) then
             return
          end if
-         
+
          do i = 1, rates% nreactions
             i1 = -1; i2 = -2; i3 = -3; i4 = -4
             select case (rates% chapter(i))
@@ -104,7 +98,7 @@
             end select
             call set_weight(rates% weight(i))
          end do
-         
+
          do i = 1, rates% nreactions
             i1 = -1; i2 = -2; i3 = -3; i4 = -4
             select case (rates% chapter(i))
@@ -146,11 +140,11 @@
             call set_weight(rates% weight_reverse(i))
 
          end do
-         
-         
+
+
          contains
-         
-         
+
+
          subroutine set_weight(w)
             ! nuclei are sorted, so if identical, then are adjacent in list
             real(dp), intent(out) :: w
@@ -170,10 +164,10 @@
                w = 1d0
             end if
          end subroutine set_weight
-         
+
 
       end subroutine assign_weights
-      
+
 
       subroutine compute_rev_ratio(rates,winvn)
          use const_def, only : pi, kB=>boltzm, NA=>avo, hbar, &
@@ -182,18 +176,18 @@
          type(nuclide_data), intent(in) :: winvn
          real(dp) :: mp, mn
          real(dp),  dimension(max_species_per_reaction) :: g   ! statistical weights of nuclides
-         real(dp), dimension(max_species_per_reaction) :: mass ! mass no's of nuclides
+         real(dp), dimension(max_species_per_reaction) :: mass  ! mass no's of nuclides
          integer, dimension(max_species_per_reaction) :: ps
          integer :: Ni,No,Nt,i
          real(dp) :: fac, massfac, sum1, sum2, tmp
-      
-         
+
+
          include 'formats'
-         
+
          ! Get these consistently from the isotopes.data file
          mp=winvn%W(chem_get_iso_id('prot'))
          mn=winvn%W(chem_get_iso_id('neut'))
-         
+
          fac = pow(1d9*kB/(2d0*pi*hbar*hbar*NA),1.5d0)/NA
          massfac = conv*NA/(c*c)
 
@@ -202,10 +196,10 @@
             ! weak rates don't have inverses, so set to innocuous values and mask out
             if (rates% reaction_flag(i) == 'w' .or. rates% reaction_flag(i) == 'e') then
                rates% weak_mask(i) = 0d0
-               rates% inverse_coefficients(:,i) = (/-huge(1d0), 0d0/)
+               rates% inverse_coefficients(:,i) = [-huge(1d0), 0d0]
                rates% inverse_exp(i) = 0d0
                rates% inverse_part(:,i) = 1d0
-               cycle
+               cycle loop_over_rates
             end if
             Ni = Nin(rates% chapter(i))
             No = Nout(rates% chapter(i))
@@ -217,30 +211,35 @@
 
             ! log(prefactor of reverse_ratio)
             tmp = product(mass(1:Ni))/product(mass(Ni+1:Nt))
-            rates% inverse_coefficients(1,i) = pow(tmp,1.5d0*(Ni-No))*(product(g(1:Ni))/product(g(Ni+1:Nt)))
+            ! The reactant/product mass ratio always enters with a fixed 3/2 power.
+            ! This follows standard detailed-balance derivations such as
+            ! Fowler et al. 1967 and Smith Clark et al. 2023 Appendix B.
+            rates% inverse_coefficients(1,i) = pow(tmp,1.5d0)*(product(g(1:Ni))/product(g(Ni+1:Nt)))
 
             ! -Q/(kB*10**9)
             sum1 = sum(winvn% binding_energy(ps(1:Ni)))
             sum2 = sum(winvn% binding_energy(ps(Ni+1:Nt)))
             rates% inverse_coefficients(2,i) = (sum1-sum2)*conv/kB/1d9
 
-            ! see equation 21 in Reichert et al. 2023 (https://doi.org/10.3847/1538-4365/acf033)
+            ! Reichert et al. 2023 Eq. 21 is the source for the fac^(Ni-No) term,
+            ! but the fixed 3/2 mass exponent above follows Fowler et al. 1967 and
+            ! Smith Clark et al. 2023 Appendix B. The current WinNet implementation
+            ! also uses the fixed 3/2 mass exponent.
             ! delta_reactants/delta_products is handled in net.
-            ! fac == (mu * kb * T / (2 * pi * hbar^2))^3/2 term with out a T^3/2.
-            ! fac shows up as fac^(Ni-No) in rates% inverse_coefficients(1,i)
-            ! so rates% inverse_coefficients(1,i)  contains terms for
-            ! fac^(n) == fac^(Ni-No), where n = Ni - No.
- 
+            ! fac == (mu * kb * T / (2 * pi * hbar^2))^3/2 term without a T^3/2.
+            ! The n-dependent phase-space factor enters as fac^(Ni-No), where
+            ! n = Ni - No. The mass ratio above remains a separate fixed 3/2 term.
+
             ! The T makes its way back into our expression inside
             ! the subroutine compute_some_inverse_lambdas, in reaclib_eval.f90.
             ! It appears in log form as 1.5d0*rates% inverse_exp(i)*lnT9, where,
             ! rates% inverse_exp(i) = Ni-No, so,
             ! 1.5d0*rates% inverse_exp(i)*lnT9 == ln(T^(3n/2)), where n = Ni-No.
-            rates% inverse_exp(i) = Ni - No ! We use this term in a log() expression in reaclib_eval
+            rates% inverse_exp(i) = Ni - No  ! We use this term in a log() expression in reaclib_eval
 
             ! Ni-No should be 0 for non-photo-disintegration reverse rates
             ! and >=1 for photos's in the reverse channel
-            if (Ni-No .ne. 0) then
+            if (Ni-No /= 0) then
                ! whether endothermic or exothermic,
                ! Ni-No handles the sign of Q from rates% inverse_coefficients(2,i)
                rates% inverse_coefficients(1,i) = rates% inverse_coefficients(1,i) * pow(fac, Ni-No)
@@ -251,9 +250,9 @@
                ! positive values of Q denote exothermic photodisintegrations
                ! We DIVIDE by fac^|Ni-No| as we want to compute
                ! rate_reverse/rate_photo
-            else ! Ni - No = 0
-               rates% inverse_exp(i) = 0 ! ensure this is 0.
-               rates% inverse_coefficients(1,i) = rates% inverse_coefficients(1,i) ! no point calling pow(fac,0)
+            else  ! Ni - No = 0
+               rates% inverse_exp(i) = 0  ! ensure this is 0.
+               rates% inverse_coefficients(1,i) = rates% inverse_coefficients(1,i)  ! no point calling pow(fac,0)
             end if
             rates% inverse_coefficients(1,i) = log(rates% inverse_coefficients(1,i))
 
@@ -268,13 +267,13 @@
          use chem_lib
          character (len=*), intent(in) :: handle
          integer, intent(out) :: num_in, num_out
-         integer, intent(out) :: iso_ids(:) ! holds chem_ids for input and output species
-         character (len=*), intent(out) :: op ! e.g., 'pg', 'wk', 'to', or ...
+         integer, intent(out) :: iso_ids(:)  ! holds chem_ids for input and output species
+         character (len=*), intent(out) :: op  ! e.g., 'pg', 'wk', 'to', or ...
          integer, intent(out) :: ierr
-         
+
          integer :: len, i, j, cnt, cid, extra_in, extra_out
          logical :: doing_inputs
-         
+
          num_in = 0; num_out = 0; op = ''
          ierr = -1
          len = len_trim(handle)
@@ -283,14 +282,14 @@
          cnt = 0
          doing_inputs = .true.
          do while (i <= len)
-            call nxt ! set j to last char of token
+            call nxt  ! set j to last char of token
             cid = chem_get_iso_id(handle(i:j))
             if (cid == nuclide_not_found) then
                if (doing_inputs) then
                   op = handle(i:j)
                   extra_in = -1
                   extra_out = -1
-                  if (j == i+1) then ! check 2 character ops
+                  if (j == i+1) then  ! check 2 character ops
                      select case (op(1:1))
                         case ('p')
                            extra_in = ih1
@@ -331,7 +330,7 @@
                               !   trim(handle) // ' -- problem with ' // handle(i:j)
                               return
                         end select
-                     end if               
+                     end if
                   end if
                   num_in = cnt
                   doing_inputs = .false.
@@ -352,9 +351,9 @@
          end do
          num_out = cnt - num_in
          ierr = 0
-         
+
          contains
-         
+
          subroutine nxt
             j = i
             do
@@ -365,7 +364,7 @@
                end if
             end do
          end subroutine nxt
-         
+
 
       end subroutine do_parse_reaction_handle
 
@@ -378,7 +377,7 @@
          logical, parameter :: reverse = .false.
          call get1_reaction_handle(num_in, num_out, iso_ids, chem_isos, reverse, reaction_flag, handle)
       end subroutine reaction_handle
-      
+
       subroutine reverse_reaction_handle(num_in, num_out, iso_ids, handle)
          use chem_def, only: chem_isos
          integer, intent(in) :: num_in, num_out
@@ -387,8 +386,8 @@
          logical, parameter :: reverse = .true.
          character (len=1), parameter :: reaction_flag = '-'
          call get1_reaction_handle(num_in, num_out, iso_ids, chem_isos, reverse, reaction_flag, handle)
-      end subroutine reverse_reaction_handle         
-      
+      end subroutine reverse_reaction_handle
+
       subroutine get_reaction_handle(num_in, num_out, pspecies, nuclides, reaction_flag, handle)
          integer, intent(in) :: num_in, num_out
          integer, intent(in) :: pspecies(:)
@@ -398,7 +397,7 @@
          logical, parameter :: reverse = .false.
          call get1_reaction_handle(num_in, num_out, pspecies, nuclides, reverse, reaction_flag, handle)
       end subroutine get_reaction_handle
-      
+
       subroutine get_reverse_reaction_handle(num_in, num_out, pspecies, nuclides, handle)
          integer, intent(in) :: num_in, num_out
          integer, intent(in) :: pspecies(:)
@@ -408,7 +407,7 @@
          character (len=1), parameter :: reaction_flag = '-'
          call get1_reaction_handle(num_in, num_out, pspecies, nuclides, reverse, reaction_flag, handle)
       end subroutine get_reverse_reaction_handle
-      
+
       subroutine get1_reaction_handle( &
             num_in, num_out, pspecies_in, nuclides, reverse, reaction_flag, handle)
          use chem_def, only: ih1, ih2, ih3, ihe3, ihe4, ibe7, ili7, chem_isos
@@ -421,17 +420,17 @@
 
          integer :: in1, in2, out1, out2, num, pspecies(num_in + num_out)
          logical :: do_long_form, ec_flag, wk_flag
-         
+
          include 'formats'
-         
+
          num = num_in + num_out
          pspecies(1:num) = pspecies_in(1:num)
          call sort(num_in, pspecies(1:num_in))
          call sort(num_out, pspecies(num_in+1:num))
          ec_flag = (reaction_flag == 'e')
          wk_flag = (reaction_flag == 'w')
-         
-         if (ec_flag) then ! special cases
+
+         if (ec_flag) then  ! special cases
             if (reverse) then
                handle = ''
                return
@@ -452,7 +451,7 @@
                if (nuclides% chem_id(pspecies(1)) == ibe7 .and. &
                    nuclides% chem_id(pspecies(2)) == ili7) then
                   handle = 'r_be7_wk_li7'
-                  return 
+                  return
                end if
             end if
          else if (wk_flag) then
@@ -498,7 +497,7 @@
             end if
          else if (num_in == 2 .and. num_out == 2) then
             call do_n_to_m(2,2)
-            do_long_form = two_two()            
+            do_long_form = two_two()
          end if
 
          if (do_long_form) then
@@ -509,9 +508,9 @@
             handle = trim(handle) // '_' // nuclides% name(out1)
          end if
 
-         
+
          contains
-         
+
          subroutine sort(n, species)
             integer :: n
             integer :: species(n)
@@ -545,7 +544,7 @@
                end do
             end do
          end subroutine sort
-         
+
          subroutine long_form
             integer :: i, cid
             character (len=3) :: op
@@ -581,7 +580,7 @@
                end do
             end if
          end subroutine long_form
-         
+
          logical function one_one()
             one_one = .true.
             if (in1 == 0 .or. out1 == 0) return
@@ -596,7 +595,7 @@
                one_one = .true.
             end if
          end function one_one
-         
+
          logical function one_two()
             one_two = .true.
             if (in1 == 0 .or. out1 == 0 .or. out2 == 0 .or. out1 == out2) return
@@ -625,7 +624,7 @@
                one_two = .true.
             end if
          end function one_two
-         
+
          logical function two_one()
             include 'formats'
             two_one = .true.
@@ -647,12 +646,12 @@
                two_one = .true.
             end if
          end function two_one
-         
+
          logical function two_two()
             two_two = .true.
 
             if (in1 == 0 .or. in2 == 0 .or. out1 == 0 .or. out2 == 0) return
-            
+
             ! Special case r_li7_pa_he4, this must come first otherwise the out1==out2
             ! check will label this rate as a _to_ reaction instead of an _ap reaction
             if (nuclides% Z(in1) == 1 .and. nuclides% N(in1) == 0 .and. &
@@ -665,7 +664,7 @@
             end if
 
             if(in1==in2 .or. out1==out2) return
-            
+
             two_two = .false.
             if (nuclides% Z(in1) == 2 .and. nuclides% N(in1) == 2 .and. &
                      nuclides% Z(out1) == 1 .and. nuclides% N(out1) == 0 .and. &
@@ -701,9 +700,9 @@
                two_two = .true.
             end if
          end function two_two
-         
+
          subroutine do_n_to_m(n,m)
-            integer, intent(in) :: n, m ! each is either 1 or 2
+            integer, intent(in) :: n, m  ! each is either 1 or 2
             in1 = 0; in2 = 0; out1 = 0; out2 = 0
             if (.not. reverse) then
                in1 = pspecies(1)
@@ -747,21 +746,21 @@
                end if
             end if
          end subroutine do_n_to_m
-         
+
          subroutine switch_if_necessary(iso1,iso2)
             integer, intent(inout) :: iso1, iso2
             integer :: j
-            if (nuclides% Z(iso2) == 1 .and. nuclides% N(iso2) == 0) then ! iso2 is ih1
+            if (nuclides% Z(iso2) == 1 .and. nuclides% N(iso2) == 0) then  ! iso2 is ih1
                j = iso1; iso1 = iso2; iso2 = j; return
             end if
-            if (nuclides% Z(iso2) == 2 .and. nuclides% N(iso2) == 2) then ! iso2 is ihe4
-               if (nuclides% Z(iso1) == 1 .and. nuclides% N(iso1) == 0) return ! iso1 is ih1
+            if (nuclides% Z(iso2) == 2 .and. nuclides% N(iso2) == 2) then  ! iso2 is ihe4
+               if (nuclides% Z(iso1) == 1 .and. nuclides% N(iso1) == 0) return  ! iso1 is ih1
                j = iso1; iso1 = iso2; iso2 = j; return
             end if
          end subroutine switch_if_necessary
-         
-         
+
+
       end subroutine get1_reaction_handle
-      
+
 
       end module reaclib_support

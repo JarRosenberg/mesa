@@ -2,24 +2,18 @@
 !
 !   Copyright (C) 2010-2019  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
@@ -27,7 +21,8 @@ module history
 
    use star_private_def
    use star_history_def
-   use const_def
+   use const_def, only: dp, pi, pi4, ln10, one_third, msun, rsun, lsun, clight, secday, secyer, &
+                        no_mixing, semiconvective_mixing, thermohaline_mixing
    use chem_def
    use history_specs
    use star_utils
@@ -40,9 +35,7 @@ module history
 
    logical, parameter :: open_close_log = .true.
 
-
 contains
-
 
    subroutine do_get_data_for_history_columns(s, ierr)
       type (star_info), pointer :: s
@@ -65,6 +58,8 @@ contains
       use chem_def, only : category_name
       use math_lib, only : math_backend
       use net_def, only : Net_General_Info, get_net_ptr
+      use colors_def, only: Colors_General_Info, get_colors_ptr
+      use colors_lib, only: how_many_colors_history_columns, data_for_colors_history_columns
       type (star_info), pointer :: s
 
       logical, intent(in) :: write_flag
@@ -72,22 +67,24 @@ contains
 
       character (len = strlen) :: fname, dbl_fmt, int_fmt, txt_fmt
       integer :: numcols, io, i, nz, col, j, i0, &
-         num_extra_cols, num_binary_cols, num_extra_binary_cols, num_extra_header_items, n
+         num_extra_cols, num_binary_cols, num_extra_binary_cols, num_colors_cols,num_extra_header_items, n
       integer, parameter :: num_epsnuc_out = 12
       real(dp) :: &
-         epsnuc_out(num_epsnuc_out), csound_surf, v_surf, envelope_fraction_left
+         epsnuc_out(num_epsnuc_out), csound_surf, v_surf, envelope_fraction_left, m_div_h, &
+         min_m_div_h, max_m_div_h
       integer :: mixing_regions, mix_relr_regions, burning_regions, burn_relr_regions
       integer, pointer :: mixing_type(:), mix_relr_type(:), burning_type(:), burn_relr_type(:)
       character (len = maxlen_history_column_name), pointer, dimension(:) :: &
-         extra_col_names, binary_col_names, extra_binary_col_names, extra_header_item_names
+         extra_col_names, binary_col_names, extra_binary_col_names, colors_col_names, extra_header_item_names
       real(dp), pointer, dimension(:) :: &
-         extra_col_vals, binary_col_vals, extra_binary_col_vals, extra_header_item_vals
+         extra_col_vals, binary_col_vals, extra_binary_col_vals, colors_col_vals, extra_header_item_vals
 
       character (len = maxlen_history_column_name), pointer :: &
-         names(:) ! (num_history_columns)
-      real(dp), pointer :: vals(:) ! (num_history_columns)
-      logical, pointer :: is_int(:) ! (num_history_columns)
+         names(:)  ! (num_history_columns)
+      real(dp), pointer :: vals(:)  ! (num_history_columns)
+      logical, pointer :: is_int(:)  ! (num_history_columns)
       type(net_general_info), pointer :: g => null()
+      type(colors_general_info), pointer :: colors_settings => null()
 
       logical :: history_file_exists
 
@@ -100,6 +97,9 @@ contains
       ierr = 0
 
       call get_net_ptr(s% net_handle, g, ierr)
+      if(ierr/=0) return
+
+      call get_colors_ptr(s% colors_handle, colors_settings, ierr)
       if(ierr/=0) return
 
       if (.not. associated(s% history_column_spec)) then
@@ -115,7 +115,12 @@ contains
          num_binary_cols = 0
          num_extra_binary_cols = 0
       end if
-      n = numcols + num_extra_cols + num_binary_cols + num_extra_binary_cols
+      if (colors_settings% use_colors) then
+         num_colors_cols = how_many_colors_history_columns(s% colors_handle)
+      else
+         num_colors_cols = 0
+      end if
+      n = numcols + num_extra_cols + num_binary_cols + num_extra_binary_cols + num_colors_cols
       if (n == 0) then
          write(*, *) 'WARNING: do not have any output specified for logs.'
          ierr = -1
@@ -192,6 +197,8 @@ contains
       nullify(binary_col_vals)
       nullify(extra_binary_col_names)
       nullify(extra_binary_col_vals)
+      nullify(colors_col_names)
+      nullify(colors_col_vals)
 
       if (num_extra_cols > 0) then
          allocate(&
@@ -252,6 +259,50 @@ contains
          end do
       end if
 
+      if (num_colors_cols > 0) then
+         allocate(&
+            colors_col_names(num_colors_cols), colors_col_vals(num_colors_cols), stat = ierr)
+         if (ierr /= 0) then
+            call dealloc
+            return
+         end if
+         colors_col_names(1:num_colors_cols) = 'unknown'
+         colors_col_vals(1:num_colors_cols) = -1d99
+
+         ! Here we compute [Fe/H], and thencall colors to compute history columns.
+         if (colors_settings% z_over_x_ref <= 0d0) then
+            write(*, *) 'colors error: z_over_x_ref must be positive'
+            ierr = -1
+            call dealloc
+            return
+         end if
+
+         min_m_div_h = minval(colors_settings% lu_meta)
+         max_m_div_h = maxval(colors_settings% lu_meta)
+
+         ! Map the current photospheric Z/X onto the atmosphere table metallicity axis.
+         if (s% X(s% photosphere_cell_k) > 0d0 .and. s% Z(s% photosphere_cell_k) > 0d0) then
+            m_div_h = log10((s% Z(s% photosphere_cell_k)/s% X(s% photosphere_cell_k)) / &
+               colors_settings% z_over_x_ref)
+            m_div_h = max(min_m_div_h, min(max_m_div_h, m_div_h))
+         else
+            m_div_h = min_m_div_h
+         end if
+
+         call data_for_colors_history_columns(s%T(1), log10(s%grav(1)), s%R(1), m_div_h, &
+            s% model_number, s% colors_handle, num_colors_cols, colors_col_names, colors_col_vals, ierr)
+         if (ierr /= 0) then
+            call dealloc
+            return
+         end if
+         do i = 1, num_colors_cols
+            if(trim(colors_col_names(i))=='unknown') then
+               write(*, *) "Warning empty history name for color_history_column ", i
+            end if
+         end do
+      end if
+
+
       i0 = 1
       if (write_flag .and. (open_close_log .or. s% model_number == -100)) then
          if(.not. folder_exists(trim(s% log_directory))) call mkdir(trim(s% log_directory))
@@ -297,7 +348,7 @@ contains
          envelope_fraction_left = 1
       end if
 
-      if (write_flag .and. i0 == 1) then ! write values at start of log
+      if (write_flag .and. i0 == 1) then  ! write values at start of log
 
          num_extra_header_items = s% how_many_extra_history_header_items(s% id)
          if (num_extra_header_items > 0) then
@@ -364,7 +415,7 @@ contains
       mix_relr_regions = 0
       burn_relr_regions = 0
 
-      do i = i0, 3 ! add a row to the log
+      do i = i0, 3  ! add a row to the log
 
          col = 0
          if (i==3) then
@@ -427,6 +478,9 @@ contains
          do j = 1, num_extra_binary_cols
             call do_extra_binary_col(i, j, numcols + num_extra_cols + num_binary_cols)
          end do
+         do j = 1, num_colors_cols
+            call do_color_col(i, j, numcols + num_extra_cols + num_binary_cols + num_extra_binary_cols)
+         end do
 
          if (write_flag) write(io, *)
 
@@ -459,6 +513,8 @@ contains
          if (associated(binary_col_vals)) deallocate(binary_col_vals)
          if (associated(extra_binary_col_names)) deallocate(extra_binary_col_names)
          if (associated(extra_binary_col_vals)) deallocate(extra_binary_col_vals)
+         if (associated(colors_col_names)) deallocate(colors_col_names)
+         if (associated(colors_col_vals)) deallocate(colors_col_vals)
 
          nullify(mixing_type)
          nullify(mix_relr_type)
@@ -470,6 +526,8 @@ contains
          nullify(binary_col_vals)
          nullify(extra_binary_col_names)
          nullify(extra_binary_col_vals)
+         nullify(colors_col_names)
+         nullify(colors_col_vals)
 
       end subroutine dealloc
 
@@ -509,6 +567,18 @@ contains
             call do_val(j + col_offset, extra_binary_col_vals(j))
          end if
       end subroutine do_extra_binary_col
+
+
+      subroutine do_color_col(pass, j, col_offset)
+         integer, intent(in) :: pass, j, col_offset
+         if (pass == 1) then
+            if (write_flag) write(io, fmt = int_fmt, advance = 'no') j + col_offset
+         else if (pass == 2) then
+            call do_name(j + col_offset, colors_col_names(j))
+         else if (pass == 3) then
+            call do_val(j + col_offset, colors_col_vals(j))
+         end if
+      end subroutine do_color_col
 
 
       subroutine do_name(j, col_name)
@@ -747,9 +817,9 @@ contains
             write(*, 2) 'q bot', min_kbot, s% q(min_kbot)
             write(*, 2) 'dq', min_kbot, s% q(min_ktop) - s% q(min_kbot)
          end if
-         if (min_ktop > 1) then ! merge with above
+         if (min_ktop > 1) then  ! merge with above
             new_type = mx_type(min_ktop - 1)
-         else if (min_kbot < nz) then ! merge with below
+         else if (min_kbot < nz) then  ! merge with below
             new_type = mx_type(min_kbot + 1)
          else
             write(*, *) 'confusion in args for remove_region', min_ktop, min_kbot
@@ -846,7 +916,7 @@ contains
       end subroutine do_col
 
 
-      subroutine do_col_pass1 ! write the column number
+      subroutine do_col_pass1  ! write the column number
          col = col + 1
          if (write_flag) write(io, fmt = int_fmt, advance = 'no') col
       end subroutine do_col_pass1
@@ -854,7 +924,7 @@ contains
 
       ! The order of if statements matter, they should be in reverse order
       ! to the order in history_specs
-      subroutine do_col_pass2(j) ! get the column name
+      subroutine do_col_pass2(j)  ! get the column name
          use colors_lib, only : get_bc_name_by_id
          use rates_def, only : reaction_name
          integer, intent(in) :: j
@@ -865,7 +935,7 @@ contains
          if (c > burn_relr_offset) then
             i = c - burn_relr_offset
             ii = (i + 1) / 2
-            if (ii > burn_relr_regions) burn_relr_regions = ii ! count the regions in pass2
+            if (ii > burn_relr_regions) burn_relr_regions = ii  ! count the regions in pass2
             if (ii < 10) then
                write(str, '(i1)') ii
             else if (ii < 100) then
@@ -873,15 +943,15 @@ contains
             else
                write(str, '(i3)') ii
             end if
-            if (mod(i, 2)==1) then ! burning type
+            if (mod(i, 2)==1) then  ! burning type
                col_name = 'burn_relr_type_' // trim(str)
-            else ! location of top
+            else  ! location of top
                col_name = 'burn_relr_top_' // trim(str)
             end if
          else if (c > burning_offset) then
             i = c - burning_offset
             ii = (i + 1) / 2
-            if (ii > burning_regions) burning_regions = ii ! count the regions in pass2
+            if (ii > burning_regions) burning_regions = ii  ! count the regions in pass2
             if (ii < 10) then
                write(str, '(i1)') ii
             else if (ii < 100) then
@@ -889,15 +959,15 @@ contains
             else
                write(str, '(i3)') ii
             end if
-            if (mod(i, 2)==1) then ! burning type
+            if (mod(i, 2)==1) then  ! burning type
                col_name = 'burn_type_' // trim(str)
-            else ! location of top
+            else  ! location of top
                col_name = 'burn_qtop_' // trim(str)
             end if
          else if (c > mix_relr_offset) then
             i = c - mix_relr_offset
             ii = (i + 1) / 2
-            if (ii > mix_relr_regions) mix_relr_regions = ii ! count the regions in pass2
+            if (ii > mix_relr_regions) mix_relr_regions = ii  ! count the regions in pass2
             if (ii < 10) then
                write(str, '(i1)') ii
             else if (ii < 100) then
@@ -907,13 +977,13 @@ contains
             end if
             if (mod(i, 2)==1) then
                col_name = 'mix_relr_type_' // trim(str)
-            else ! location of top
+            else  ! location of top
                col_name = 'mix_relr_top_' // trim(str)
             end if
          else if (c > mixing_offset) then
             i = c - mixing_offset
             ii = (i + 1) / 2
-            if (ii > mixing_regions) mixing_regions = ii ! count the regions in pass2
+            if (ii > mixing_regions) mixing_regions = ii  ! count the regions in pass2
             if (ii < 10) then
                write(str, '(i1)') ii
             else if (ii < 100) then
@@ -921,9 +991,9 @@ contains
             else
                write(str, '(i3)') ii
             end if
-            if (mod(i, 2)==1) then ! mixing type
+            if (mod(i, 2)==1) then  ! mixing type
                col_name = 'mix_type_' // trim(str)
-            else ! location of top
+            else  ! location of top
                col_name = 'mix_qtop_' // trim(str)
             end if
          else if (c > eps_neu_rate_offset) then
@@ -1000,7 +1070,7 @@ contains
       end subroutine do_col_pass2
 
 
-      subroutine do_col_pass3(c) ! get the column value
+      subroutine do_col_pass3(c)  ! get the column value
          use rates_def
          integer, intent(in) :: c
          integer :: i, ii, k, int_val
@@ -1012,42 +1082,42 @@ contains
             i = c - burn_relr_offset
             ii = (i + 1) / 2
             k = region_top(burn_relr_type, ii)
-            if (mod(i, 2)==1) then ! burning type
+            if (mod(i, 2)==1) then  ! burning type
                is_int_val = .true.
                if (k > 0) then
                   int_val = burn_relr_type(k)
                else
                   int_val = -9999
                end if
-            else ! location of top
+            else  ! location of top
                val = interpolate_burn_bdy_r(k)
             end if
          else if (c > burning_offset) then
             i = c - burning_offset
             ii = (i + 1) / 2
             k = region_top(burning_type, ii)
-            if (mod(i, 2)==1) then ! burning type
+            if (mod(i, 2)==1) then  ! burning type
                is_int_val = .true.
                if (k > 0) then
                   int_val = burning_type(k)
                else
                   int_val = -9999
                end if
-            else ! location of top
+            else  ! location of top
                val = interpolate_burn_bdy_q(k)
             end if
          else if (c > mix_relr_offset) then
             i = c - mix_relr_offset
             ii = (i + 1) / 2
             k = region_top(mix_relr_type, ii)
-            if (mod(i, 2)==1) then ! mixing type
+            if (mod(i, 2)==1) then  ! mixing type
                is_int_val = .true.
                if (k > 0) then
                   int_val = mix_relr_type(k)
                else
                   int_val = -1
                end if
-            else ! r/rstar location of boundary
+            else  ! r/rstar location of boundary
                if (k <= 1) then
                   val = 1d0
                else
@@ -1060,14 +1130,14 @@ contains
             i = c - mixing_offset
             ii = (i + 1) / 2
             k = region_top(mixing_type, ii)
-            if (mod(i, 2)==1) then ! mixing type
+            if (mod(i, 2)==1) then  ! mixing type
                is_int_val = .true.
                if (k > 0) then
                   int_val = mixing_type(k)
                else
                   int_val = -1
                end if
-            else ! q location of boundary
+            else  ! q location of boundary
                if (k <= 1) then
                   val = 1d0
                else
@@ -1116,7 +1186,7 @@ contains
          if (associated(is_int)) is_int(j) = .true.
       end subroutine do_int_val
 
-      subroutine write_string(io, col, pass, name, val) !for header items only
+      subroutine write_string(io, col, pass, name, val)  !for header items only
          integer, intent(in) :: io, pass
          integer, intent(inout) :: col
          character(len = *), intent(in) :: name, val
@@ -1134,7 +1204,7 @@ contains
       end subroutine write_string
 
 
-      subroutine write_integer(io, col, pass, name, val) ! for header items only
+      subroutine write_integer(io, col, pass, name, val)  ! for header items only
          integer, intent(in) :: io, pass
          integer, intent(inout) :: col
          character (len = *), intent(in) :: name
@@ -1150,7 +1220,7 @@ contains
       end subroutine write_integer
 
 
-      subroutine write_val(io, col, pass, name, val) ! for header items only
+      subroutine write_val(io, col, pass, name, val)  ! for header items only
          integer, intent(in) :: io, pass
          integer, intent(inout) :: col
          character (len = *), intent(in) :: name
@@ -1186,7 +1256,7 @@ contains
       integer, intent(out) :: ierr
 
       integer :: k, i, min_k, k2
-      real(dp) :: Ledd, phi_Joss, power_photo, tmp, r, m_div_h, w_div_w_Kep, deltam
+      real(dp) :: Ledd, phi_Joss, power_photo, tmp, r, m_div_h, w_div_w_Kep, deltam, csound_face
       real(dp), pointer :: v(:)
       logical :: v_flag
 
@@ -1277,7 +1347,7 @@ contains
          end if
       else if (c > c_log_eps_burn_offset) then
          i = c - c_log_eps_burn_offset
-         val = safe_log10(abs(s% center_eps_burn(i))) ! abs is for photo
+         val = safe_log10(abs(s% center_eps_burn(i)))  ! abs is for photo
       else if (c > max_eps_nuc_offset) then
          i = c - max_eps_nuc_offset
          val = safe_log10(max_eps_nuc_log_x(s% net_iso(i)))
@@ -1414,8 +1484,6 @@ contains
          case(h_species)
             int_val = s% species
             is_int_val = .true.
-         case(h_Tsurf_factor)
-            val = s% Tsurf_factor
          case(h_tau_factor)
             val = s% tau_factor
          case(h_tau_surface)
@@ -1955,9 +2023,9 @@ contains
             val = if_rot(s% w_div_w_crit_avg_surf)
 
          case(h_surf_avg_v_rot)
-            val = if_rot(s% v_rot_avg_surf) * 1d-5 ! km/sec
+            val = if_rot(s% v_rot_avg_surf) * 1d-5  ! km/sec
          case(h_surf_avg_v_crit)
-            val = if_rot(s% v_crit_avg_surf) * 1d-5 ! km/sec
+            val = if_rot(s% v_crit_avg_surf) * 1d-5  ! km/sec
          case(h_surf_avg_v_div_v_crit)
             val = if_rot(s% v_div_v_crit_avg_surf)
 
@@ -2033,8 +2101,8 @@ contains
                val = 2.5d0 / (r / 1d8)
             end if
          case(h_mu4)
-            deltam = 0.3d0 * msun ! Ertl et al 2016
-            if (s% entropy(1) > 4.0) then
+            deltam = 0.3d0 * msun  ! Ertl et al 2016
+            if (s% entropy(1) > 4.0d0) then
                do k = nz - 1, 1, -1
                   if (s% entropy(k) > 4.d0) exit
                end do
@@ -2045,7 +2113,7 @@ contains
                val = (deltam / msun) / ((s% r(k2) - s% r(k)) / 1d8)
             end if
          case(h_m4)
-            if (s% entropy(1) > 4.0) then
+            if (s% entropy(1) > 4.0d0) then
                do k = nz - 1, 1, -1
                   if (s% entropy(k) > 4.d0) exit
                end do
@@ -2053,16 +2121,16 @@ contains
             end if
          case(h_max_infall_speed)
             if (s% u_flag) then
-               val = -minval(s% u(1:s% nz)) * 1d-5 ! convert to km/sec
+               val = -minval(s% u(1:s% nz)) * 1d-5  ! convert to km/sec
             else if (s% v_flag) then
-               val = -minval(s% v(1:s% nz)) * 1d-5 ! convert to km/sec
+               val = -minval(s% v(1:s% nz)) * 1d-5  ! convert to km/sec
             end if
          case(h_fe_core_infall)
-            val = s% fe_core_infall * 1d-5 ! convert to km/sec
+            val = s% fe_core_infall * 1d-5  ! convert to km/sec
          case(h_non_fe_core_infall)
-            val = s% non_fe_core_infall * 1d-5 ! convert to km/sec
+            val = s% non_fe_core_infall * 1d-5  ! convert to km/sec
          case(h_non_fe_core_rebound)
-            val = s% non_fe_core_rebound * 1d-5 ! convert to km/sec
+            val = s% non_fe_core_rebound * 1d-5  ! convert to km/sec
          case(h_center_omega)
             val = if_rot(s% center_omega)
          case(h_center_omega_div_omega_crit)
@@ -2228,11 +2296,16 @@ contains
          case(h_log_Lnuc)
             power_photo = dot_product(s% dm(1:nz), s% eps_nuc_categories(iphoto, 1:nz)) / Lsun
             val = safe_log10(s% power_nuc_burn - power_photo)
+         case(h_Lnuc)
+            power_photo = dot_product(s% dm(1:nz), s% eps_nuc_categories(iphoto, 1:nz)) / Lsun
+            val = s% power_nuc_burn - power_photo
          case(h_log_Lnuc_ergs_s)
             power_photo = dot_product(s% dm(1:nz), s% eps_nuc_categories(iphoto, 1:nz))
             val = safe_log10(s% power_nuc_burn * Lsun - power_photo)
          case(h_log_power_nuc_burn)
             val = safe_log10(s% power_nuc_burn)
+         case(h_power_nuc_burn)
+            val = s% power_nuc_burn
          case(h_log_Lnuc_sub_log_L)
             power_photo = dot_product(s% dm(1:nz), s% eps_nuc_categories(iphoto, 1:nz)) / Lsun
             val = safe_log10(s% power_nuc_burn - power_photo)
@@ -2651,8 +2724,14 @@ contains
          case(h_max_conv_vel_div_csound)
             val = 0
             do k = 2, nz
-               if (s% q(k) > s% max_conv_vel_div_csound_maxq .or. s% csound(k) == 0) cycle
-               if (s% conv_vel(k) / s% csound(k) > val) val = s% conv_vel(k) / s% csound(k)
+               if (s% q(k) > s% max_conv_vel_div_csound_maxq) cycle
+               if (s% use_face_reconstruction) then
+                  if (.not. s% reconstructed_face_state_valid(k)) cycle
+                  csound_face = s% reconstructed_csound_face(k)
+               else
+                  csound_face = s% csound_face(k)
+               end if
+               if (csound_face > 0d0) val = max(val, s% conv_vel(k)/csound_face)
             end do
 
          case(h_min_t_eddy)
@@ -2668,7 +2747,7 @@ contains
 
          case(h_delta_nu)
             if (.not. s% get_delta_nu_from_scaled_solar) then
-               val = 1d6 / (2 * s% photosphere_acoustic_r) ! microHz
+               val = 1d6 / (2 * s% photosphere_acoustic_r)  ! microHz
             else
                val = &
                   s% delta_nu_sun * sqrt(s% star_mass) * pow3(s% Teff / s% astero_Teff_sun) / &
@@ -2688,7 +2767,7 @@ contains
             val = s% photosphere_acoustic_r
          case(h_gs_per_delta_nu)
             if (s% calculate_Brunt_N2 .and. s% nu_max > 0 .and. s% delta_Pg >= 0) then
-               val = 1d6 / (2 * s% photosphere_acoustic_r) ! delta_nu
+               val = 1d6 / (2 * s% photosphere_acoustic_r)  ! delta_nu
                val = 1d6 * val / (s% nu_max * s% nu_max * s% delta_Pg)
             end if
          case(h_ng_for_nu_max)
@@ -2818,12 +2897,12 @@ contains
          case(h_RSP_phase)
             if (s% RSP_flag) val = (s% time - rsp_phase_time0()) / s% RSP_period
          case(h_RSP_period_in_days)
-            if (s% RSP_flag) val = s% RSP_period / secday ! days
+            if (s% RSP_flag) val = s% RSP_period / secday  ! days
          case(h_RSP_num_periods)
             if (s% RSP_flag) int_val = s% RSP_num_periods
             is_int_val = .true.
 
-         case(h_grav_dark_L_polar) ! pole is at inclination = 0
+         case(h_grav_dark_L_polar)  ! pole is at inclination = 0
             if(s% rotation_flag) then
                w_div_w_Kep = if_rot(s% omega(1) * sqrt(pow3(s% r_equatorial(1)) / (s% cgrav(1) * s% m(1))))
                val = gravity_darkening_L_coeff(w_div_w_Kep, 0.0d0) * s% L_surf
@@ -2837,7 +2916,7 @@ contains
             else
                val = 0d0
             end if
-         case(h_grav_dark_L_equatorial) ! equator is at inclination = pi/2
+         case(h_grav_dark_L_equatorial)  ! equator is at inclination = pi/2
             if(s% rotation_flag) then
                w_div_w_Kep = if_rot(s% omega(1) * sqrt(pow3(s% r_equatorial(1)) / (s% cgrav(1) * s% m(1))))
                val = gravity_darkening_L_coeff(w_div_w_Kep, 0.5d0 * pi) * s% L_surf
@@ -2857,7 +2936,7 @@ contains
 
             ! following items correspond to names on terminal output lines
 
-         case(h_lg_Lnuc)
+         case(h_lg_Lnuc_tot)  ! _tot indicates the inclusion of photodisintegations
             val = safe_log10(s% power_nuc_burn)
 
          case(h_H_rich)
@@ -3001,7 +3080,7 @@ contains
             else
                if_rot = 0
             end if
-         endif
+         end if
       end function if_rot
 
 
@@ -3023,7 +3102,7 @@ contains
 
       include 'formats'
 
-      dbg = .false. !(el == 1 .and. nu_factor == 1d0)
+      dbg = .false.  !(el == 1 .and. nu_factor == 1d0)
 
       get_int_k_r_dr = 0
       L2 = el * (el + 1)
@@ -3113,12 +3192,12 @@ contains
       real(dp) :: y, dy, rho_bar, dr_div_r, fprmid3
       integer :: k
 
-      y = j - 2 ! value at r = 0
+      y = j - 2  ! value at r = 0
       do k = s% nz, 1, -1
          fprmid3 = pi4 * pow(s% rmid(k), 3)
          rho_bar = 3d0 * s% m(k) / fprmid3
          if (k == s% nz) then
-            dr_div_r = s% r(k) / s% rmid(k) ! r(nz+1) would be zero
+            dr_div_r = s% r(k) / s% rmid(k)  ! r(nz+1) would be zero
          else
             dr_div_r = (s% r(k) - s% r(k + 1)) / s% rmid(k)
          end if
@@ -3204,7 +3283,7 @@ contains
       get1_hist_value = .false.
 
       call integer_dict_lookup(s% history_names_dict, name, i, ierr)
-      if (ierr /= 0 .or. i <= 0) return ! didn't find it
+      if (ierr /= 0 .or. i <= 0) return  ! didn't find it
       if (associated(s% pg% pgstar_hist)) then
          if (associated(s% pg% pgstar_hist% vals)) then
             if (size(s% pg% pgstar_hist% vals, dim = 1) >= i) then
@@ -3339,12 +3418,12 @@ contains
             exit
          end if
       end do
-      if (split <= 1 .or. split >= n) then ! no interior space to split str
+      if (split <= 1 .or. split >= n) then  ! no interior space to split str
          ierr = -1
          return
       end if
       id = chem_get_iso_id(str(split + 1:n))
-      if (id <= 0) then ! not a valid iso name
+      if (id <= 0) then  ! not a valid iso name
          ierr = -1
          return
       end if
@@ -3372,4 +3451,3 @@ contains
    end subroutine get_iso_val
 
 end module history
-

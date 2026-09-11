@@ -2,46 +2,47 @@
 !
 !   Copyright (C) 2010-2019  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
       module hydro_vars
 
       use star_private_def
-      use const_def
+      use const_def, only: dp, i8, pi, ln10, boltz_sigma, clight, standard_cgrav, two_thirds, four_thirds, lsun, rsun, no_mixing
       use chem_def, only: chem_isos
       use utils_lib, only: mesa_error, is_bad
 
       implicit none
 
       private
-      public :: set_vars_if_needed, set_vars, set_final_vars, update_vars, set_cgrav, &
-         set_hydro_vars, unpack_xh, set_Teff_info_for_eqns, set_Teff, get_surf_PT, set_grads
+      public :: set_vars_if_needed
+      public :: set_vars
+      public :: set_final_vars
+      public :: update_vars
+      public :: set_cgrav
+      public :: set_hydro_vars
+      public :: unpack_xh
+      public :: set_Teff_info_for_eqns
+      public :: set_Teff
+      public :: get_surf_PT
+      public :: set_grads
 
       logical, parameter :: dbg = .false.
       logical, parameter :: trace_setvars = .false.
 
-
       contains
-
 
       subroutine set_vars_if_needed(s, dt, str, ierr)
          type (star_info), pointer :: s
@@ -86,7 +87,7 @@
             dt, ierr)
       end subroutine set_vars
 
-      
+
       subroutine set_final_vars(s, dt, ierr)
          use rates_def, only: num_rvs
          type (star_info), pointer :: s
@@ -109,30 +110,30 @@
             skip_set_cz_bdy_mass, &
             skip_mlt
          integer :: nz, k
-         
+
          include 'formats'
-         
+
          ierr = 0
          nz = s% nz
-         
+
          skip_grads = .false.
          skip_rotation = .false.
          skip_brunt = .false.
          skip_other_cgrav = .false.
          skip_set_cz_bdy_mass = .false.
          skip_m_grav_and_grav = .false.
-         skip_mixing_info = .not. s% recalc_mix_info_after_evolve         
+         skip_mixing_info = .not. s% recalc_mix_info_after_evolve
 
          ! only need to do things that were skipped in set_vars_for_solver
          ! i.e., skip what it already did for the last solver iteration
-         skip_basic_vars = .not. s% need_to_setvars            
+         skip_basic_vars = .not. s% need_to_setvars
          skip_micro_vars = .not. s% need_to_setvars
          skip_kap = .not. s% need_to_setvars
          skip_neu = .not. s% need_to_setvars
          skip_net = .not. s% need_to_setvars
          skip_eos = .not. s% need_to_setvars
          skip_mlt = .not. s% need_to_setvars
-         
+
          if (s% need_to_setvars) then
             s% num_setvars = s% num_setvars + 1
             if (trace_setvars) write(*,*) 'set_vars in set_final_vars'
@@ -141,7 +142,7 @@
             if (trace_setvars) write(*,*) '** skip set_vars in set_final_vars'
          end if
          if (trace_setvars) write(*,*)
-      
+
          call set_hydro_vars( &
             s, 1, nz, skip_basic_vars, &
             skip_micro_vars, skip_m_grav_and_grav, skip_eos, skip_net, skip_neu, &
@@ -185,7 +186,7 @@
          logical, parameter :: skip_eos = .false.
 
          include 'formats'
-            
+
          call update_vars(s, &
             skip_basic_vars, skip_micro_vars, &
             skip_m_grav_and_grav, skip_net, skip_neu, skip_kap, &
@@ -197,7 +198,7 @@
                write(*,*) 'set_some_vars: update_vars returned ierr', ierr
             return
          end if
-         
+
       end subroutine set_some_vars
 
 
@@ -231,9 +232,9 @@
             if (.not. skip_mixing_info) then
                s% mixing_type(1:nz) = no_mixing
                s% adjust_mlt_gradT_fraction(1:nz) = -1
-            end if            
+            end if
          end if
-         
+
          call set_hydro_vars( &
             s, 1, nz, skip_basic_vars, &
             skip_micro_vars, skip_m_grav_and_grav, skip_eos, skip_net, skip_neu, &
@@ -253,7 +254,7 @@
                return
             end if
          end if
-         
+
          if (.not. skip_irradiation_heat) then
             if (s% irradiation_flux /= 0) then
                do k=1,nz
@@ -265,8 +266,8 @@
          end if
 
       end subroutine update_vars
-      
-      
+
+
       subroutine unpack_xh(s,ierr)
          use star_utils, only: set_qs, set_dm_bar, set_m_and_dm
          type (star_info), pointer :: s
@@ -290,7 +291,7 @@
          i_u = s% i_u
          i_alpha_RTI = s% i_alpha_RTI
          i_Et_RSP = s% i_Et_RSP
-      
+
          do j=1,s% nvar_hydro
             if (j == i_lnd) then
                do k=1,nz
@@ -407,14 +408,14 @@
          need_atm_Tsurf = need_atm_Tsurf_in
 
          ierr = 0
-         
+
          r_surf = s% r(1)
          L_surf = s% L(1)
 
          s% P_surf = s% Peos(1)
          s% T_surf = s% T(1)
 
-         call set_phot_info(s) ! sets Teff using L_phot and R_phot
+         call set_phot_info(s)  ! sets Teff using L_phot and R_phot
          Teff = s% Teff
 
          if (s% RSP_flag) then
@@ -430,7 +431,7 @@
             dlnP_dlnkap = 0d0
             return
          end if
-         
+
          if (s% use_other_surface_PT) then
             call s% other_surface_PT( &
                s% id, skip_partials, &
@@ -463,7 +464,7 @@
          s% T_surf = exp(lnT_surf)
          s% P_surf = exp(lnP_surf)
 
-         call set_phot_info(s) ! s% T_surf might have changed so call again
+         call set_phot_info(s)  ! s% T_surf might have changed so call again
 
       end subroutine set_Teff_info_for_eqns
 
@@ -484,6 +485,7 @@
          use brunt, only: do_brunt_B, do_brunt_N2
          use mix_info, only: set_mixing_info
          use hydro_rsp2, only: set_RSP2_vars
+         use tdc_hydro, only: set_viscosity_vars_TDC
 
          type (star_info), pointer :: s
          integer, intent(in) :: nzlo, nzhi
@@ -495,7 +497,7 @@
          integer, intent(out) :: ierr
 
          integer :: nz, k, T_tau_id
-         integer(8) :: time0
+         integer(i8) :: time0
          logical, parameter :: dbg = .false.
          real(dp) :: total
 
@@ -521,12 +523,12 @@
          end if
 
          if (.not. skip_other_cgrav) call set_cgrav(s, ierr)
-         
+
          call get_tau(s, ierr)
          if (failed('get_tau')) return
 
          if (.not. skip_m_grav_and_grav) then
-            ! don't change m_grav or grav during solver iteratons
+            ! don't change m_grav or grav during solver iterations
             if (dbg) write(*,*) 'call set_m_grav_and_grav'
             call set_m_grav_and_grav(s)
          end if
@@ -542,30 +544,32 @@
 
          if (.not. skip_grads) then
             if (dbg) write(*,*) 'call do_brunt_B'
-            call do_brunt_B(s, nzlo, nzhi, ierr) ! for unsmoothed_brunt_B
+            call do_brunt_B(s, nzlo, nzhi, ierr)  ! for unsmoothed_brunt_B
             if (failed('do_brunt_B')) return
             if (dbg) write(*,*) 'call set_grads'
             call set_grads(s, ierr)
             if (failed('set_grads')) return
-            call set_conv_time_scales(s) ! uses brunt_B
+            call set_conv_time_scales(s)  ! uses brunt_B
          end if
 
-         if (.not. skip_mixing_info) then         
+         if (.not. skip_mixing_info) then
             if (.not. s% RSP2_flag) then
                if (dbg) write(*,*) 'call other_adjust_mlt_gradT_fraction'
                call s% other_adjust_mlt_gradT_fraction(s% id,ierr)
                if (failed('other_adjust_mlt_gradT_fraction')) return
-            end if         
+            end if
             if (dbg) write(*,*) 'call set_abs_du_div_cs'
             call set_abs_du_div_cs(s)
          end if
-         
+
          if (.not. skip_mlt .and. .not. s% RSP_flag) then
-         
+
+            s% reconstructed_face_state_valid(1:s%nz) = .false.
+
             if (.not. skip_mixing_info) then
                if (s% make_gradr_sticky_in_solver_iters) then
-                  s% fixed_gradr_for_rest_of_solver_iters(nzlo:nzhi) = .false.   
-               end if         
+                  s% fixed_gradr_for_rest_of_solver_iters(nzlo:nzhi) = .false.
+               end if
                s% alpha_mlt(nzlo:nzhi) = s% mixing_length_alpha
                if (s% use_other_alpha_mlt) then
                   call s% other_alpha_mlt(s% id, ierr)
@@ -576,7 +580,7 @@
                   end if
                end if
             end if
-            
+
             if (s% use_other_gradr_factor) then
                if (dbg) write(*,*) 'call other_gradr_factor'
                call s% other_gradr_factor(s% id, ierr)
@@ -596,17 +600,27 @@
             else
                s% gradr_factor(nzlo:nzhi) = 1d0
             end if
-            
+
+            if (s% TDC_alpha_M > 0 .and. s% MLT_option == 'TDC' &
+               .and. .not. (s% RSP2_flag .or. s% RSP_flag)) then
+               call set_viscosity_vars_TDC(s,ierr)
+               if (ierr /= 0) then
+                  if (len_trim(s% retry_message) == 0) s% retry_message = 'set_viscosity_vars_TDC failed'
+                  if (s% report_ierr) write(*,*) 'ierr from set_viscosity_vars_TDC'
+                  return
+               end if
+            end if
+
             call set_mlt_vars(s, nzlo, nzhi, ierr)
             if (failed('set_mlt_vars')) return
             if (dbg) write(*,*) 'call check_for_redo_MLT'
-            
+
             call check_for_redo_MLT(s, nzlo, nzhi, ierr)
             if (failed('check_for_redo_MLT')) return
-            
+
          end if
 
-         if (.not. skip_brunt) then ! skip_brunt during solver iterations
+         if (.not. skip_brunt) then  ! skip_brunt during solver iterations
             if (dbg) write(*,*) 'call do_brunt_N2'
             call do_brunt_N2(s, nzlo, nzhi, ierr)
             if (failed('do_brunt_N2')) return
@@ -624,7 +638,7 @@
                write(*,*) 'failed in compute_j_fluxes'
             end if
          end if
-         
+
          if (s% RSP2_flag) then
             call set_RSP2_vars(s,ierr)
             if (ierr /= 0) then
@@ -634,12 +648,13 @@
             end if
          end if
 
+
          if (s% doing_timing) &
             call update_time(s, time0, total, s% time_set_hydro_vars)
-         
+
          s% need_to_setvars = .false.
 
-         
+
          contains
 
          logical function failed(str)
@@ -652,7 +667,7 @@
                write(*,*) 'set_hydro_vars failed in call to ' // trim(str)
             failed = .true.
          end function failed
-         
+
       end subroutine set_hydro_vars
 
 
@@ -729,7 +744,7 @@
                end if
             end if
             if (s% r_start(k) < 0) s% r_start(k) = s% r(k)
-            call set_rv_info(s,k)        
+            call set_rv_info(s,k)
             do j=1,species
                s% xa(j,k) = max(0d0, min(1d0, s% xa(j,k)))
             end do
@@ -745,8 +760,8 @@
          call set_rmid(s, nzlo, nzhi, ierr)
 
       end subroutine set_basic_vars
-      
-      
+
+
       subroutine set_cgrav(s, ierr)
          type (star_info), pointer :: s
          integer, intent(out) :: ierr
@@ -800,20 +815,20 @@
          include 'formats'
 
          ! Set up stellar surface parameters
-         
+
          L_surf = s% L(1)
          R_surf = s% r(1)
          kap_surf = s% opacity(1)
          M_surf = s% m(1)
          Teff = s% Teff
-         
+
          ! Initialize partials
          dlnT_dL = 0._dp; dlnT_dlnR = 0._dp; dlnT_dlnM = 0._dp; dlnT_dlnkap = 0._dp
          dlnP_dL = 0._dp; dlnP_dlnR = 0._dp; dlnP_dlnM = 0._dp; dlnP_dlnkap = 0._dp
 
          ! Evaluate the surface optical depth
 
-         tau_surf = s% tau_factor*s% tau_base ! tau at outer edge of cell 1
+         tau_surf = s% tau_factor*s% tau_base  ! tau at outer edge of cell 1
          if (is_bad(tau_surf)) then
             write(*,1) 's% tau_factor', s% tau_factor
             write(*,1) 's% tau_base', s% tau_base
@@ -822,7 +837,7 @@
          end if
 
          ! Evaluate surface temperature and pressure
-             
+
          if (.not. (need_atm_Psurf .or. need_atm_Tsurf)) then
 
             ! Special-case boundary condition
@@ -837,7 +852,7 @@
             if (.not. skip_partials) then
                dlnT_dL = 0._dp; dlnT_dlnR = 0._dp; dlnT_dlnM = 0._dp; dlnT_dlnkap = 0._dp
                dlnP_dL = 0._dp; dlnP_dlnR = 0._dp; dlnP_dlnM = 0._dp; dlnP_dlnkap = 0._dp
-            endif
+            end if
 
          else
             ! Evaluate temperature and pressure based on atm_option
@@ -847,7 +862,7 @@
             ! The first few are special, 'trivial-atmosphere' options
 
             select case (s% atm_option)
-         
+
             case ('fixed_Teff')
 
                ! set Tsurf from Eddington T-tau relation
@@ -863,8 +878,8 @@
                if (.not. skip_partials) then
                   dlnT_dL = 0._dp; dlnT_dlnR = 0._dp; dlnT_dlnM = 0._dp; dlnT_dlnkap = 0._dp
                   dlnP_dL = 0._dp; dlnP_dlnR = 0._dp; dlnP_dlnM = 0._dp; dlnP_dlnkap = 0._dp
-               endif
-               
+               end if
+
             case ('fixed_Tsurf')
 
                ! set Teff from Eddington T-tau relation for given
@@ -880,7 +895,7 @@
                if (.not. skip_partials) then
                   dlnT_dL = 0._dp; dlnT_dlnR = 0._dp; dlnT_dlnM = 0._dp; dlnT_dlnkap = 0._dp
                   dlnP_dL = 0._dp; dlnP_dlnR = 0._dp; dlnP_dlnM = 0._dp; dlnP_dlnkap = 0._dp
-               endif
+               end if
 
             case ('fixed_Psurf')
 
@@ -905,7 +920,7 @@
                   if (.not. skip_partials) then
                      dlnT_dlnR = 0._dp
                      dlnT_dL = 0._dp
-                  endif
+                  end if
                   Teff = s% T(1)
                else
                   Teff = pow(L_surf/(4._dp*pi*R_surf*R_surf*boltz_sigma), 0.25_dp)
@@ -915,13 +930,13 @@
                   if (.not. skip_partials) then
                      dlnT_dlnR = -0.5_dp
                      dlnT_dL = 1._dp/(4._dp*L_surf)
-                  endif
+                  end if
                end if
 
                if (.not. skip_partials) then
                   dlnT_dlnM = 0._dp; dlnT_dlnkap = 0._dp
                   dlnP_dL = 0._dp; dlnP_dlnR = 0._dp; dlnP_dlnM = 0._dp; dlnP_dlnkap = 0._dp
-               endif
+               end if
 
             case ('fixed_Psurf_and_Tsurf')
 
@@ -934,7 +949,7 @@
                if (.not. skip_partials) then
                   dlnT_dL = 0; dlnT_dlnR = 0; dlnT_dlnM = 0; dlnT_dlnkap = 0
                   dlnP_dL = 0; dlnP_dlnR = 0; dlnP_dlnM = 0; dlnP_dlnkap = 0
-               endif
+               end if
 
             case default
 
@@ -971,7 +986,7 @@
                end if
             end select
          end if
-         
+
          ! if using fixed surface, calculate Pextra.
          if (s% atm_option == 'fixed_Tsurf' .or. s% atm_option == 'fixed_Psurf_and_Tsurf' &
             .or. s% atm_option == 'fixed_Psurf' .or. s% atm_option == 'fixed_Teff') then
@@ -987,7 +1002,7 @@
                      dlnP_dlnR = 0._dp
                      dlnP_dlnM = 0._dp
                      dlnP_dlnkap = 0._dp
-                  endif
+                  end if
                else
                   lnP_surf = log(P_surf)
                   if (.not. skip_partials) then
@@ -995,13 +1010,13 @@
                      dlnP_dlnR = dlnP_dlnR*P_surf_atm/P_surf
                      dlnP_dlnM = dlnP_dlnM*P_surf_atm/P_surf
                      dlnP_dlnkap = dlnP_dlnkap*P_surf_atm/P_surf
-                  endif
+                  end if
                end if
             end if
          end if
 
          ! Check outputs
-      
+
          if (is_bad(lnT_surf) .or. is_bad(lnP_surf)) then
             if (len_trim(s% retry_message) == 0) s% retry_message = 'bad logT surf or logP surf'
             ierr = -1
@@ -1011,8 +1026,6 @@
             write(*,*) 'atm_option = ', trim(s% atm_option)
             if (s% stop_for_bad_nums) call mesa_error(__FILE__,__LINE__,'get PT surf')
          end if
-
-         ! Finish
 
          return
 
@@ -1109,7 +1122,7 @@
          contains
 
          subroutine compute_smoothed_brunt_B
-            use star_utils, only: weighed_smoothing, threshold_smoothing
+            use star_utils, only: weighted_smoothing, threshold_smoothing
             logical, parameter :: preserve_sign = .false.
             real(dp), pointer, dimension(:) :: work
             include 'formats'
@@ -1149,6 +1162,4 @@
 
       end subroutine set_grads
 
-   
       end module hydro_vars
-

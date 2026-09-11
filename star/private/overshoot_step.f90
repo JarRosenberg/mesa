@@ -2,46 +2,30 @@
 !
 !   Copyright (C) 2010-2019  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 module overshoot_step
 
-  ! Uses
-
   use star_private_def
-
   use overshoot_utils
-
-  ! No implicit typing
 
   implicit none
 
-  ! Access specifers
-
   private
-
   public :: eval_overshoot_step
-
-  ! Procedures
 
 contains
 
@@ -56,7 +40,7 @@ contains
     real(dp), intent(out)    :: vc(:)
     integer, intent(out)     :: ierr
 
-    real(dp) :: f
+    real(dp) :: f, f2
     real(dp) :: f0
     real(dp) :: D0
     real(dp) :: Delta0
@@ -76,19 +60,28 @@ contains
     ! Evaluate the overshoot diffusion coefficient D(k_a:k_b) and
     ! mixing velocity vc(k_a:k_b) at the i'th convective boundary,
     ! using the j'th set of overshoot parameters. The overshoot
-    ! follows a simple step scheme
+    ! follows a simple step scheme, with an optional exponential tail.
 
     ierr = 0
 
     ! Extract parameters
 
     f = s%overshoot_f(j)
+    f2 = 0._dp
     f0 = s%overshoot_f0(j)
 
     D0 = s%overshoot_D0(j)
     Delta0 = s%overshoot_Delta0(j)
 
-    if (f <= 0._dp .OR. f0 <= 0._dp) then
+    if (s%overshoot_scheme(j) == 'step+exponential') then
+       f2 = s%overshoot_f2(j)
+       if (f <= 0._dp .OR. f0 <= 0._dp .OR. f2 <= 0._dp) then
+          write(*,*) 'ERROR: for step+exp overshooting, must set f, f2 and f0 > 0'
+          write(*,*) 'see description of overshooting in star/defaults/control.defaults'
+          ierr = -1
+          return
+       end if
+    else if (f <= 0._dp .OR. f0 <= 0._dp) then
        write(*,*) 'ERROR: for step overshooting, must set f and f0 > 0'
        write(*,*) 'see description of overshooting in star/defaults/control.defaults'
        ierr = -1
@@ -107,8 +100,8 @@ contains
        else
           f = 0._dp
           f0 = 0._dp
-       endif
-    endif
+       end if
+    end if
 
     ! Evaluate convective boundary (_cb) parameters
 
@@ -132,11 +125,9 @@ contains
        k_a = k_ob+1
        k_b = s%nz
        dk = 1
-    endif
+    end if
 
     face_loop : do k = k_a, k_b, dk
-
-       ! Evaluate the step factor
 
        r = s%r(k)
 
@@ -144,13 +135,15 @@ contains
           dr = r - r_ob
        else
           dr = r_ob - r
-       endif
+       end if
 
        if (dr < f*Hp_cb) then
           factor = 1._dp
+       else if (f2 > 0._dp) then
+          factor = exp(-2._dp*(dr - f*Hp_cb)/(f2*Hp_cb))
        else
           factor = 0._dp
-       endif
+       end if
 
        ! Store the diffusion coefficient and velocity
 
@@ -160,16 +153,15 @@ contains
        else
           vc(k) = 0d0
        end if
+
        ! Check for early overshoot completion
 
        if (D(k) < s%overshoot_D_min) then
           k_b = k
           exit face_loop
-       endif
-          
-    end do face_loop
+       end if
 
-    ! Finish
+    end do face_loop
 
     ierr = 0
 

@@ -1,6 +1,13 @@
 Overview of kap module
 ======================
 
+.. toctree::
+   :maxdepth: 1
+   :hidden:
+
+   defaults
+   interface
+
 The opacity values returned by the ``kap`` module combine opacity
 data from many sources.  The most important opacity-related MESA
 options select which opacity sources to use and control the location
@@ -19,7 +26,7 @@ Radiative Opacities
 The radiative opacity is the Rosseland mean opacity.  The opacity
 depends on the temperature, density, and composition.  A set of
 opacity tables consists of a collection of individual opacity tables,
-each at a different composition.  Each individual table is 
+each at a different composition.  Each individual table is
 tabulated in :math:`\log T` and in :math:`\log R \equiv \log \rho - 3
 \log T + 18` (cgs).
 
@@ -34,7 +41,7 @@ processes.
 
 
 .. note::
-   
+
    The value of the option :ref:`kap/defaults:Zbase` provides the reference
    metallicity necessary to calculate element variations (e.g., carbon
    and oxygen enhancement) from the composition of a cell.  The
@@ -64,7 +71,7 @@ region :math:`0.0 \leq X \leq 1-Z` and
 :math:`0.0\leq Z \leq 0.2`. The set of tables to be used are
 selected by the option :ref:`kap/defaults:kap_file_prefix`.
 
-A direct comparison between the Type 1 format of OPAL/OP tables and 
+A direct comparison between the Type 1 format of OPAL/OP tables and
 the OPLIB tables are shown in the figure below
 taken from Figure 1 in `Farag et al. 2024 <https://doi.org/10.3847/1538-4357/ad4355>`_. Further comparisons
 between OP/OPAL/OPLIB can be found in `Farag et al. 2024 <https://doi.org/10.3847/1538-4357/ad4355>`_.
@@ -74,7 +81,7 @@ between OP/OPAL/OPLIB can be found in `Farag et al. 2024 <https://doi.org/10.384
    :alt: kap blends in solar-like compositions
 
    Location of each Type-1 opacity table in the :math:`X–Z` plane (left panel) and the
-   log:math:`T`–log:math:`R` plane (right panel). Orange circles mark the location of
+   log :math:`T` – log :math:`R` plane (right panel). Orange circles mark the location of
    the 126 OPAL Type-1 tables (Rogers & Iglesias 1992). Blue circles
    mark the location of the new 1194 Type-1 opacity tables (Farag et al. 2024).
 
@@ -102,13 +109,19 @@ Tables based on the work of |Fergusson| include the effects of
 molecules and grains and cover the range
 :math:`2.7 \le \log T \le 4.5` and :math:`-8 \le \log R \le 1`.
 
-Tables based on the work of |Freedman| include the effects of
-molecules and cover the range :math:`1.88 \le \log T \le 4.5` and
-:math:`-8 \le \log R \le 9`.  The table set was privately communicated
-by R. S. Freedman in 2011.  Unlike other opacity sources, this is a 1D
-sequence of tables in :math:`Z` as opposed to a 2D grid of
-:math:`(X,Z)` values.  (The assumed H/He abundances scale with
-:math:`Z`.)
+Tables based on the work of |Freedman08| and |Freedman14| include the
+effects of molecules.  The MESA ``lowT_Freedman11`` tables cover the
+range :math:`1.88 \le \log T \le 4.5` and
+:math:`-8 \le \log R \le 9` after preprocessing.  The raw opacity data
+used to build these tables stop near :math:`T = 4000\,\rm K`,
+corresponding to :math:`\log T \simeq 3.60`; the higher temperature
+part of the MESA table is generated during preprocessing so the table
+can be used on the same grid as the other low temperature opacity
+tables.  The table set was privately communicated by R. S. Freedman in
+2011 and corresponds to the expanded opacity data later described by
+|Freedman14|.  Unlike other opacity sources, this is a 1D sequence of
+tables in :math:`Z` as opposed to a 2D grid of :math:`(X,Z)` values.
+(The assumed H/He abundances scale with :math:`Z`.)
 
 
 Tables from ÆSOPUS (|AESOPUS|) include variation factors for the CNO
@@ -135,7 +148,7 @@ compositions, and the resulting opacities linearly interpolated.
 (Note that this means that the interpolation in :math:`Z` occurs at
 fixed :math:`X` and :math:`f_{\rm CO}`, but not at fixed :math:`f_{\rm
 C}` or :math:`f_{\rm N}`.)
-   
+
 ------------------
 Compton Scattering
 ------------------
@@ -175,15 +188,16 @@ degeneracy, the additional correction formulae of |B20| are applied.
 
 .. |Fergusson| replace:: `Ferguson et al. (2005) <https://ui.adsabs.harvard.edu/abs/2005ApJ...623..585F/abstract>`__
 
-.. |Freedman| replace:: `Freedman et al. (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJS..174..504F/abstract>`__
+.. |Freedman08| replace:: `Freedman et al. (2008) <https://ui.adsabs.harvard.edu/abs/2008ApJS..174..504F/abstract>`__
+
+.. |Freedman14| replace:: `Freedman et al. (2014) <https://ui.adsabs.harvard.edu/abs/2014ApJS..214...25F/abstract>`__
 
 .. |AESOPUS| replace:: `Marigo & Aringer 2009 <https://ui.adsabs.harvard.edu/abs/2009A%26A...508.1539M/abstract>`__
 
 .. |OPAL| replace:: Iglesias & Rogers `1993 <https://ui.adsabs.harvard.edu/abs/1993ApJ...412..752I/abstract>`__, `1996 <https://ui.adsabs.harvard.edu/abs/1996ApJ...464..943I/abstract>`__
 
-.. |OP| replace:: `Seaton 2005 <https://ui.adsabs.harvard.edu/abs/2005MNRAS.362L...1S/abstract>`__  
+.. |OP| replace:: `Seaton 2005 <https://ui.adsabs.harvard.edu/abs/2005MNRAS.362L...1S/abstract>`__
 
-.. |OPLIB| replace:: `Colgan 2016 <https://ui.adsabs.harvard.edu/abs/2016ApJ...817..116C/abstract>`__                                      
+.. |OPLIB| replace:: `Colgan 2016 <https://ui.adsabs.harvard.edu/abs/2016ApJ...817..116C/abstract>`__
 
 .. |Cassisi| replace:: `Cassisi et al. (2007) <https://ui.adsabs.harvard.edu/abs/2007ApJ...661.1094C/abstract>`__
-

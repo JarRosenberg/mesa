@@ -2,48 +2,33 @@
 !
 !   Copyright (C) 2017-2019  Rich Townsend & The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 module predictive_mix
 
-  ! Uses
-
-  use const_def
+  use const_def, only: dp, ln10, pi4, boltzm, amu, convective_mixing
   use star_private_def
   use chem_def
   use chem_lib
   use num_lib
 
-  ! No implicit typing
-
   implicit none
 
-  ! Access specifers
-
   private
-
   public :: add_predictive_mixing
-
-  ! Procedures
 
 contains
 
@@ -88,7 +73,7 @@ contains
        if (s%conv_bdy_loc(i) == 1) then
           if (dbg) then
              write(*,*) 'skip since s%conv_bdy_loc(i) == 1', i
-          endif
+          end if
           cycle conv_bdy_loop
        end if
 
@@ -111,7 +96,7 @@ contains
              match_zone_type = .NOT. ( &
                   s%burn_h_conv_region(i) .OR. &
                   s%burn_he_conv_region(i) .OR. &
-                  s%burn_z_conv_region(i) )              
+                  s%burn_z_conv_region(i) )
           case ('any')
              match_zone_type = .true.
           case default
@@ -126,8 +111,8 @@ contains
              is_surf_zone = s%conv_bdy_loc(i) == 1
           else
              is_surf_zone = s%conv_bdy_loc(i+1) == 1
-          endif
-                
+          end if
+
           select case (s%predictive_zone_loc(j))
           case ('core')
              match_zone_loc = is_core_zone
@@ -160,13 +145,13 @@ contains
 
           if (s%conv_bdy_q(i) < s%predictive_bdy_q_min(j) .OR. &
               s%conv_bdy_q(i) > s%predictive_bdy_q_max(j)) cycle criteria_loop
-          
+
           if (dbg) then
              write(*,*) 'Predictive mixing at convective boundary: i, j=', i, j
              write(*,*) '  s%predictive_zone_type=', TRIM(s%predictive_zone_type(j))
              write(*,*) '  s%predictive_zone_loc=', TRIM(s%predictive_zone_loc(j))
              write(*,*) '  s%predictive_bdy_loc=', TRIM(s%predictive_bdy_loc(j))
-          endif
+          end if
 
           ! Perform the predictive mixing for this boundary
 
@@ -203,13 +188,10 @@ contains
 
     end do check_loop
 
-    ! Finish
-
     return
 
   end subroutine add_predictive_mixing
 
-  !*****
 
   subroutine do_predictive_mixing (s, i, j, ierr, mix_mask)
 
@@ -222,13 +204,13 @@ contains
     logical, parameter :: dbg = .false.
     logical, parameter :: DUMP_PREDICTIONS = .false.
 
-    real(dp)       :: superad_thresh 
+    real(dp)       :: superad_thresh
     real(dp)       :: ingest_factor
     integer        :: iso_id
     integer        :: iso_r
     integer        :: iso_i
     integer        :: k_bot_cz
-    integer        :: k_top_cz  
+    integer        :: k_top_cz
     integer        :: k_bot_ez
     integer        :: k_top_ez
     integer        :: k_bot_mz
@@ -279,7 +261,7 @@ contains
        iso_r = s%net_iso(iso_id)
     else
        iso_r = 0
-    endif
+    end if
 
     if (s%predictive_limit_ingestion(j) /= '') then
        iso_id = chem_get_iso_id(s%predictive_limit_ingestion(j))
@@ -292,7 +274,7 @@ contains
        ingest_factor = s%predictive_ingestion_factor(j)
     else
        iso_i = 0
-    endif
+    end if
 
     ! Determine cell indices spanning the initial convection zone,
     ! including the cells which contain the actual convective
@@ -309,8 +291,8 @@ contains
              return
           end if
           k_bot_cz = s%conv_bdy_loc(i-1) - 1
-       endif
-       
+       end if
+
        k_top_cz = s%conv_bdy_loc(i)
 
     else
@@ -324,9 +306,9 @@ contains
              write(*,*) 'Double bottom boundary in predictive_mix; i=', i
              ierr = -1
              return
-          endif
+          end if
           k_top_cz = s%conv_bdy_loc(i+1)
-       endif
+       end if
 
     end if
 
@@ -335,13 +317,13 @@ contains
           write(*,*) 'Predictive mixing: i, j, q_top, q_bot:', i, j, s%q(k_top_cz), s%q(k_bot_cz+1)
        else
           write(*,*) 'Predictive mixing: i, j, q_top, q_bot:', i, j, s%q(k_top_cz), 0._dp
-       endif
+       end if
     end if
 
     ! Determine average abundances of the initial convection zone
 
     call eval_abundances(s, k_bot_cz, k_top_cz, xa_cz, xa_cz_burn)
-    
+
     ! Decide whether we are starting in the "Ledoux extension" phase,
     ! where the boundary moves to where it would be if the
     ! Schwarzschild (rather than Ledoux) criterion had been used in
@@ -356,10 +338,10 @@ contains
     k_top_ez = k_top_cz
 
     call eval_abundances(s, k_bot_ez, k_top_ez, xa_ez, xa_ez_burn)
-    
+
     ! Begin the predictive mixing search, expanding the extent of the
     ! mixed zone until one of a number of criteria are met
- 
+
     outward = s%top_conv_bdy(i)
 
     k_bot_mz = k_bot_cz
@@ -373,14 +355,14 @@ contains
           k_top_mz = k_top_mz - 1
        else
           k_bot_mz = k_bot_mz + 1
-       endif
+       end if
 
        ! Exit search if the mixed region has gone out of bounds
 
        if ((      outward .AND. k_top_mz < 1) .OR. &
            (.NOT. outward .AND. k_bot_mz > s%nz)) then
           exit search_loop
-       endif
+       end if
 
        ! Evaluate average abundance in the mixed zone
 
@@ -412,9 +394,9 @@ contains
 
              call eval_abundances(s, k_bot_ez, k_top_ez, xa_ez, xa_ez_burn)
 
-          endif
+          end if
 
-       endif
+       end if
 
        ! Perform checks that only occur after the Ledoux extension
        ! phase has completed
@@ -424,7 +406,7 @@ contains
           ! Check whether the predictive mixing will lead to a
           ! reversal in the abundance evolution of isotope iso_r due
           ! to nuclear burning; if so, finish the search.
-       
+
           if (iso_r /= 0) then
 
              if (SIGN(1._dp, xa_mz_burn(iso_r)-xa_ez(iso_r)) /= SIGN(1._dp, xa_ez_burn(iso_r)-xa_ez(iso_r))) then
@@ -432,13 +414,13 @@ contains
                    write(*,*) 'Exiting predictive search due to abundance reversal'
                 end if
                 exit search_loop
-             endif
+             end if
 
           end if
 
           ! Check whether the predictive mixing will cause the
           ! ingestion rate for isotope iso_i to exceed the limit
-       
+
           if (iso_i /= 0) then
 
              ! Calculate the mass ingested
@@ -452,7 +434,7 @@ contains
                 call eval_ingest_limit(s, grada, gradr, ingest_factor, k_a, m_ingest_limit)
              else
                 call eval_ingest_limit(s, grada, gradr, ingest_factor, k_b, m_ingest_limit)
-             endif
+             end if
 
              ! If the mass ingested exceeds the limit, finish the search
 
@@ -475,9 +457,9 @@ contains
            (.NOT. outward .AND. gradr(k_b) < grada(k_b))) then
           if (dbg) then
              write(*,*) 'Exiting predictive search due to non-convective growing boundary'
-          endif
+          end if
           exit search_loop
-       endif
+       end if
 
        ! See if any faces (apart from the growing boundary face) have
        ! a ratio gradr/grada below the superadiabaticity threshold;
@@ -488,14 +470,14 @@ contains
           superad_min = MINVAL(gradr(k_a+1:k_b)/grada(k_a+1:k_b)) - 1._dp
        else
           superad_min = MINVAL(gradr(k_a:k_b-1)/grada(k_a:k_b-1)) - 1._dp
-       endif
+       end if
 
        if (superad_min <= superad_thresh) then
           if (dbg) then
              write(*,*) 'Exiting predictive search due to convection-zone split'
-          endif
+          end if
           exit search_loop
-       endif
+       end if
 
     end do search_loop
 
@@ -511,14 +493,14 @@ contains
        close(unit)
        print *,'Writing prediction data to file:',TRIM(filename)
     end if
-   
+
     ! Back off the mixing by one zone
 
     if (outward) then
        k_top_mz = k_top_mz + 1
     else
        k_bot_mz = k_bot_mz - 1
-    endif
+    end if
 
     ! Check the mix mask
 
@@ -529,21 +511,21 @@ contains
        call mesa_error(__FILE__,__LINE__,'Double predictive')
     else
        mix_mask(k_top_mz:k_bot_mz) = .false.
-    endif
+    end if
 
     ! Return now if no additional mixing should occur
 
     if (outward .AND. k_top_mz == k_top_cz) then
        if (dbg) then
           write(*,*) 'No predictive mixing at top of zone; boundary i=', i
-       endif
+       end if
        return
     elseif (.NOT. outward .AND. k_bot_mz == k_bot_cz) then
        if (dbg) then
           write(*,*) 'No predictive mixing at bottom of zone; boundary i=', i
-       endif
+       end if
        return
-    endif
+    end if
 
     ! Re-calculate mixed abundances and mixing coefficients, since we
     ! backed off by one zone
@@ -555,13 +537,13 @@ contains
     if (ierr /= 0) then
        if (dbg) write(*,*) 'Non-zero return from eval_mixing_coeffs in do_predictive_mixing/predictive_mix'
        return
-    endif
+    end if
 
     if (outward) then
        superad_min = MINVAL(gradr(k_a+1:k_b)/grada(k_a+1:k_b)) - 1._dp
     else
        superad_min = MINVAL(gradr(k_a:k_b-1)/grada(k_a:k_b-1)) - 1._dp
-    endif
+    end if
 
     ! Update the model with the new D and vc
 
@@ -572,7 +554,7 @@ contains
     else
        k_a = k_bot_cz + 1
        dk = 1
-    endif
+    end if
 
     face_loop : do k = k_a, k_b, dk
 
@@ -582,16 +564,16 @@ contains
        if (s%mixing_type(k) == convective_mixing) then
           k_b = k - dk
           exit face_loop
-       endif
+       end if
 
        if (k > 1) then
           rho = (s%dq(k-1)*s%rho(k) + s%dq(k)*s%rho(k-1))/ &
                 (s%dq(k-1) + s%dq(k))
        else
           rho = s%rho(k)
-       endif
-       
-       cdc = (pi4*s%r(k)*s%r(k)*rho)*(pi4*s%r(k)*s%r(k)*rho)*D(k) ! gm^2/sec
+       end if
+
+       cdc = (pi4*s%r(k)*s%r(k)*rho)*(pi4*s%r(k)*s%r(k)*rho)*D(k)  ! gm^2/sec
 
        s%cdc(k) = cdc
        s%D_mix(k) = D(k)
@@ -618,7 +600,7 @@ contains
              ierr = -1
              return
           end if
-       endif
+       end if
 
     else
 
@@ -626,7 +608,7 @@ contains
 
        dg0 = grada(k_b) - gradr(k_b)
        dg1 = s%grada_face(k_b+1) - s%gradr(k_b+1)
-          
+
        if (dg0*dg1 < 0) then
           s%cz_bdy_dq(k_bot_mz) = find0(0._dp, dg0, s%dq(k_bot_mz), dg1)
           if (s%cz_bdy_dq(k_bot_mz) < 0._dp .or. s%cz_bdy_dq(k_bot_mz) > s%dq(k_bot_mz)) then
@@ -634,22 +616,19 @@ contains
              ierr = -1
              return
           end if
-       endif
+       end if
 
     end if
 
     if (dbg) then
        write(*,*) 'Predictive mixing: i, k_a, k_b, q_a, q_b, superad_min=', i, k_a, k_b, s%q(k_a), s%q(k_b), &
             superad_min
-    endif
-
-    ! Finish
+    end if
 
     return
 
   end subroutine do_predictive_mixing
 
-  !****
 
   subroutine eval_abundances (s, k_bot, k_top, xa, xa_burn)
 
@@ -683,14 +662,11 @@ contains
     xa_burn = MAX(MIN(xa_burn, 1._dp), 0._dp)
     xa_burn = xa_burn/SUM(xa_burn)
 
-    ! Finish
-
     return
 
   end subroutine eval_abundances
-    
-  !****
-  
+
+
   subroutine eval_mixing_coeffs (s, k_bot_mz, k_top_mz, xa_mx, k_a, k_b, D, vc, grada, gradr, ierr)
 
     use eos_def
@@ -781,12 +757,12 @@ contains
        s%xa(:,k) = xa_mx
        s%zbar(k) = zbar
 
-    enddo update_cell_loop_eos
+    end do update_cell_loop_eos
 !$OMP END PARALLEL DO
     if (ierr /= 0) then
        if (s% report_ierr) write(*,*) 'Non-zero return from eval_eos in eval_mixing_coeffs/predictive_mix'
        return
-    endif
+    end if
 
 
 !$OMP PARALLEL DO PRIVATE(k,op_err) SCHEDULE(dynamic,2)
@@ -794,13 +770,13 @@ contains
        op_err = 0
        call do_kap_for_cell(s, k, op_err)
        if (op_err /= 0) ierr = op_err
-    enddo update_cell_loop_kap
+    end do update_cell_loop_kap
 !$OMP END PARALLEL DO
     if (ierr /= 0) then
        if (s% report_ierr) write(*,*) 'Non-zero return from do_kap_for_cells in eval_mixing_coeffs/predictive_mix'
        print *,'xa:',xa_mx
        return
-    endif
+    end if
 
 
 
@@ -809,6 +785,10 @@ contains
 
     k_a = k_top_mz + 1
     k_b = k_bot_mz
+
+    ! Rebuild the face state for the trial mixed composition.
+    if (s% use_face_reconstruction) &
+       s% reconstructed_face_state_valid(k_a:k_b) = .false.
 
     eval_face_loop: do k = k_a, k_b
 
@@ -835,6 +815,10 @@ contains
     end do eval_face_loop
 
     ! Restore EOS and MLT data
+
+    ! Discard the trial face state before restoring the cells.
+    if (s% use_face_reconstruction) &
+       s% reconstructed_face_state_valid(k_a:k_b) = .false.
 
 !$OMP PARALLEL DO PRIVATE(k,op_err) SCHEDULE(dynamic,2)
     restore_cell_loop : do k = k_top_mz, k_bot_mz
@@ -863,12 +847,12 @@ contains
        call do_kap_for_cell(s, k, op_err)
        if (op_err /= 0) ierr = op_err
 
-    enddo restore_cell_loop
+    end do restore_cell_loop
 !$OMP END PARALLEL DO
     if (ierr /= 0) then
        if (s% report_ierr) write(*,*) 'Non-zero return from do_kap_for_cells in eval_mixing_coeffs/predictive_mix'
        return
-    endif
+    end if
 
     restore_face_loop: do k = k_a, k_b
 
@@ -878,13 +862,10 @@ contains
 
     end do restore_face_loop
 
-    ! Finish
-
     return
 
   end subroutine eval_mixing_coeffs
 
-  !****
 
   subroutine eval_eos (s, k, z, x, abar, zbar, xa, &
        lnRho, Cp, Cv, gamma1, grada, chiRho, chiT, &
@@ -934,7 +915,7 @@ contains
     if (ierr /= 0) then
        if (dbg) write(*,*) 'Non-zero return from solve_eos_given_PgasT in eval_eos/predictive_mix'
        return
-    endif
+    end if
 
     lnRho = logRho*ln10
 
@@ -949,13 +930,10 @@ contains
 
     lnfree_e = res(i_lnfree_e)
 
-    ! Finish
-    
     return
 
   end subroutine eval_eos
 
-  !****
 
   subroutine eval_ingest_limit (s, grada, gradr, ingest_factor, k, m_ingest_limit)
 
@@ -981,14 +959,12 @@ contains
        alfa = s%dq(k-1)/(s%dq(k-1) + s%dq(k))
     end if
     beta = 1._dp - alfa
-    
+
     T_face = alfa*s%T(k) + beta*s%T(k-1)
 
     ! Evaluate the limit
 
     m_ingest_limit = ingest_factor*(amu*s%L(k)/(boltzm*T_face))*(1._dp - grada(k)/gradr(k))*s%dt
-
-    ! Finish
 
     return
 

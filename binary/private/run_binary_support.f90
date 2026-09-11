@@ -1,22 +1,19 @@
 ! ***********************************************************************
 !
-!   Copyright (C) 2013-2022  The MESA Team, Pablo Marchant & Matthias Fabry
+!   Copyright (C) 2013-2022  Pablo Marchant, Matthias Fabry & The MESA Team
 !
-!   this file is part of mesa.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   mesa is free software; you can redistribute it and/or modify
-!   it under the terms of the gnu general library public license as published
-!   by the free software foundation; either version 2 of the license, or
-!   (at your option) any later version.
+!   This program is distributed in the hope that it will be useful,
+!   but WITHOUT ANY WARRANTY; without even the implied warranty of
+!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+!   See the GNU Lesser General Public License for more details.
 !
-!   mesa is distributed in the hope that it will be useful,
-!   but without any warranty; without even the implied warranty of
-!   merchantability or fitness for a particular purpose.  see the
-!   gnu library general public license for more details.
-!
-!   you should have received a copy of the gnu library general public license
-!   along with this software; if not, write to the free software
-!   foundation, inc., 59 temple place, suite 330, boston, ma 02111-1307 usa
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
@@ -24,7 +21,7 @@ module run_binary_support
 
    use star_lib
    use star_def
-   use const_def
+   use const_def, only: dp, i8, secday
    use utils_lib
    use binary_def
    use binary_private_def
@@ -48,6 +45,7 @@ contains
       use binary_job_ctrls_io
       use binary_mdot, only : adjust_mdots, set_accretion_composition
       use binary_tides, only : sync_spin_orbit_torque
+      use binary_roche_deformation, only: build_roche_interpolators, roche_fp_ft, roche_irot, roche_psi, synchronicity
       use binary_evolve
       use mod_other_rlo_mdot
       use mod_other_implicit_rlo
@@ -61,10 +59,10 @@ contains
       use mod_other_binary_edot
       use mod_other_binary_ce
       use mod_other_binary_extras
-      use mod_other_binary_photo_read
-      use mod_other_binary_photo_write
+      use mod_other_binary_photos
       use mod_other_e2
       use mod_other_pgbinary_plots
+      use mod_other_tidal_deformation_switch_function
       use binary_timestep
       use binary_history
       use binary_history_specs
@@ -77,11 +75,13 @@ contains
       interface
 
          subroutine extras_controls(id, ierr)
+            implicit none
             integer, intent(in) :: id
             integer, intent(out) :: ierr
          end subroutine extras_controls
 
          subroutine extras_binary_controls(binary_id, ierr)
+            implicit none
             integer :: binary_id
             integer, intent(out) :: ierr
          end subroutine extras_binary_controls
@@ -96,7 +96,7 @@ contains
          result_reason, model_number, iounit, binary_startup, model, num_stars
       type (star_info), pointer :: s
       character (len = 256) :: restart_filename, photo_filename
-      integer(8) :: time0, clock_rate
+      integer(i8) :: time0, clock_rate
       logical :: doing_restart, first_try, continue_evolve_loop, &
           get_history_info, write_history, write_terminal, will_read_pgbinary_inlist
       type (binary_info), pointer :: b
@@ -108,7 +108,7 @@ contains
       call system_clock(time0, clock_rate)
 
       call resolve_inlist_fname(inlist_fname, inlist_fname_arg)
-      MESA_INLIST_RESOLVED = .true. ! Now any call to resolve_inlist_fname will only return inlist_fname_arg or 'inlist'
+      MESA_INLIST_RESOLVED = .true.  ! Now any call to resolve_inlist_fname will only return inlist_fname_arg or 'inlist'
 
       ! Find out if this is a restart
       open(newunit = iounit, file = '.restart', status = 'old', action = 'read', iostat = ierr)
@@ -189,6 +189,7 @@ contains
       b% other_CE_binary_finish_step => null_other_CE_binary_finish_step
       b% other_e2 => null_other_e2
       b% other_pgbinary_plots_info => null_other_pgbinary_plots_info
+      b% other_tidal_deformation_switch_function => null_other_tidal_deformation_switch_function
 
       b% extras_binary_startup => null_extras_binary_startup
       b% extras_binary_start_step => null_extras_binary_start_step
@@ -264,6 +265,15 @@ contains
          s% accrete_same_as_surface = .false.
          s% binary_other_torque => sync_spin_orbit_torque
 
+         ! settings for roche geometry deformation
+         if (b% use_tidal_deformation) then
+            call build_roche_interpolators
+            s% binary_other_fp_ft => roche_fp_ft
+            s% binary_other_irot => roche_irot
+            s% binary_get_roche_potential => roche_psi
+            s% binary_deformation_switch_fraction => synchronicity
+         end if
+
          s% doing_timing = .false.
 
          write(*, '(A)')
@@ -284,13 +294,12 @@ contains
       end if
 
 
-
       ! binary data must be initiated after stars, such that masses are available
       ! if using saved models
       call binarydata_init(b, doing_restart)
       call binary_private_def_init
       call binary_history_column_names_init(ierr)
-      call set_binary_history_columns(b, b% job% binary_history_columns_file, ierr)
+      call set_binary_history_columns(b, b% job% binary_history_columns_file, .true., ierr)
 
       ! setup pgbinary
       if (.not. doing_restart) then
@@ -345,7 +354,7 @@ contains
          call ce_init(b, doing_restart, ierr)
       end if
 
-      evolve_loop : do while(continue_evolve_loop) ! evolve one step per loop
+      evolve_loop : do while(continue_evolve_loop)  ! evolve one step per loop
 
          if (b% point_mass_i /= 0) then
             num_stars = 1
@@ -382,7 +391,7 @@ contains
             write(*, *) "CE flag is on!!"
          end if
 
-         step_loop : do ! may need to repeat this loop
+         step_loop : do  ! may need to repeat this loop
 
             result = b% extras_binary_start_step(b% binary_id, ierr)
             if (ierr /= 0) then
@@ -429,7 +438,7 @@ contains
 
                id = b% star_ids(j)
 
-               ! Avoid repeting the accretor when using the implicit scheme plus
+               ! Avoid repeating the accretor when using the implicit scheme plus
                ! rotation and implicit winds. When this happens the accretor won't
                ! usually care about the result of the evolution of the donor.
                if (j == b% a_i .and. b% num_tries >0 .and. s% was_in_implicit_wind_limit) &
@@ -496,7 +505,7 @@ contains
                end do
             end if
 
-            ! do not evolve binary step on failure, its unnecesary and some variables are not properly
+            ! do not evolve binary step on failure, its unnecessary and some variables are not properly
             ! set when the newton solver fails.
             if (result == keep_going) then
                if (.not. b% CE_flag) then
@@ -582,7 +591,7 @@ contains
                   end if
                   id = b% star_ids(i)
 
-                  ! Avoid repeting the accretor when using the implicit scheme plus
+                  ! Avoid repeating the accretor when using the implicit scheme plus
                   ! rotation and implicit winds. When this happens the accretor won't
                   ! usually care about the result of the evolution of the donor.
 
@@ -1002,6 +1011,6 @@ contains
          end if
       end if
 
-   end subroutine
+   end subroutine do_binary_job_controls_after
 
 end module run_binary_support

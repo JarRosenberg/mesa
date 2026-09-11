@@ -2,42 +2,170 @@
 !
 !   Copyright (C) 2010-2019  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
       module star_utils
 
       use star_private_def
-      use const_def
+      use const_def, only: dp, i8, pi, pi4, ln10, clight, crad, msun, rsun, lsun, one_third, four_thirds_pi
       use num_lib
       use utils_lib
       use auto_diff_support
 
       implicit none
 
-      private :: mdb
+      private
+      public :: eval_min_cell_collapse_time
+      public :: min_dr_div_cs
+      public :: get_XYZ
+      public :: lookup_nameofvar
+      public :: start_time
+      public :: update_time
+      public :: foreach_cell
+      public :: write_eos_call_info
+      public :: eval_csound
+      public :: eval_current_abundance
+      public :: eval_current_z
+      public :: eval_ledd
+      public :: normalize_dqs
+      public :: set_qs
+      public :: set_m_and_dm
+      public :: set_dm_bar
+      public :: set_rmid
+      public :: get_r_from_xh
+      public :: get_r_and_lnr_from_xh
+      public :: get_t_and_lnt_from_xh
+      public :: get_lnt_from_xh
+      public :: get_lnr_from_xh
+      public :: get_rho_and_lnd_from_xh
+      public :: store_t_in_xh
+      public :: store_r_in_xh
+      public :: store_rho_in_xh
+      public :: store_lnd_in_xh
+      public :: store_lnt_in_xh
+      public :: cell_specific_ke
+      public :: cell_specific_pe
+      public :: get_phot_info
+      public :: init_random
+      public :: rand
+      public :: interp_val_to_pt
+      public :: get_log_concentration
+      public :: get_lconv
+      public :: get_ladv
+      public :: get_lrad_div_ledd
+      public :: get_lrad
+      public :: get_ledd
+      public :: tau_eff
+      public :: get_rho_face_val
+      public :: omega_crit
+      public :: eval_cell_section_total_energy
+      public :: conv_time_scale
+      public :: qhse_time_scale
+      public :: eps_nuc_time_scale
+      public :: cooling_time_scale
+      public :: get_face_values
+      public :: threshold_smoothing
+      public :: save_eqn_residual_info
+      public :: calc_ptrb_ad_tw
+      public :: set_energy_eqn_scal
+      public :: get_scale_height_face_val
+      public :: weighted_smoothing
+      public :: get_kap_face
+      public :: get_rho_face
+      public :: get_rho_start_face
+      public :: get_e_face
+      public :: get_ChiRho_face
+      public :: get_ChiT_face
+      public :: get_T_face
+      public :: get_Peos_face
+      public :: get_Peos_face_val
+      public :: get_cp_face
+      public :: get_grada_face
+      public :: get_gradr_face
+      public :: get_scale_height_face
+      public :: get_tau
+      public :: after_c_burn
+      public :: get_shock_info
+      public :: reset_starting_vectors
+      public :: eval_irradiation_heat
+      public :: set_phot_info
+      public :: set_m_grav_and_grav
+      public :: set_scale_height
+      public :: set_abs_du_div_cs
+      public :: set_conv_time_scales
+      public :: set_rv_info
+      public :: smooth
+      public :: safe_div_val
+      public :: center_avg_x
+      public :: surface_avg_x
+      public :: get_remnant_mass
+      public :: get_ejecta_mass
+      public :: get_phi_joss
+      public :: center_value
+      public :: eval_kh_timescale
+      public :: k_for_q
+      public :: total_angular_momentum
+      public :: reset_epsnuc_vectors
+      public :: yrs_for_init_timestep
+      public :: set_phase_of_evolution
+      public :: get_string_for_model_number
+      public :: e00
+      public :: em1
+      public :: ep1
+      public :: store_partials
+      public :: save_eqn_dxa_partials
+      public :: unpack_residual_partials
+      public :: get_area_info_opt_time_center
+      public :: calc_ptot_ad_tw
+      public :: get_face_weights
+      public :: get_dke_dt_dpe_dt
+      public :: get_pvsc_ad
+      public :: show_matrix
+      public :: no_extra_profile_columns
+      public :: no_data_for_extra_profile_columns
+      public :: total_times
+      public :: current_min_xa_hard_limit
+      public :: current_sum_xa_hard_limit
+      public :: lookup_nameofequ
+      public :: eval_total_energy_integrals
+      public :: set_luminosity_by_category
+      public :: eval_deltam_total_energy_integrals
+      public :: report_xa_bad_nums
+      public :: eval_current_y
+      public :: get_name_for_restart_file
+      public :: eval_integrated_total_energy_profile
+      public :: use_xh_to_set_rho_to_dm_div_dv
+      public :: cell_specific_total_energy
+      public :: store_lnr_in_xh
+      public :: interp_q
+      public :: set_zero_alpha_rti
+      public :: after_he_burn
+      public :: interp_xa_to_pt
+      public :: set_xqs
+      public :: get_tau_at_r
+      public :: smooth_abundances
+      public :: do_boxcar_mixing
+      public :: eval_total_energy_profile
+      public :: get_delta_pg_traditional
+      public :: get_delta_pg_bildsten2012
+      public :: write_to_extra_terminal_output_file
+
       logical, parameter :: mdb = .false.
 
       contains
-
 
       subroutine foreach_cell(s,nzlo,nzhi,use_omp,do1,ierr)
          type (star_info), pointer :: s
@@ -46,6 +174,7 @@
          interface
             subroutine do1(s,k,ierr)
                use star_private_def
+               implicit none
                type (star_info), pointer :: s
                integer, intent(in) :: k
                integer, intent(out) :: ierr
@@ -69,7 +198,7 @@
                if (.not. okay) cycle
                op_err = 0
                call do1(s,k,op_err)
-               if (op_err /= 0) okay = .false. ! cannot just exit from a parallel loop
+               if (op_err /= 0) okay = .false.  ! cannot just exit from a parallel loop
             end do
 !$OMP END PARALLEL DO
             if (.not. okay) ierr = -1
@@ -90,8 +219,7 @@
          real(dp), intent(out) :: y_avg, z_avg
          integer, intent(out) :: ierr
          integer :: k, nz,  h1, h2, he3, he4
-         real(dp) :: total_mass_h, total_mass_he, total_mass_z, &
-            cell_mass, total_mass
+         real(dp) :: total_mass_h, total_mass_he, total_mass_z, cell_mass, total_mass
          ierr = 0
          nz = s% nz
          h1 = s% net_iso(ih1)
@@ -161,8 +289,8 @@
 
       subroutine smooth_abundances(s, cnt, nzlo, nzhi, ierr)
          type (star_info), pointer :: s
-         integer, intent(in) :: cnt ! make this many passes
-         integer, intent(in) :: nzlo, nzhi ! only smooth zones nzlo to nzhi inclusive
+         integer, intent(in) :: cnt  ! make this many passes
+         integer, intent(in) :: nzlo, nzhi  ! only smooth zones nzlo to nzhi inclusive
          integer, intent(out) :: ierr
          integer :: k, j, nz
          ierr = 0
@@ -212,7 +340,7 @@
          integer :: val
          character (len=32) :: fstring
          include 'formats'
-         val = mod(n, 10**num_digits) ! wrap around
+         val = mod(n, 10**num_digits)  ! wrap around
          if (val == 0) then
             write(num,*) n
             num = adjustl(num)
@@ -256,7 +384,7 @@
       end function eval_csound
 
 
-      subroutine set_m_grav_and_grav(s) ! using mass_corrections
+      subroutine set_m_grav_and_grav(s)  ! using mass_corrections
          type (star_info), pointer :: s
          real(dp) :: r, lnR
          integer :: k, nz
@@ -281,7 +409,7 @@
          end do
       end subroutine set_m_grav_and_grav
 
-      
+
       subroutine get_r_and_lnR_from_xh(s, k, r, lnR, xh_in)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -297,7 +425,7 @@
          r = exp(lnR)
       end subroutine get_r_and_lnR_from_xh
 
-      
+
       real(dp) function get_r_from_xh(s, k, xh_in) result(r)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -311,7 +439,7 @@
          r = exp(xh(s% i_lnR,k))
       end function get_r_from_xh
 
-      
+
       real(dp) function get_lnR_from_xh(s, k, xh_in) result(lnR)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -323,7 +451,7 @@
             xh => s% xh
          end if
          lnR = xh(s% i_lnR,k)
-      end function get_lnR_from_xh      
+      end function get_lnR_from_xh
 
       subroutine store_r_in_xh(s, k, r, xh_in)
          type (star_info), pointer :: s
@@ -339,7 +467,7 @@
          xh(s% i_lnR,k) = log(r)
       end subroutine store_r_in_xh
 
-      
+
       subroutine store_lnR_in_xh(s, k, lnR, xh_in)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -354,7 +482,7 @@
          xh(s% i_lnR,k) = lnR
       end subroutine store_lnR_in_xh
 
-      
+
       subroutine get_T_and_lnT_from_xh(s, k, T, lnT, xh_in)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -370,7 +498,7 @@
          T =  exp(lnT)
       end subroutine get_T_and_lnT_from_xh
 
-      
+
       real(dp) function get_T_from_xh(s, k, xh_in) result(T)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -384,7 +512,7 @@
          T =  exp(xh(s% i_lnT,k))
       end function get_T_from_xh
 
-      
+
       real(dp) function get_lnT_from_xh(s, k, xh_in) result(lnT)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -398,7 +526,7 @@
          lnT = xh(s% i_lnT,k)
       end function get_lnT_from_xh
 
-      
+
       subroutine store_T_in_xh(s, k, T, xh_in)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -413,7 +541,7 @@
          xh(s% i_lnT,k) = log(T)
       end subroutine store_T_in_xh
 
-      
+
       subroutine store_lnT_in_xh(s, k, lnT, xh_in)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -428,7 +556,7 @@
          xh(s% i_lnT,k) = lnT
       end subroutine store_lnT_in_xh
 
-      
+
       subroutine get_rho_and_lnd_from_xh(s, k, rho, lnd, xh_in)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -443,7 +571,7 @@
          lnd = xh(s% i_lnd,k)
          rho =  exp(lnd)
       end subroutine get_rho_and_lnd_from_xh
-            
+
 
       subroutine store_rho_in_xh(s, k, rho, xh_in)
          type (star_info), pointer :: s
@@ -459,7 +587,7 @@
          xh(s% i_lnd,k) = log(rho)
       end subroutine store_rho_in_xh
 
-      
+
       subroutine store_lnd_in_xh(s, k, lnd, xh_in)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -523,14 +651,14 @@
       subroutine set_dm_bar(s, nz, dm, dm_bar)
          type (star_info), pointer :: s
          integer, intent(in) :: nz
-         real(dp), intent(in) :: dm(:) ! (nz)
-         real(dp), intent(inout) :: dm_bar(:) ! (nz)
+         real(dp), intent(in) :: dm(:)  ! (nz)
+         real(dp), intent(inout) :: dm_bar(:)  ! (nz)
          integer :: k
          do k=2,nz-1
             dm_bar(k) = 0.5d0*(dm(k-1) + dm(k))
          end do
          dm_bar(1) = 0.5d0*dm(1)
-         if (s% rsp_flag .or. s% RSP2_flag) then ! rsp and RSP2 use this definition
+         if (s% rsp_flag .or. s% RSP2_flag) then  ! rsp and RSP2 use this definition
             dm_bar(nz) = 0.5d0*(dm(nz-1) + dm(nz))
          else
             dm_bar(nz) = 0.5d0*dm(nz-1) + dm(nz)
@@ -543,7 +671,7 @@
          ! work in from boundaries to meet at largest dq
          type (star_info), pointer :: s
          integer, intent(in) :: nz
-         real(dp), intent(inout) :: dq(:) ! (nz)
+         real(dp), intent(inout) :: dq(:)  ! (nz)
          integer, intent(out) :: ierr
          integer :: k, midq
          real(dp) :: dqsum1, dqsum2, dq_min
@@ -581,11 +709,11 @@
       end subroutine normalize_dqs
 
 
-      subroutine set_qs(s, nz, q, dq, ierr) ! set q's using normalized dq's
+      subroutine set_qs(s, nz, q, dq, ierr)  ! set q's using normalized dq's
          type (star_info), pointer :: s
          integer, intent(in) :: nz
-         real(dp), intent(inout) :: dq(:) ! (nz)
-         real(dp), intent(inout) :: q(:) ! (nz)
+         real(dp), intent(inout) :: dq(:)  ! (nz)
+         real(dp), intent(inout) :: q(:)  ! (nz)
          integer, intent(out) :: ierr
          integer :: k, midq
          real(dp) :: dqsum1, dqsum2
@@ -620,14 +748,14 @@
          do k=nz, midq+1, -1
             dqsum2 = dqsum2 + dq(k)
             q(k) = dqsum2
-         end do         
+         end do
       end subroutine set_qs
 
 
-      subroutine set_xqs(nz, xq, dq, ierr) ! set xq's using dq's
+      subroutine set_xqs(nz, xq, dq, ierr)  ! set xq's using dq's
          integer, intent(in) :: nz
-         real(dp), intent(inout) :: dq(:) ! (nz)
-         real(dp), intent(inout) :: xq(:) ! (nz)
+         real(dp), intent(inout) :: dq(:)  ! (nz)
+         real(dp), intent(inout) :: xq(:)  ! (nz)
          integer, intent(out) :: ierr
          integer :: k
          include 'formats'
@@ -678,7 +806,7 @@
             write(*,2) 'dq(k+1)', k+1, dq(k+1)
 
             call mesa_error(__FILE__,__LINE__,'interp_val_to_pt')
-         endif
+         end if
          interp_val_to_pt = (v(k)*dq(k-1) + v(k-1)*dq(k))/(dq(k-1) + dq(k))
       end function interp_val_to_pt
 
@@ -709,7 +837,7 @@
                interp_xa_to_pt, str, ierr)
             interp_xa_to_pt = min(1d0,max(0d0,interp_xa_to_pt))
             if (ierr == 0) return
-         endif
+         end if
          interp_xa_to_pt = (xa(j,k)*dq(k-1) + xa(j,k-1)*dq(k))/(dq(k-1) + dq(k))
          interp_xa_to_pt = min(1d0,max(0d0,interp_xa_to_pt))
       end function interp_xa_to_pt
@@ -788,10 +916,50 @@
       end function find_cell_for_mass
 
 
-      subroutine get_delta_Pg(s, nu_max, delta_Pg)
+      subroutine get_delta_Pg_traditional(s, delta_Pg)
          type (star_info), pointer :: s
-         real(dp), intent(in) :: nu_max ! microHz
          real(dp), intent(out) :: delta_Pg ! seconds
+         ! g-mode period spacing for l=1
+         real(dp) :: dr, N2, integral, r
+         integer :: k
+         logical, parameter :: dbg = .false.
+         include 'formats'
+         if (dbg) then
+            write(*,2) 's% star_mass', s% model_number, s% star_mass
+            write(*,2) 's% photosphere_r', s% model_number, s% photosphere_r
+            write(*,2) 's% Teff', s% model_number, s% Teff
+         end if
+         delta_Pg = 0._dp
+         if (.not. s% calculate_Brunt_N2) return
+         k = 0
+         r = 0._dp
+         N2 = 0._dp
+         dr = 0._dp
+         integral = 0._dp
+
+         ! we integrate at cell edges.
+         do k = 2, s% nz
+         N2 = s% brunt_N2(k) ! brunt_N2 at cell_face
+         r  = s% r(k) ! r evaluated at cell_face
+         dr = s% rmid(k-1) - s% rmid(k) ! dr evaluated at cell face.
+         if (N2 > 0d0) integral = integral + sqrt(N2)*dr/r
+         end do
+
+         if (dbg) write(*,2) ' integral ', &
+            s% model_number,integral
+
+         if (integral == 0) return
+         delta_Pg = sqrt(2._dp)*pi*pi/integral
+         if (is_bad(delta_Pg)) delta_Pg = 0._dp
+
+         if (dbg) write(*,2) 'delta_Pg', s% model_number, delta_Pg
+
+      end subroutine get_delta_Pg_traditional
+
+      subroutine get_delta_Pg_bildsten2012(s, nu_max, delta_Pg)
+         type (star_info), pointer :: s
+         real(dp), intent(in) :: nu_max  ! microHz
+         real(dp), intent(out) :: delta_Pg  ! seconds
          ! g-mode period spacing for l=1
          real(dp) :: integral, N2, omega2, kr2, L2, el, &
             dr, r, r2, cs2, sl2, I_integral, I_integral_limit
@@ -828,11 +996,11 @@
                k_sl2 = k
                if (dbg) write(*,2) 'k_sl2', k
             end if
-            if (N2 > omega2) then ! in g-cavity
+            if (N2 > omega2) then  ! in g-cavity
                if (dbg .and. integral == 0) write(*,2) 'enter g-cavity', k
                integral = integral + sqrt(N2)*dr/r
-            else ! in decay region
-               if (integral == 0) cycle ! ! haven't been in g-cavity yet
+            else  ! in decay region
+               if (integral == 0) cycle  ! ! haven't been in g-cavity yet
                if (dbg .and. I_integral == 0) write(*,2) 'enter decay', k
                ! in decay region below g-cavity; I_integral estimates decay
                kr2 = (1 - n2/omega2)*(1 - Sl2/omega2)*omega2/cs2
@@ -850,7 +1018,7 @@
 
          if (dbg) write(*,2) 'delta_Pg', s% model_number, delta_Pg
 
-      end subroutine get_delta_Pg
+      end subroutine get_delta_Pg_bildsten2012
 
 
       subroutine set_rmid(s, nzlo, nzhi, ierr)
@@ -864,7 +1032,7 @@
          ierr = 0
          nz = s% nz
          dbg = .false.
-         if (s% RSP_flag) then ! mid = avg r
+         if (s% RSP_flag) then  ! mid = avg r
             !dbg = s% model_number >= s% max_model_number - 1
             do k=nzlo, nzhi
                if (k < nz) then
@@ -922,7 +1090,7 @@
          end do
       end function get_tau_at_r
 
-      
+
       subroutine set_phot_info(s)
          use atm_lib, only: atm_black_body_T
          type (star_info), pointer :: s
@@ -967,7 +1135,7 @@
             Tface_0, Tface_1
 
          include 'formats'
-         
+
          ! set values for surface as defaults in case phot not in model
          r = s% r(1)
          m = s% m(1)
@@ -978,7 +1146,7 @@
          else
             v = 0d0
          end if
-         L = max(1d0, s% L(1)) ! don't use negative L(1)
+         L = max(1d0, s% L(1))  ! don't use negative L(1)
          T_phot = s% T(1)
          cs = s% csound(1)
          kap = s% opacity(1)
@@ -986,10 +1154,10 @@
          k_phot = 1
          if (s% tau_factor >= 1) then
             ! This is always true for tables, regardless of tau_base.
-            return ! just use surface values
+            return  ! just use surface values
          end if
-         tau_phot = s% tau_base ! this holds for case of tau_factor < 1
-         tau00 = s% tau_factor*s% tau_base ! start at tau_surf < tau_phot and go inward
+         tau_phot = s% tau_base  ! this holds for case of tau_factor < 1
+         tau00 = s% tau_factor*s% tau_base  ! start at tau_surf < tau_phot and go inward
          taup1 = 0
          ysum = 0
          do k = 1, s% nz-1
@@ -1016,7 +1184,7 @@
                   v = s% v(k) + (s% v(k+1) - s% v(k))*(tau_phot - tau00)/dtau
                end if
                L = s% L(k) + (s% L(k+1) - s% L(k))*(tau_phot - tau00)/dtau
-               L = max(1d0, s% L(1)) ! don't use negative L(1)
+               L = max(1d0, s% L(1))  ! don't use negative L(1)
                logg = safe_log10(s% cgrav(k_phot)*m/(r*r))
                k_phot = k
                ! don't bother interpolating these.
@@ -1099,12 +1267,12 @@
 
       subroutine set_abs_du_div_cs(s)
          type (star_info), pointer :: s
-         
+
          integer :: k, nz, j
          real(dp) :: abs_du, cs
          include 'formats'
          nz = s% nz
-         
+
          if (s% v_flag) then
             do k=2,nz
                abs_du = abs(s% v_start(k) - s% v_start(k-1))
@@ -1177,7 +1345,7 @@
          s% shock_entropy = 0d0
          s% shock_tau = 0d0
          s% shock_k = 0
-         
+
          if (s% u_flag) then
             v => s% u
          else if (s% v_flag) then
@@ -1195,7 +1363,7 @@
             v_div_cs_max = max(v_div_cs_00, v_div_cs_m1)
             v_div_cs_min = min(v_div_cs_00, v_div_cs_m1)
             if (v_div_cs_max >= 1d0 .and. v_div_cs_min < 1d0) then
-               if (v(k+1) > s% csound(k+1)) then ! skip single point glitches
+               if (v(k+1) > s% csound(k+1)) then  ! skip single point glitches
                   shock_radius = &
                      find0(s% r(k), v_div_cs_00-1d0, s% r(k-1), v_div_cs_m1-1d0)
                   if (shock_radius <= 0d0) then
@@ -1205,7 +1373,7 @@
                end if
             end if
             if (v_div_cs_min <= -1d0 .and. v_div_cs_max > -1d0) then
-               if (v(k+1) < -s% csound(k+1)) then ! skip single point glitches
+               if (v(k+1) < -s% csound(k+1)) then  ! skip single point glitches
                   shock_radius = &
                      find0(s% r(k), v_div_cs_00+1d0, s% r(k-1), v_div_cs_m1+1d0)
                   if (shock_radius <= 0d0) then
@@ -1216,7 +1384,7 @@
             end if
          end do
          if (shock_radius < 0d0) return
-         
+
          call get_shock_location_info( &
             s, .false., k-1, v, shock_radius, &
             s% shock_mass, &
@@ -1292,7 +1460,7 @@
             shock_k = 0
             return
          end if
-         
+
          shock_radius = r/Rsun
          shock_k = k
          if (k < s% nz) then
@@ -1317,7 +1485,7 @@
       end subroutine get_shock_location_info
 
 
-      real(dp) function min_dr_div_cs(s,min_k) ! seconds
+      real(dp) function min_dr_div_cs(s,min_k)  ! seconds
          type (star_info), pointer :: s
          integer, intent(out) :: min_k
          integer :: k, nz, k_min
@@ -1446,7 +1614,6 @@
       end subroutine save_eqn_residual_info
 
 
-
       subroutine unpack_residual_partials(s, k, nvar, i_eqn, &
             residual, d_dm1, d_d00, d_dp1)
          use auto_diff
@@ -1455,7 +1622,7 @@
          integer, intent(in) :: k, nvar, i_eqn
          type(auto_diff_real_star_order1) :: residual
          real(dp) :: d_dm1(nvar), d_d00(nvar), d_dp1(nvar)
-         
+
          real(dp) :: val, dlnd_m1, dlnd_00, dlnd_p1, dlnT_m1, dlnT_00, dlnT_p1, &
             dw_m1, dw_00, dw_p1, &
             dlnR_m1, dlnR_00, dlnR_p1, &
@@ -1476,8 +1643,8 @@
             dw_div_wc_m1, dw_div_wc_00, dw_div_wc_p1, &
             djrot_m1, djrot_00, djrot_p1, &
             dxtra1_m1, dxtra1_00, dxtra1_p1, &
-            dxtra2_m1, dxtra2_00, dxtra2_p1) 
-                     
+            dxtra2_m1, dxtra2_00, dxtra2_p1)
+
          d_dm1 = 0; d_d00 = 0; d_dp1 = 0
          call unpack1(s% i_lnd, dlnd_m1, dlnd_00, dlnd_p1)
          call unpack1(s% i_lnT, dlnT_m1, dlnT_00, dlnT_p1)
@@ -1489,17 +1656,17 @@
          if (s% i_Hp /= 0) call unpack1(s% i_Hp, dHp_m1, dHp_00, dHp_p1)
          if (s% i_w_div_wc /= 0) call unpack1(s% i_w_div_wc, dw_div_wc_m1, dw_div_wc_00, dw_div_wc_p1)
          if (s% i_j_rot /= 0) call unpack1(s% i_j_rot, djrot_m1, djrot_00, djrot_p1)
-         
+
          contains
-         
+
          subroutine unpack1(j, dvar_m1, dvar_00, dvar_p1)
             integer, intent(in) :: j
             real(dp), intent(in) :: dvar_m1, dvar_00, dvar_p1
             d_dm1(j) = dvar_m1
             d_d00(j) = dvar_00
             d_dp1(j) = dvar_p1
-         end subroutine unpack1         
-         
+         end subroutine unpack1
+
       end subroutine unpack_residual_partials
 
       subroutine store_partials(s, k, i_eqn, nvar, d_dm1, d_d00, d_dp1, str, ierr)
@@ -1523,8 +1690,8 @@
                if (checking) call check_dequ(d_dp1(j),trim(str) // ' d_dp1')
                call ep1(s, i_eqn, j, k, nvar, d_dp1(j))
             end if
-         end do            
-         
+         end do
+
          contains
 
          subroutine check_dequ(dequ, str)
@@ -1542,7 +1709,7 @@
                return
             end if
          end subroutine check_dequ
-         
+
       end subroutine store_partials
 
 
@@ -1687,11 +1854,11 @@
          if (s% irradiation_flux /= 0) then
             irradiation_dq = pi4*s% r(1)*s% r(1)*s% column_depth_for_irradiation/s% xmstar
             xq = 1 - s% q(k)
-            if (irradiation_dq > xq) then ! add irradiation heat for cell k
+            if (irradiation_dq > xq) then  ! add irradiation heat for cell k
                eps = 0.25d0 * s% irradiation_flux / s% column_depth_for_irradiation
-               if (irradiation_dq < xq + s% dq(k)) then ! only part of cell gets heated
+               if (irradiation_dq < xq + s% dq(k)) then  ! only part of cell gets heated
                   eval_irradiation_heat = eps*(irradiation_dq - xq)/s% dq(k)
-               else ! all of cell gets heated
+               else  ! all of cell gets heated
                   eval_irradiation_heat = eps
                end if
             end if
@@ -1701,9 +1868,9 @@
 
       subroutine start_time(s, time0, total_all_before)
          type (star_info), pointer :: s
-         integer(8), intent(out) :: time0
+         integer(i8), intent(out) :: time0
          real(dp), intent(out) :: total_all_before
-         integer(8) :: clock_rate
+         integer(i8) :: clock_rate
          if (.not. s% doing_timing) return
          total_all_before = total_times(s)
          call system_clock(time0,clock_rate)
@@ -1712,11 +1879,11 @@
 
       subroutine update_time(s, time0, total_all_before, total)
          type (star_info), pointer :: s
-         integer(8), intent(in) :: time0
+         integer(i8), intent(in) :: time0
          real(dp), intent(in) :: total_all_before
          real(dp), intent(inout) :: total
          real(dp) :: total_all_after, other_stuff
-         integer(8) :: time1, clock_rate
+         integer(i8) :: time1, clock_rate
          if (.not. s% doing_timing) return
          call system_clock(time1,clock_rate)
          total_all_after = total_times(s)
@@ -1753,7 +1920,7 @@
          get_remnant_mass = s% m(1) - get_ejecta_mass(s)
       end function get_remnant_mass
 
-      
+
       real(dp) function get_ejecta_mass(s)
          use num_lib, only: find0
          type (star_info), pointer :: s
@@ -1765,7 +1932,7 @@
          v_div_vesc_prev = 0d0
          do k=1,s% nz
             if (s% u_flag) then
-               !v = s% u_face_ad(k)%val ! CANNOT USE u_face for this 
+               !v = s% u_face_ad(k)%val ! CANNOT USE u_face for this
                ! approximate value is good enough for this estimate
                if (k == 1) then
                   v = s% u(k)
@@ -1925,7 +2092,7 @@
          if (s% RSP2_flag .or. s% RSP_flag) then
             get_Lconv = s% Lc(k)
          else
-            get_Lconv = s% L_conv(k) ! L_conv set by last call on mlt
+            get_Lconv = s% L_conv(k)  ! L_conv set by last call on mlt
          end if
       end function get_Lconv
 
@@ -1969,14 +2136,14 @@
             -(area*area*crad*(del_T4/del_m)/3)/(pi4*s% cgrav(j)*s% m_grav(j))
       end function get_Lrad_div_Ledd
 
-      
+
       real(dp) function cell_start_specific_KE(s,k)
          type (star_info), pointer :: s
          integer, intent(in) :: k
          cell_start_specific_KE = cell_start_specific_KE_qp(s,k)
       end function cell_start_specific_KE
 
-      
+
       real(qp) function cell_start_specific_KE_qp(s,k)
          ! for consistency with dual cells at faces, use <v**2> instead of <v>**2
          type (star_info), pointer :: s
@@ -2000,12 +2167,12 @@
             end if
             v2 = qhalf*(v0**2 + v1**2)
             cell_start_specific_KE_qp = qhalf*Mbar*v2
-         else ! ignore kinetic energy if no velocity variables
+         else  ! ignore kinetic energy if no velocity variables
             cell_start_specific_KE_qp = 0d0
          end if
       end function cell_start_specific_KE_qp
 
-      
+
       real(dp) function cell_specific_KE(s,k,d_dv00,d_dvp1)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -2013,7 +2180,7 @@
          cell_specific_KE = cell_specific_KE_qp(s,k,d_dv00,d_dvp1)
       end function cell_specific_KE
 
-      
+
       real(qp) function cell_specific_KE_qp(s,k,d_dv00,d_dvp1)
          ! for consistency with dual cells at faces, use <v**2> instead of <v>**2
          type (star_info), pointer :: s
@@ -2030,7 +2197,7 @@
          if (s% u_flag) then
             v0 = s% u(k)
             cell_specific_KE_qp = qhalf*Mbar*v0**2
-            d_dv00 = s% u(k)
+            d_dv00 = Mbar*s% u(k)
             d_dvp1 = 0d0
          else if (s% v_flag) then
             v0 = s% v(k)
@@ -2046,14 +2213,14 @@
             cell_specific_KE_qp = qhalf*Mbar*v2
             d_dv00 = qhalf*Mbar*dv2_dv00
             d_dvp1 = qhalf*Mbar*dv2_dvp1
-         else ! ignore kinetic energy if no velocity variables
+         else  ! ignore kinetic energy if no velocity variables
             cell_specific_KE_qp = 0d0
             d_dv00 = 0d0
             d_dvp1 = 0d0
          end if
       end function cell_specific_KE_qp
 
-      
+
       real(dp) function cell_specific_PE(s,k,d_dlnR00,d_dlnRp1)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -2061,7 +2228,7 @@
          cell_specific_PE = cell_specific_PE_qp(s,k,d_dlnR00,d_dlnRp1)
       end function cell_specific_PE
 
-      
+
       real(qp) function cell_specific_PE_qp(s,k,d_dlnR00,d_dlnRp1)
          ! for consistency with dual cells at faces, <m/r>_cntr => (m(k)/r(k) + m(k+1)/r(k+1))/2 /= m_cntr/r_cntr
          ! i.e., use avg of m/r at faces of cell rather than ratio of cell center mass over cell center r.
@@ -2109,14 +2276,14 @@
          end if
       end function cell_specific_PE_qp
 
-      
+
       real(dp) function cell_start_specific_PE(s,k)
          type (star_info), pointer :: s
          integer, intent(in) :: k
          cell_start_specific_PE = cell_start_specific_PE_qp(s,k)
       end function cell_start_specific_PE
 
-      
+
       real(dp) function cell_start_specific_PE_qp(s,k)
          ! for consistency with dual cells at faces, <m/r>_cntr => (m(k)/r(k) + m(k+1)/r(k+1))/2 /= m_cntr/r_cntr
          ! i.e., use avg of m/r at faces of cell rather than ratio of cell center mass over cell center r.
@@ -2157,7 +2324,7 @@
          end if
       end function cell_start_specific_PE_qp
 
-      
+
       real(dp) function cell_specific_rotational_energy(s,k)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -2175,8 +2342,8 @@
       subroutine get_dke_dt_dpe_dt(s, k, dt, &
             dke_dt, d_dkedt_dv00, d_dkedt_dvp1, &
             dpe_dt, d_dpedt_dlnR00, d_dpedt_dlnRp1, ierr)
-         type (star_info), pointer :: s      
-         integer, intent(in) :: k 
+         type (star_info), pointer :: s
+         integer, intent(in) :: k
          real(dp), intent(in) :: dt
          real(dp), intent(out) :: &
             dke_dt, d_dkedt_dv00, d_dkedt_dvp1, &
@@ -2190,19 +2357,19 @@
          PE_start = cell_start_specific_PE_qp(s,k)
          PE_new = cell_specific_PE_qp(s,k,dpe_dlnR00,dpe_dlnRp1)
          q1 = PE_new - PE_start
-         dpe_dt = q1/dt ! erg/g/s
+         dpe_dt = q1/dt  ! erg/g/s
          d_dpedt_dlnR00 = dpe_dlnR00/dt
-         d_dpedt_dlnRp1 = dpe_dlnRp1/dt    
+         d_dpedt_dlnRp1 = dpe_dlnRp1/dt
          ! rate of change in specific KE (erg/g/s)
          KE_start = cell_start_specific_KE_qp(s,k)
          KE_new = cell_specific_KE_qp(s,k,dke_dv00,dke_dvp1)
          q1 = KE_new - KE_start
-         dke_dt = q1/dt ! erg/g/s
+         dke_dt = q1/dt  ! erg/g/s
          d_dkedt_dv00 = dke_dv00/dt
-         d_dkedt_dvp1 = dke_dvp1/dt   
+         d_dkedt_dvp1 = dke_dvp1/dt
       end subroutine get_dke_dt_dpe_dt
 
-      
+
       real(dp) function eval_deltaM_total_from_profile( &
             deltaM, premesh_dm, profile)
          real(dp), intent(in) :: deltaM
@@ -2226,7 +2393,7 @@
          eval_deltaM_total_from_profile = total
       end function eval_deltaM_total_from_profile
 
-      
+
       real(dp) function cell_specific_total_energy(s, k) result(cell_total)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -2242,7 +2409,7 @@
          if (s% rsp_flag) cell_total = cell_total + s% RSP_Et(k)
       end function cell_specific_total_energy
 
-      
+
       subroutine eval_integrated_total_energy_profile(s, arr, direction, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: direction
@@ -2266,7 +2433,7 @@
          do k=start+direction, finish, direction
             arr(k) = arr(k-direction) + cell_specific_total_energy(s,k) * s%dm(k)
          end do
-            
+
       end subroutine eval_integrated_total_energy_profile
 
       subroutine eval_deltaM_total_energy_integrals( &
@@ -2276,7 +2443,7 @@
             total_radial_kinetic_energy, total_rotational_kinetic_energy, &
             total_turbulent_energy, sum_total)
          type (star_info), pointer :: s
-         integer, intent(in) :: klo, khi ! sum from klo to khi
+         integer, intent(in) :: klo, khi  ! sum from klo to khi
          real(dp), intent(in) :: deltaM
          logical, intent(in) :: save_profiles
          real(dp), intent(out), dimension(:) :: total_energy_profile
@@ -2285,9 +2452,9 @@
             total_radial_kinetic_energy, total_rotational_kinetic_energy, &
             total_turbulent_energy, sum_total
          integer :: k
-         real(dp) :: dm, sum_dm, cell_total, cell1, d_dv00, d_dvp1, d_dlnR00, d_dlnRp1
+         real(dp) :: dm, sum_dm, cell_total, cell1, d_dv00, d_dvp1, d_dlnR00, d_dlnRp1, alfa, beta,TDC_eturb_cell
          include 'formats'
-         
+
          total_internal_energy = 0d0
          total_gravitational_energy = 0d0
          total_radial_kinetic_energy = 0d0
@@ -2296,7 +2463,7 @@
          sum_total = 0d0
 
          if (klo < 1 .or. khi > s% nz .or. klo > khi) return
-         
+
          sum_dm = 0
          do k=klo,khi
             if (sum_dm >= deltaM) exit
@@ -2324,6 +2491,17 @@
                cell1 = dm*pow2(s% w(k))
                cell_total = cell_total + cell1
                total_turbulent_energy = total_turbulent_energy + cell1
+            else if ( s% MLT_option == 'TDC' .and. &
+               s% TDC_include_eturb_in_energy_equation) then ! needs corrected s% mlt_vc(k) >= 0 causes failures.
+               if (k < s% nz) then
+                  TDC_eturb_cell = 0.75d0*(pow2(s% mlt_vc(k)) + &
+                     pow2(s% mlt_vc(k+1)))
+               else ! k == s% nz
+                  TDC_eturb_cell = 0.75d0*pow2(s% mlt_vc(k))
+               end if
+               cell1 = dm*TDC_eturb_cell
+               cell_total = cell_total + cell1
+               total_turbulent_energy = total_turbulent_energy + cell1
             end if
             if (s% rsp_flag) then
                cell1 = dm*s% RSP_Et(k)
@@ -2337,7 +2515,7 @@
 
          sum_total = total_internal_energy + total_gravitational_energy + &
             total_radial_kinetic_energy + total_turbulent_energy
-            
+
          if (s% include_rotation_in_total_energy) &
             sum_total = sum_total + total_rotational_kinetic_energy
 
@@ -2351,7 +2529,7 @@
          integer :: k
          real(dp) :: dm, cell_total, cell1, d_dv00, d_dvp1, d_dlnR00, d_dlnRp1
          include 'formats'
-         
+
          do k=1, s%nz
             cell_total = 0
             dm = s% dm(k)
@@ -2378,14 +2556,14 @@
             end if
             total_energy_profile(k) = cell_total
          end do
-            
+
       end subroutine eval_total_energy_profile
 
-      
+
       real(dp) function eval_cell_section_total_energy( &
             s, klo, khi) result(sum_total)
          type (star_info), pointer :: s
-         integer, intent(in) :: klo, khi ! sum from klo to khi
+         integer, intent(in) :: klo, khi  ! sum from klo to khi
          real(dp) :: &
             total_internal_energy, total_gravitational_energy, &
             total_radial_kinetic_energy, total_rotational_kinetic_energy, &
@@ -2542,7 +2720,7 @@
          after_C_burn = .true.
       end function after_C_burn
 
-      
+
       integer function lookup_nameofvar(s, namestr)
          type (star_info), pointer :: s
          character (len=*), intent(in) :: namestr
@@ -2556,7 +2734,7 @@
          end do
       end function lookup_nameofvar
 
-      
+
       integer function lookup_nameofequ(s, namestr)
          type (star_info), pointer :: s
          character (len=*), intent(in) :: namestr
@@ -2596,13 +2774,13 @@
       end function omega_crit
 
 
-      subroutine weighed_smoothing(dd, n, ns, preserve_sign, ddold)
+      subroutine weighted_smoothing(dd, n, ns, preserve_sign, ddold)
       !     based on routine written by S.-C. Yoon, 18 Sept. 2002
-      !     for smoothing  any variable (dd) with size n over 2*ns+1 cells.
-         real(dp), intent(inout) :: dd(:) ! (n)
+      !     for smoothing any variable (dd) with size n over 2*ns+1 cells.
+         real(dp), intent(inout) :: dd(:)  ! (n)
          integer, intent(in) :: n, ns
          logical, intent(in) :: preserve_sign
-         real(dp), intent(inout) :: ddold(:) ! (n) work array
+         real(dp), intent(inout) :: ddold(:)  ! (n) work array
 
          integer :: nweight, mweight, i, j, k
          real(dp) :: weight(2*ns+1), sweight, v0
@@ -2649,25 +2827,25 @@
             end if
          end do
 
-      end subroutine weighed_smoothing
+      end subroutine weighted_smoothing
 
 
-      subroutine threshold_smoothing (dd, dd_thresh, n, ns, preserve_sign, ddold)
+      subroutine threshold_smoothing(dd, dd_thresh, n, ns, preserve_sign, ddold)
 
-        ! Same as weighed_smoothing, but only smooth contiguous regions where |dd| >= dd_thresh
+        ! Same as weighted_smoothing, but only smooth contiguous regions where |dd| >= dd_thresh
 
         real(dp), intent(inout) :: dd(:)    ! (n)
         real(dp), intent(in)    :: dd_thresh
         integer, intent(in)     :: n
         integer, intent(in)     :: ns
         logical, intent(in)     :: preserve_sign
-        real(dp), intent(inout) :: ddold(:) ! (n) work array
+        real(dp), intent(inout) :: ddold(:)  ! (n) work array
 
         logical :: in_region
         integer :: i
         integer :: i_a
         integer :: i_b
-        
+
         include 'formats'
 
         ! Process regions
@@ -2681,15 +2859,15 @@
 
               if (ABS(dd(i)) < dd_thresh) then
                  i_b = i-1
-                 if (i_b > i_a) call weighed_smoothing(dd(i_a:i_b), i_b-i_a+1, ns, preserve_sign, ddold(i_a:i_b))
+                 if (i_b > i_a) call weighted_smoothing(dd(i_a:i_b), i_b-i_a+1, ns, preserve_sign, ddold(i_a:i_b))
                  in_region = .FALSE.
-              endif
+              end if
 
            else
               if (ABS(dd(i)) >= dd_thresh) then
                  i_a = i
                  in_region = .TRUE.
-              endif
+              end if
 
            end if
 
@@ -2700,11 +2878,9 @@
         if (in_region) then
 
            i_b = n
-           if (i_b > i_a) call weighed_smoothing(dd(i_a:i_b), i_b-i_a+1, ns, preserve_sign, ddold(i_a:i_b))
+           if (i_b > i_a) call weighted_smoothing(dd(i_a:i_b), i_b-i_a+1, ns, preserve_sign, ddold(i_a:i_b))
 
-        endif
-
-        ! Finish
+        end if
 
         return
 
@@ -2716,7 +2892,7 @@
          if (L <= 0) then
             kh = 0d0
          else
-            kh = 0.75d0*G*M*M/(R*L) ! 0.75 is based on sun.  Hansen & Kawaler eqn 1.30
+            kh = 0.75d0*G*M*M/(R*L)  ! 0.75 is based on sun.  Hansen & Kawaler eqn 1.30
          end if
       end function eval_kh_timescale
 
@@ -2731,7 +2907,7 @@
       end function yrs_for_init_timestep
 
 
-      subroutine set_phase_of_evolution(s) ! from evolve after call do_report
+      subroutine set_phase_of_evolution(s)  ! from evolve after call do_report
          use rates_def, only: i_rate
          use chem_def
          type (star_info), pointer :: s
@@ -2773,23 +2949,23 @@
             any(s% burn_he_conv_region(1:s% num_conv_boundaries))) then
             s% phase_of_evolution = phase_TP_AGB
          else if (center_he4 <= 1d-4) then
-            s% phase_of_evolution = phase_TACHeB          
+            s% phase_of_evolution = phase_TACHeB
          else if (s% center_eps_burn(i3alf) > 1d2) then
             s% phase_of_evolution = phase_ZACHeB
          else if (s% L_by_category(i3alf) > 1d2) then
             s% phase_of_evolution = phase_He_Burn
          else if (center_h1 <= 1d-6) then
-            s% phase_of_evolution = phase_TAMS            
+            s% phase_of_evolution = phase_TAMS
          else if (center_h1 <= 0.3d0) then
-            s% phase_of_evolution = phase_IAMS            
+            s% phase_of_evolution = phase_IAMS
          else if (s% L_nuc_burn_total >= s% L_phot*s% Lnuc_div_L_zams_limit) then
             s% phase_of_evolution = phase_ZAMS
          else if (s% log_center_temperature > 5d0) then
             s% phase_of_evolution = phase_PreMS
          else
             s% phase_of_evolution = phase_starting
-         end if 
-         
+         end if
+
       end subroutine set_phase_of_evolution
 
 
@@ -2808,14 +2984,14 @@
          end if
       end subroutine set_rv_info
 
-      
+
       subroutine show_matrix(s, dmat, nvar)
          type (star_info), pointer :: s
          integer, intent(in) :: nvar
          real(dp) :: dmat(nvar,nvar)
          integer :: i, j
          write(*,'(A)')
-         write(*,'(18x)', advance = 'no') 
+         write(*,'(18x)', advance = 'no')
          do j = 1, nvar
             write(*,'(a15)', advance = 'no') s% nameofvar(j)
          end do
@@ -2833,27 +3009,25 @@
 
       ! e00(i,j,k) is partial of equ(i,k) wrt var(j,k)
       subroutine e00(s,i,j,k,nvar,v)
-         use num_def, only: &
-            block_tridiag_dble_matrix_type, block_tridiag_quad_matrix_type
          type (star_info), pointer :: s
          integer, intent(in) :: i, j, k, nvar
          real(dp), intent(in) :: v
          logical, parameter :: dbg = .false.
          include 'formats'
-         
+
          if (mdb .and. k==397 .and. v /= 0d0) &
             write(*,4) 'e00(i,j,k) ' // &
                trim(s% nameofequ(i)) // ' ' // trim(s% nameofvar(j)), i, j, k, v
-         
+
          !if (j == s% i_lnd .and. k /= s% nz) return ! this variable is being held constant
-         
+
          if (v == 0d0) return
-         
+
          if (.false. .and. j == s% i_lnT .and. k == 30) then
             write(*,4) 'e00(i,j,k) ' // &
                trim(s% nameofequ(i)) // ' ' // trim(s% nameofvar(j)), i, j, k, v, s% x_scale(j,k)
          end if
-         
+
          if (is_bad(v)) then
 !$omp critical (star_utils_e00_crit1)
             write(*,4) 'e00(i,j,k) ' // &
@@ -2861,15 +3035,15 @@
             if (s% stop_for_bad_nums) call mesa_error(__FILE__,__LINE__,'1 e00')
 !$omp end critical (star_utils_e00_crit1)
          end if
-         
+
          if (i <= 0 .or. j <= 0 .or. k <= 0 .or. k > s% nz) then
             write(*,4) 'bad i,j,k e00(i,j,k) ' // &
                trim(s% nameofequ(i)) // ' ' // trim(s% nameofvar(j)), i, j, k, v
             call mesa_error(__FILE__,__LINE__,'2 e00')
          end if
-         
-         if (j > nvar) return ! hybrid
-         
+
+         if (j > nvar) return  ! hybrid
+
          if (i > nvar) then
 !$omp critical (star_utils_e00_crit2)
             write(*,5) 'bad i e00(i,j,k) ' // &
@@ -2888,26 +3062,24 @@
 
       ! em1(i,j,k) is partial of equ(i,k) wrt var(j,k-1)
       subroutine em1(s,i,j,k,nvar,v)
-         use num_def, only: &
-            block_tridiag_dble_matrix_type, block_tridiag_quad_matrix_type
          type (star_info), pointer :: s
          integer, intent(in) :: i, j, k, nvar
          real(dp), intent(in) :: v
          logical, parameter :: dbg = .false.
          if (k == 1) return
          include 'formats'
-         
+
          if (mdb .and. k==397 .and. v /= 0d0) &
             write(*,4) 'em1(i,j,k) ' // &
                trim(s% nameofequ(i)) // ' ' // trim(s% nameofvar(j)), i, j, k, v
-         
+
          if (v == 0d0) return
-         
+
          if (.false. .and. j == s% i_lnT .and. k == 31) then
             write(*,4) 'em1(i,j,k) ' // &
                trim(s% nameofequ(i)) // ' ' // trim(s% nameofvar(j)), i, j, k, v, s% x_scale(j,k-1)
          end if
-         
+
          if (is_bad(v)) then
 !$omp critical (star_utils_em1_crit1)
             write(*,4) 'em1(i,j,k) ' // &
@@ -2915,15 +3087,15 @@
             if (s% stop_for_bad_nums) call mesa_error(__FILE__,__LINE__,'em1')
 !$omp end critical (star_utils_em1_crit1)
          end if
-         
+
          if (i <= 0 .or. j <= 0 .or. k <= 0 .or. k > s% nz) then
             write(*,4) 'bad i,j,k em1(i,j,k) ' // &
                trim(s% nameofequ(i)) // ' ' // trim(s% nameofvar(j)), i, j, k, v
             call mesa_error(__FILE__,__LINE__,'em1')
          end if
-         
-         if (j > nvar) return ! hybrid
-         
+
+         if (j > nvar) return  ! hybrid
+
          if (i > nvar) then
             write(*,5) 'bad i em1(i,j,k) ' // &
                trim(s% nameofequ(i)) // ' ' // trim(s% nameofvar(j)), &
@@ -2940,25 +3112,23 @@
 
       ! ep1(i,j,k) is partial of equ(i,k) wrt var(j,k+1)
       subroutine ep1(s,i,j,k,nvar,v)
-         use num_def, only: &
-            block_tridiag_dble_matrix_type, block_tridiag_quad_matrix_type
          type (star_info), pointer :: s
          integer, intent(in) :: i, j, k, nvar
          real(dp), intent(in) :: v
          logical, parameter :: dbg = .false.
          include 'formats'
-         
+
          if (mdb .and. k==397 .and. v /= 0d0) &
             write(*,4) 'ep1(i,j,k) ' // &
                trim(s% nameofequ(i)) // ' ' // trim(s% nameofvar(j)), i, j, k, v
-         
+
          if (v == 0d0) return
-         
+
          if (.false. .and. j == s% i_lnT .and. k == 29) then
             write(*,4) 'ep1(i,j,k) ' // &
                trim(s% nameofequ(i)) // ' ' // trim(s% nameofvar(j)), i, j, k, v, s% x_scale(j,k+1)
          end if
-         
+
          if (is_bad(v)) then
 !$omp critical (star_utils_ep1_crit1)
             write(*,4) 'ep1(i,j,k) ' // &
@@ -2966,15 +3136,15 @@
             if (s% stop_for_bad_nums) call mesa_error(__FILE__,__LINE__,'ep1')
 !$omp end critical (star_utils_ep1_crit1)
          end if
-         
+
          if (i <= 0 .or. j <= 0 .or. k <= 0 .or. k > s% nz) then
             write(*,4) 'bad i,j,k ep1(i,j,k) ' // &
                trim(s% nameofequ(i)) // ' ' // trim(s% nameofvar(j)), i, j, k, v
             call mesa_error(__FILE__,__LINE__,'ep1')
          end if
-         
+
          if (j > nvar) return
-         
+
          if (i > nvar) then
             write(*,5) 'bad i ep1(i,j,k) ' // &
                trim(s% nameofequ(i)) // ' ' // trim(s% nameofvar(j)), &
@@ -3090,7 +3260,7 @@
                c1 = 0d0
                return
             end if
-            if (.not. quadratic) then ! minmod
+            if (.not. quadratic) then  ! minmod
                s00 = (vm1 - vp1)/(d00 + (dm1 + dp1)/2)
                c1 = sm1
                if (sm1*s00 < 0d0) c1 = 0d0
@@ -3098,7 +3268,7 @@
                if (s00*sp1 < 0d0) c1 = 0d0
                if (abs(sp1) < abs(c1)) c1 = sp1
             else
-               c1 = sprod*2/(sp1 + sm1) ! harmonic mean slope
+               c1 = sprod*2/(sp1 + sm1)  ! harmonic mean slope
                if (abs(sm1) <= abs(sp1)) then
                   c2 = (sm1 - c1)/(2d0*d00)
                else
@@ -3113,16 +3283,16 @@
          dhalf = 0.5d0*d00
          dv1 = c1*dhalf
          dv2 = 0.5d0*c2*dhalf*dhalf
-         vbdy1 = c0 + dv1 + dv2 ! value at face(k)
-         vbdy2 = c0 - dv1 + dv2 ! value at face(k+1)
+         vbdy1 = c0 + dv1 + dv2  ! value at face(k)
+         vbdy2 = c0 - dv1 + dv2  ! value at face(k+1)
 
          okay = .true.
 
-         if (k > 1) then ! check v00 <= vbdy1 <= vm1 or v00 >= vbdy1 >= vm1
+         if (k > 1) then  ! check v00 <= vbdy1 <= vm1 or v00 >= vbdy1 >= vm1
             if ((vm1 - vbdy1)*(vbdy1 - v00) < 0d0) okay = .false.
          end if
 
-         if (k < nz) then ! check vp1 <= vdby2 <= v00 or vp1 >= vdby2 >= v00
+         if (k < nz) then  ! check vp1 <= vdby2 <= v00 or vp1 >= vdby2 >= v00
             if ((v00 - vbdy2)*(vbdy2 - vp1) < 0d0) okay = .false.
          end if
 
@@ -3143,8 +3313,8 @@
 
       end subroutine get1_lpp
 
- 
-      subroutine calc_Ptrb_ad_tw(s, k, Ptrb, Ptrb_div_etrb, ierr) 
+
+      subroutine calc_Ptrb_ad_tw(s, k, Ptrb, Ptrb_div_etrb, ierr)
          ! note: Ptrb_div_etrb is not time weighted
          ! erg cm^-3 = g cm^2 s^-2 cm^-3 = g cm^-1 s^-2
          use auto_diff
@@ -3169,7 +3339,7 @@
          rho = wrap_d_00(s,k)
          etrb = wrap_etrb_00(s,k)
          Ptrb_div_etrb = s% RSP2_alfap*x_ALFAP*etrb*rho
-         Ptrb = Ptrb_div_etrb*etrb ! cm^2 s^-2 g cm^-3 = erg cm^-3
+         Ptrb = Ptrb_div_etrb*etrb  ! cm^2 s^-2 g cm^-3 = erg cm^-3
          time_center = (s% using_velocity_time_centering .and. &
                   s% include_P_in_velocity_time_centering)
          if (time_center) then
@@ -3193,7 +3363,7 @@
             !s% solver_test_partials_dval_dx = 0 ! d_residual_dr_00
             write(*,*) 'calc_Ptrb_ad_tw', s% solver_test_partials_var
          end if
-         
+
       end subroutine calc_Ptrb_ad_tw
 
 
@@ -3201,7 +3371,7 @@
       subroutine calc_Ptot_ad_tw( &
             s, k, skip_Peos, skip_mlt_Pturb, Ptot_ad, d_Ptot_dxa, ierr)
          use auto_diff_support
-          type (star_info), pointer :: s 
+          type (star_info), pointer :: s
          integer, intent(in) :: k
          logical, intent(in) :: skip_Peos, skip_mlt_Pturb
          type(auto_diff_real_star_order1), intent(out) :: Ptot_ad
@@ -3213,20 +3383,21 @@
             Peos_ad, Pvsc_ad, Ptrb_ad, mlt_Pturb_ad, Ptrb_ad_div_etrb
          logical :: time_center
          include 'formats'
-         
+
          ierr = 0
          d_Ptot_dxa = 0d0
-         
+
          time_center = (s% using_velocity_time_centering .and. &
-                  s% include_P_in_velocity_time_centering)
+                  s% include_P_in_velocity_time_centering .and. &
+                  s% lnT(k)/ln10 <= s% max_logT_for_include_P_and_L_in_velocity_time_centering)
          if (time_center) then
             alfa = s% P_theta_for_velocity_time_centering
          else
             alfa = 1d0
          end if
          beta = 1d0 - alfa
-         
-         Peos_ad = 0d0         
+
+         Peos_ad = 0d0
          if (.not. skip_Peos) then
             Peos_ad = wrap_peos_00(s, k)
             Peos_ad = alfa*Peos_ad + beta*s% Peos_start(k)
@@ -3238,14 +3409,14 @@
 
          Pvsc_ad = 0d0
          if (s% use_Pvsc_art_visc) then
-            call get_Pvsc_ad(s, k, Pvsc_ad, ierr) ! no time centering for Pvsc
+            call get_Pvsc_ad(s, k, Pvsc_ad, ierr)  ! no time centering for Pvsc
             if (ierr /= 0) return
             ! NO TIME CENTERING FOR Pvsc: Pvsc_ad = alfa*Pvsc_ad + beta*s% Pvsc_start(k)
          end if
-         
+
          Ptrb_ad = 0d0
          if (s% RSP2_flag) then
-            call calc_Ptrb_ad_tw(s, k, Ptrb_ad, Ptrb_ad_div_etrb, ierr) 
+            call calc_Ptrb_ad_tw(s, k, Ptrb_ad, Ptrb_ad_div_etrb, ierr)
             if (ierr /= 0) return
             ! note that Ptrb_ad is already time weighted
          end if
@@ -3258,20 +3429,20 @@
                   s% mlt_Pturb_factor*pow2(s% mlt_vc_old(k))*(s% rho_start(k-1) + s% rho_start(k))/6d0
                mlt_Pturb_ad = alfa*mlt_Pturb_ad + beta*mlt_Pturb_start
             end if
-         end if           
-         
+         end if
+
          Ptot_ad = Peos_ad + Pvsc_ad + Ptrb_ad + mlt_Pturb_ad
-         
+
          if (s% use_other_pressure) Ptot_ad = Ptot_ad + s% extra_pressure(k)
 
       end subroutine calc_Ptot_ad_tw
 
-      
+
       subroutine get_Pvsc_ad(s, k, Pvsc, ierr)
          use auto_diff
          use auto_diff_support
-         type (star_info), pointer :: s      
-         integer, intent(in) :: k 
+         type (star_info), pointer :: s
+         integer, intent(in) :: k
          type(auto_diff_real_star_order1), intent(out) :: Pvsc
          integer, intent(out) :: ierr
          type(auto_diff_real_star_order1) :: v00, vp1, Peos, rho, &
@@ -3297,11 +3468,11 @@
          if (Pvsc_start < 0d0) s% Pvsc_start(k) = s% Pvsc(k)
       end subroutine get_Pvsc_ad
 
-      
+
       ! marsaglia and zaman random number generator. period is 2**43 with
       ! 900 million different sequences. the state of the generator (for restarts)
       subroutine init_random(s)
-         type (star_info), pointer :: s      
+         type (star_info), pointer :: s
          integer :: ijkl,ij,kl,i,j,k,l,ii,jj,m
          real(dp) :: x,t
          ijkl = 54217137
@@ -3322,9 +3493,9 @@
                l = mod(53*l + 1, 169)
                if (mod(l*m,64) >= 32) x = x + t
                t = 0.5d0 * t
-            enddo
+            end do
             s% rand_u(ii) = x
-         enddo
+         end do
          s% rand_c   = 362436.0d0/16777216.0d0
          s% rand_cd  = 7654321.0d0/16777216.0d0
          s% rand_cm  = 16777213.0d0/16777216.0d0
@@ -3332,9 +3503,9 @@
          s% rand_j97 = 33
       end subroutine init_random
 
-      
+
       real(dp) function rand(s)
-         type (star_info), pointer :: s      
+         type (star_info), pointer :: s
          real(dp) :: uni
          uni = s% rand_u(s% rand_i97) - s% rand_u(s% rand_j97)
          if (uni < 0.0d0) uni = uni + 1.0d0
@@ -3374,11 +3545,11 @@
          end if
       end subroutine write_to_extra_terminal_output_file
 
-      
+
       subroutine write_eos_call_info(s,k)
          use chem_def
          type (star_info), pointer :: s
-         integer, intent(in) :: k ! 0 means not being called for a particular cell
+         integer, intent(in) :: k  ! 0 means not being called for a particular cell
          integer :: j
          include 'formats'
          !$OMP critical (omp_write_eos_call_info)
@@ -3483,7 +3654,7 @@
          center_avg_x = sum_x/sum_dq
       end function center_avg_x
 
-      
+
       subroutine get_area_info_opt_time_center(s, k, area, inv_R2, ierr)
          use auto_diff_support
          type (star_info), pointer :: s
@@ -3503,8 +3674,8 @@
          end if
       end subroutine get_area_info_opt_time_center
 
-      
-      subroutine set_energy_eqn_scal(s, k, scal, ierr) ! 1/(erg g^-1 s^-1)
+
+      subroutine set_energy_eqn_scal(s, k, scal, ierr)  ! 1/(erg g^-1 s^-1)
          type (star_info), pointer :: s
          integer, intent(in) :: k
          real(dp), intent(out) :: scal
@@ -3519,13 +3690,13 @@
          end if
          if (s% dedt_eqn_r_scale > 0d0) then
             cell_energy_fraction_start = &
-               s% energy_start(k)*s% dm(k)/s% total_internal_energy_old                    
-            scal = min(scal, cell_energy_fraction_start*s% dedt_eqn_r_scale) 
+               s% energy_start(k)*s% dm(k)/s% total_internal_energy_old
+            scal = min(scal, cell_energy_fraction_start*s% dedt_eqn_r_scale)
          end if
          scal = scal*s% dt/s% energy_start(k)
       end subroutine set_energy_eqn_scal
 
-      
+
       real(dp) function conv_time_scale(s,k_in) result(tau_conv)
          type (star_info), pointer :: s
          integer, intent(in) :: k_in
@@ -3547,7 +3718,7 @@
          dlnP = s% lnPeos(k-1) - s% lnPeos(k)
          dlnT = s% lnT(k-1) - s% lnT(k)
          grada_face = alfa*s% grada(k) + beta*s% grada(k-1)
-         gradT_actual = safe_div_val(s, dlnT, dlnP) ! mlt has not been called yet when doing this
+         gradT_actual = safe_div_val(s, dlnT, dlnP)  ! mlt has not been called yet when doing this
          brunt_N2 = f*(brunt_B - (gradT_actual - grada_face))
          if(abs(brunt_B) > 0d0) then
             tau_conv = 1d0/sqrt(abs(brunt_N2))
@@ -3556,7 +3727,7 @@
          end if
       end function conv_time_scale
 
-      
+
       subroutine set_conv_time_scales(s)
          type (star_info), pointer :: s
          integer :: k
@@ -3577,9 +3748,9 @@
          end do
          if (s% max_conv_time_scale == 0d0) s% max_conv_time_scale = 1d99
          if (s% min_conv_time_scale == 1d99) s% min_conv_time_scale = 0d0
-      end subroutine set_conv_time_scales      
+      end subroutine set_conv_time_scales
 
-      
+
       real(dp) function QHSE_time_scale(s,k) result(tau_qhse)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -3594,16 +3765,14 @@
          tau_qhse = abs_dv/(s% cgrav(k)*s% m_grav(k)/pow2(s% r(k)))
       end function QHSE_time_scale
 
-      
 
-      
       real(dp) function eps_nuc_time_scale(s,k) result(tau_epsnuc)
          type (star_info), pointer :: s
          integer, intent(in) :: k
          tau_epsnuc = s% Cp(k)*s% T(k)/max(1d-10,abs(s% eps_nuc(k)))
       end function eps_nuc_time_scale
 
-      
+
       real(dp) function cooling_time_scale(s,k) result(tau_cool)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -3612,7 +3781,7 @@
          tau_cool = pow2(s% scale_height(k)) / thermal_conductivity
       end function cooling_time_scale
 
-      
+
       function get_rho_face(s,k) result(rho_face)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -3626,7 +3795,7 @@
          rho_face = alfa*wrap_d_00(s,k) + beta*wrap_d_m1(s,k)
       end function get_rho_face
 
-      
+
       real(dp) function get_rho_face_val(s,k) result(rho_face)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -3639,7 +3808,19 @@
          rho_face = alfa*s% rho(k) + beta*s% rho(k-1)
       end function get_rho_face_val
 
-      
+      function get_rho_start_face(s,k) result(rho_face)
+         type (star_info), pointer :: s
+         integer, intent(in) :: k
+         type(auto_diff_real_star_order1) :: rho_face
+         real(dp) :: alfa, beta
+         if (k == 1) then
+            rho_face = wrap_d_00_start(s,k)
+            return
+         end if
+         call get_face_weights(s, k, alfa, beta)
+         rho_face = alfa*wrap_d_00_start(s,k) + beta*wrap_d_m1_start(s,k)
+      end function get_rho_start_face
+
       function get_T_face(s,k) result(T_face)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -3653,7 +3834,7 @@
          T_face = alfa*wrap_T_00(s,k) + beta*wrap_T_m1(s,k)
       end function get_T_face
 
-      
+
       function get_Prad_face(s,k) result(Prad_face)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -3661,7 +3842,7 @@
          Prad_face = crad*pow4(get_T_face(s,k))/3d0
       end function get_Prad_face
 
-      
+
       function get_Peos_face(s,k) result(Peos_face)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -3675,7 +3856,32 @@
          Peos_face = alfa*wrap_Peos_00(s,k) + beta*wrap_Peos_m1(s,k)
       end function get_Peos_face
 
-      
+      function get_Peos_face_val(s,k) result(Peos_face)
+         type (star_info), pointer :: s
+         integer, intent(in) :: k
+         real(dp) :: Peos_face
+         real(dp) :: alfa, beta
+         if (k == 1) then
+            Peos_face = s% Peos(k)
+            return
+         end if
+         call get_face_weights(s, k, alfa, beta)
+         Peos_face = alfa*s% Peos(k) + beta*s% Peos(k-1)
+      end function get_Peos_face_val
+
+      function get_e_face(s,k) result(e_face) ! specific energy on face
+         type (star_info), pointer :: s
+         integer, intent(in) :: k
+         type(auto_diff_real_star_order1) :: e_face
+         real(dp) :: alfa, beta
+         if (k == 1) then
+            e_face = wrap_e_00(s,k)
+            return
+         end if
+         call get_face_weights(s, k, alfa, beta)
+         e_face = alfa*wrap_e_00(s,k) + beta*wrap_e_m1(s,k)
+      end function get_e_face
+
       function get_Cp_face(s,k) result(Cp_face)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -3689,7 +3895,7 @@
          Cp_face = alfa*wrap_Cp_00(s,k) + beta*wrap_Cp_m1(s,k)
       end function get_Cp_face
 
-      
+
       function get_ChiRho_face(s,k) result(ChiRho_face)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -3703,7 +3909,7 @@
          ChiRho_face = alfa*wrap_ChiRho_00(s,k) + beta*wrap_ChiRho_m1(s,k)
       end function get_ChiRho_face
 
-      
+
       function get_ChiT_face(s,k) result(ChiT_face)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -3717,7 +3923,7 @@
          ChiT_face = alfa*wrap_ChiT_00(s,k) + beta*wrap_ChiT_m1(s,k)
       end function get_ChiT_face
 
-      
+
       function get_kap_face(s,k) result(kap_face)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -3731,47 +3937,76 @@
          kap_face = alfa*wrap_kap_00(s,k) + beta*wrap_kap_m1(s,k)
       end function get_kap_face
 
-      
+
       function get_grada_face(s,k) result(grada_face)
          type (star_info), pointer :: s
          integer, intent(in) :: k
-         type(auto_diff_real_star_order1) :: grada_face
+         type(auto_diff_real_star_order1) :: grada_face, mlt_Pturb_ad, P, gamma1_face, alpha
          real(dp) :: alfa, beta
+         P = get_Peos_face(s,k)
          if (k == 1) then
             grada_face = wrap_grad_ad_00(s,k)
             return
          end if
          call get_face_weights(s, k, alfa, beta)
          grada_face = alfa*wrap_grad_ad_00(s,k) + beta*wrap_grad_ad_m1(s,k)
+         if (s% have_mlt_vc .and. s% okay_to_set_mlt_vc .and. s% include_mlt_Pturb_in_thermodynamic_gradients &
+            .and. s% mlt_Pturb_factor > 0d0 .and. k > 1) then
+            gamma1_face = alfa*wrap_gamma1_00(s,k) + beta*wrap_gamma1_m1(s,k)
+            mlt_Pturb_ad = s% mlt_Pturb_factor*pow2(s% mlt_vc_old(k))*get_rho_face(s,k)/3d0
+            alpha = mlt_Pturb_ad/ (P*gamma1_face)
+            grada_face = grada_face*(P+mlt_Pturb_ad) / (P * (1d0 + alpha))
+         end if
       end function get_grada_face
 
-      
+
       function get_gradr_face(s,k) result(gradr)
          type (star_info), pointer :: s
          integer, intent(in) :: k
          type(auto_diff_real_star_order1) :: gradr
-         type(auto_diff_real_star_order1) :: P, opacity, L, Pr
+         type(auto_diff_real_star_order1) :: P, opacity, L, Pr, r
+         real(dp) :: L_theta
          !include 'formats'
          P = get_Peos_face(s,k)
          opacity = get_kap_face(s,k)
-         L = wrap_L_00(s,k)
+
+         if (s% include_mlt_in_velocity_time_centering) then
+            ! consider building a wrapper : wrap_opt_time_center_L_00(s,k)
+            if (s% using_velocity_time_centering .and. &
+              s% include_L_in_velocity_time_centering .and. &
+              s% lnT(k)/ln10 <= s% max_logT_for_include_P_and_L_in_velocity_time_centering) then
+               L_theta = s% L_theta_for_velocity_time_centering
+            else
+               L_theta = 1d0
+            end if
+            L = L_theta*wrap_L_00(s, k) + (1d0 - L_theta)*s% L_start(k)
+            r = wrap_opt_time_center_r_00(s,k)
+         else
+            L = wrap_L_00(s,k)
+            r = wrap_r_00(s,k)
+         end if
          Pr = get_Prad_face(s,k)
-         gradr = P*opacity*L/(16d0*pi*clight*s% m_grav(k)*s% cgrav(k)*Pr) 
+         gradr = P*opacity*L/(16d0*pi*clight*s% m_grav(k)*s% cgrav(k)*Pr)
       end function get_gradr_face
 
-      
+
       function get_scale_height_face(s,k) result(scale_height)
          type (star_info), pointer :: s
          integer, intent(in) :: k
          type(auto_diff_real_star_order1) :: scale_height
          type(auto_diff_real_star_order1) :: grav, scale_height2, P, rho
-         real(dp) :: G
+         real(dp) :: G, alfa, beta
          include 'formats'
          G = s% cgrav(k)
-         grav = G*s% m_grav(k)/pow2(wrap_r_00(s,k))
-         P = get_Peos_face(s,k)
-         rho = get_rho_face(s,k)
-         scale_height = P/(grav*rho) ! this assumes HSE
+         grav = G*s% m_grav(k)/pow2(wrap_r_00(s,k)) ! try geff later.
+         if (s% use_rsp_form_of_scale_height .and. k >1) then ! use rsp form of Hp, assumes HSE, wraps P/rho together.
+            call get_face_weights(s, k, alfa, beta)
+            scale_height = (alfa*(wrap_Peos_00(s,k))/wrap_d_00(s,k) + beta*(wrap_Peos_m1(s,k))/wrap_d_m1(s,k))/grav
+         else
+            P = get_Peos_face(s,k)
+            rho = get_rho_face(s,k)
+            scale_height = P/(grav*rho)  ! this assumes HSE
+         end if
          if (s% alt_scale_height_flag) then
             ! consider sound speed*hydro time scale as an alternative scale height
             ! (this comes from Eggleton's code.)
@@ -3782,19 +4017,24 @@
          end if
       end function get_scale_height_face
 
-      
+
       real(dp) function get_scale_height_face_val(s,k) result(scale_height)
          type (star_info), pointer :: s
          integer, intent(in) :: k
-         real(dp) :: G, grav, scale_height2, P, rho
-         type(auto_diff_real_star_order1) :: P_face, rho_face
+         real(dp) :: G, scale_height2, P, rho, alfa, beta
+         type(auto_diff_real_star_order1) :: P_face, rho_face, grav
          G = s% cgrav(k)
-         grav = G*s% m_grav(k)/pow2(s% r(k))
-         P_face = get_Peos_face(s,k)
-         P = P_face%val
-         rho_face = get_rho_face(s,k)
-         rho = rho_face%val
-         scale_height = P/(grav*rho) ! this assumes HSE
+         grav = G*s% m_grav(k)/pow2(wrap_r_00(s,k))! try geff later
+         if (s% use_rsp_form_of_scale_height .and. k >1) then ! use rsp form of Hp, assumes HSE, wraps P/rho together.
+            call get_face_weights(s, k, alfa, beta)
+            scale_height = (alfa*(s% Peos(k)/s% rho(k)) + beta*(s% Peos(k-1)/s% rho(k-1)))/grav%val
+         else
+            P_face = get_Peos_face(s,k)
+            P = P_face%val
+            rho_face = get_rho_face(s,k)
+            rho = rho_face%val
+            scale_height = P/(grav%val*rho)  ! this assumes HSE
+         end if
          if (s% alt_scale_height_flag) then
             ! consider sound speed*hydro time scale as an alternative scale height
             ! (this comes from Eggleton's code.)
@@ -3812,14 +4052,14 @@
          type(auto_diff_real_star_order1) :: QQ_cell
          type(auto_diff_real_star_order1) :: &
             T_00, d_00, chiT_00, chiRho_00
-         T_00 = wrap_T_00(s,k)                  
-         d_00 = wrap_d_00(s,k)         
+         T_00 = wrap_T_00(s,k)
+         d_00 = wrap_d_00(s,k)
          chiT_00 = wrap_chiT_00(s,k)
          chiRho_00 = wrap_chiRho_00(s,k)
          QQ_cell = chiT_00/(d_00*T_00*chiRho_00)
       end function get_QQ_cell
 
-      
+
       subroutine get_face_weights(s, k, alfa, beta)
          type (star_info), pointer :: s
          integer, intent(in) :: k
@@ -3869,7 +4109,7 @@
       end function safe_div
 
 
-      subroutine set_luminosity_by_category(s) ! integral by mass from center out
+      subroutine set_luminosity_by_category(s)  ! integral by mass from center out
          use chem_def, only: category_name
          use rates_def, only: i_rate
          use utils_lib, only: is_bad
@@ -3905,6 +4145,5 @@
          s% alpha_RTI(1:s% nz) = 0d0
          s% need_to_setvars = .true.
       end subroutine set_zero_alpha_RTI
-
 
       end module star_utils

@@ -2,47 +2,30 @@
 !
 !   Copyright (C) 2010-2019  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 module eos_support
 
-  ! Uses
-
-  use const_def
+  use const_def, only: dp, ln10, arg_not_provided
   use star_private_def
   use utils_lib, only : is_bad, mesa_error
 
-  ! No implicit typing
-
   implicit none
 
-  ! Parameter definitions
-
-  integer, parameter :: MAX_ITER_FOR_SOLVE = 100
-
-  ! Access specifiers
-
   private
-
   public :: get_eos
   public :: solve_eos_given_DE
   public :: solve_eos_given_DEgas
@@ -51,8 +34,8 @@ module eos_support
   public :: solve_eos_given_PT
   public :: solve_eos_given_PgasT
   public :: solve_eos_given_PgasT_auto
-  
-  ! Procedures
+
+  integer, parameter :: MAX_ITER_FOR_SOLVE = 100
 
 contains
 
@@ -68,7 +51,7 @@ contains
     use eos_def, only: num_eos_basic_results, num_eos_d_dxa_results, num_helm_results, i_lnE
 
     type (star_info), pointer :: s
-    integer, intent(in) :: k ! 0 means not being called for a particular cell
+    integer, intent(in) :: k  ! 0 means not being called for a particular cell
     real(dp), intent(in) :: xa(:), Rho, logRho, T, logT
     real(dp), dimension(num_eos_basic_results), intent(out) :: &
          res, dres_dlnRho, dres_dlnT
@@ -86,7 +69,7 @@ contains
 
     if(logRho < -25) then
       ! Provide some hard lower limit on what we would even try to evalue the eos at
-      ! Going to low causes FPE's when we try to evaluate certain derviatives that need (rho**power)
+      ! Going to low causes FPE's when we try to evaluate certain derivatives that need (rho**power)
       s% retry_message = 'eos evaluated at too low a density'
       ierr = -1
       return
@@ -117,7 +100,6 @@ contains
 
   end subroutine get_eos
 
-  !****
 
   ! Solve for temperature & eos results data given density & energy
 
@@ -131,7 +113,7 @@ contains
     use eos_lib, only: eosDT_get_T
 
     type (star_info), pointer :: s
-    integer, intent(in) :: k ! 0 indicates not for a particular cell.
+    integer, intent(in) :: k  ! 0 indicates not for a particular cell.
     real(dp), intent(in) :: &
          xa(:), logRho, logE, &
          logT_guess, logT_tol, logE_tol
@@ -159,8 +141,7 @@ contains
     if (s% doing_timing) s% timing_num_solve_eos_calls = s% timing_num_solve_eos_calls + eos_calls
 
   end subroutine solve_eos_given_DE
-  
-  !****
+
 
   ! Solve for temperature & eos results data given density & gas energy
 
@@ -174,7 +155,7 @@ contains
     use eos_lib, only: eosDT_get_T
 
     type (star_info), pointer :: s
-    integer, intent(in) :: k ! 0 indicates not for a particular cell.
+    integer, intent(in) :: k  ! 0 indicates not for a particular cell.
     real(dp), intent(in) :: &
          xa(:), logRho, egas, &
          logT_guess, logT_tol, egas_tol
@@ -194,7 +175,7 @@ contains
 
     call eosDT_get_T( &
        s% eos_handle, &
-       s% species, s% chem_id, s% net_iso, xa, &            
+       s% species, s% chem_id, s% net_iso, xa, &
        logRho, i_egas, egas, logT_tol, egas_tol, MAX_ITER_FOR_SOLVE, logT_guess, &
        arg_not_provided, arg_not_provided, arg_not_provided, arg_not_provided, &
        logT, res, dres_dlnRho, dres_dlnT, &
@@ -202,7 +183,6 @@ contains
 
   end subroutine solve_eos_given_DEgas
 
-  !****
 
   ! Solve for temperature & eos results data given density & pressure
 
@@ -216,7 +196,7 @@ contains
     use eos_lib, only: eosDT_get_T
 
     type (star_info), pointer :: s
-    integer, intent(in) :: k ! 0 indicates not for a particular cell.
+    integer, intent(in) :: k  ! 0 indicates not for a particular cell.
     real(dp), intent(in) :: &
          xa(:), logRho, logP, &
          logT_guess, logT_tol, logP_tol
@@ -241,10 +221,9 @@ contains
        arg_not_provided, arg_not_provided, arg_not_provided, arg_not_provided, &
        logT, res, dres_dlnRho, dres_dlnT, &
        dres_dxa, eos_calls, ierr)
-          
+
   end subroutine solve_eos_given_DP
 
-  !****
 
   ! Solve for temperature & eos results data for a given density &
   ! entropy
@@ -259,7 +238,7 @@ contains
     use eos_lib, only: eosDT_get_T
 
     type (star_info), pointer :: s
-    integer, intent(in) :: k ! 0 indicates not for a particular cell.
+    integer, intent(in) :: k  ! 0 indicates not for a particular cell.
     real(dp), intent(in) :: &
          xa(:), logRho, logS, &
          logT_guess, logT_tol, logS_tol
@@ -274,7 +253,7 @@ contains
     include 'formats'
 
     ierr = 0
-    
+
     call eosDT_get_T( &
        s% eos_handle, &
        s% species, s% chem_id, s% net_iso, xa, &
@@ -288,7 +267,6 @@ contains
 
   end subroutine solve_eos_given_DS
 
-  !****
 
   ! Solve for density & eos results data given pressure & temperature
 
@@ -302,7 +280,7 @@ contains
     use eos_lib, only: eosDT_get_Rho
 
     type (star_info), pointer :: s
-    integer, intent(in) :: k ! 0 indicates not for a particular cell.
+    integer, intent(in) :: k  ! 0 indicates not for a particular cell.
     real(dp), intent(in) :: &
          xa(:), logT, logP, &
          logRho_guess, logRho_tol, logP_tol
@@ -330,7 +308,6 @@ contains
 
   end subroutine solve_eos_given_PT
 
-  !****
 
   ! Solve for density & eos results data given gas pressure &
   ! temperature
@@ -345,7 +322,7 @@ contains
     use eos_lib, only: eosDT_get_Rho
 
     type (star_info), pointer :: s
-    integer, intent(in) :: k ! 0 indicates not for a particular cell.
+    integer, intent(in) :: k  ! 0 indicates not for a particular cell.
     real(dp), intent(in) :: &
          xa(:), logT, logPgas, &
          logRho_guess, logRho_tol, logPgas_tol
@@ -380,7 +357,6 @@ contains
 
   end subroutine solve_eos_given_PgasT
 
-  !****
 
   ! Solve for density & eos results data given gas pressure &
   ! temperature, with logRho_guess calculated automatically via an
@@ -397,7 +373,7 @@ contains
     use eos_lib, only: eos_gamma_PT_get
 
     type (star_info), pointer :: s
-    integer, intent(in) :: k ! 0 indicates not for a particular cell.
+    integer, intent(in) :: k  ! 0 indicates not for a particular cell.
     real(dp), intent(in) :: &
          xa(:), logT, logPgas, &
          logRho_tol, logPgas_tol
@@ -415,7 +391,7 @@ contains
     call basic_composition_info( &
        s% species, s% chem_id, xa, X, Y, Z, &
        abar, zbar, z2bar, z53bar, ye, mass_correction, sumx)
-    
+
     gamma = 5d0/3d0
     call eos_gamma_PT_get( &
        s% eos_handle, abar, exp10(logPgas), logPgas, exp10(logT), logT, gamma, &
@@ -433,7 +409,5 @@ contains
        ierr)
 
   end subroutine solve_eos_given_PgasT_auto
-         
-  !****
 
 end module eos_support

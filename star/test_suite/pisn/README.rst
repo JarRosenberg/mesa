@@ -4,6 +4,8 @@
 pisn
 ****
 
+.. tags:: star, very-massive-star, pair-instability, pair-instability-supernova, supernova, carbon-burning, oxygen-burning, explosive-burning
+
 This test case evolves an initially 200 |Msun| star from ZAMS until it undergoes a pair instability supernovae (PISN)
 
 
@@ -14,10 +16,8 @@ This tracks the central value of (Gamma1 - 4/3) and the point when the pressure 
 This value should be 0 or negative otherwise we do not have a PISN but instead PPISN (`Renzo et al (2020) <https://ui.adsabs.harvard.edu/abs/2020A%26A...640A..56R/abstract>`__)
 
 
-
 Inlists
 =======
-
 
 This test case has seven parts.
 
@@ -27,7 +27,7 @@ This test case has seven parts.
 
 * Part 3 (``inlist_to_end_core_he_burn``) This takes the model up to the end of core helium burning
 
-* Part 4 (``inlist_remove_envelope_header``) This removes whats left of the hydrogen envelope
+* Part 4 (``inlist_remove_envelope_header``) This removes what'ss left of the hydrogen envelope
 
 * Part 5 (``inlist_to_end_core_c_burn``) This takes the model up to the end of carbon burning
 
@@ -36,6 +36,4 @@ This test case has seven parts.
 * Part 7 (``inlist_finish``) This evoles the model through the PISN by taking it through carbon burning, explosive oxygen ignition, and stops once the star reaches a positive total energy.
 
 
-
 Last-Updated: 23Jun2021 (MESA 21a860) by rjfarmer
-

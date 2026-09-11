@@ -1,122 +1,319 @@
 ! ***********************************************************************
 !
-!   Copyright (C) 2010  The MESA Team
+!   Copyright (C) 2025  Niall Miller & The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
-!
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
-      module colors_def
-      use const_def, only : strlen, dp
-      implicit none
-      
-      !Public constants for use by clients
-      !Have we called colors_init yet?
-      logical :: color_is_initialized=.false.
-      
-      integer, parameter :: max_num_color_files=10
-      integer, parameter :: max_num_bcs_per_file=20 
-      integer :: bc_total_num_colors
-      
-      ! color indices are differences in magnitudes in different wavelength bands
-      ! as a reminder for non-experts like myself, here's how it goes
-      !
-      ! msun := apparent magnitude of sun is -26.81
-      ! Fsun := solar flux at 1AU is 1.36e6 erg/s/cm^2
-      !
-      ! "apparent magnitude" m of star with flux F is m = msun - 2.5 log10(F/Fsun)
-      ! "absolute magnitude" M for star of apparent magnitude m at distance d is M = m - 5 log(d/d0)
-      !     where the standard distance d0 is 10pc.
-      !     i.e., absolute magnitude is what the apparent magnitude would be if star were at 10 parsecs.
-      !
-      ! thus absolute magnitude of sun is about 4.75
-      ! 
-      ! "bolometric magnitude" = absolute magnitude using flux integrated over all wavelengths
-      !     can be derived from the current stellar luminosity using the equation
-      !     log(Lstar/Lsun) = (Mbol_sun - Mbol_star)/2.5 using Mbol_sun = 4.75 (LCB)
-      !
-      ! "visual magnitude" = absolute magnitude only using flux in visible wavelengths
-      !      more precisely, this is magnitude as measured with filter centered at 5500A, 890A width.
-      !
-      ! "bolometric correction" = bolometric magnitude minus visual magnitude
-      !      for the sun, the bolometric correction is about -0.11
-      !      thus visual magnitude of sun is about 4.86 = Mbol_sun - BC_sun = 4.75 - (-0.11)
-      !
-      ! in order of increasing wavelength, the "color" magnitudes are as follows:
-      !
-      ! "U" is the ultraviolet magnitude, center at 365nm.
-      ! "B" is the        blue magnitude, center at 440nm.
-      ! "V" is the      visual magnitude, center at 550nm.
-      ! "R" is the         red magnitude, center at 600nm.
-      ! "I" is the   infra-red magnitude, center at 800nm.
-      
-      ! in addition, longer wavelength "colors" have been defined as well
-      ! by order of increasing wavelength, these are J, H, K, L, and M.
-      
-      ! "color index" is the difference between 2 color magnitudes
-      ! for example, B-V is colors_B - colors_V
-      ! smaller B-V means larger brightness in blue band compared to visual band, means bluer star.
+module colors_def
 
+   use const_def, only: dp
 
-      ! color magnitude data from Lejeune, Cuisinier, Buser (1998) A&AS 130, 65-75. [LCB]
-      ! the coverage is approximately Teff from 50,000K to 2000K, log g 5.5 to -1.02, [Fe/H} 1.0 to -5.0
-      !
-      ! but not all combination of these are actually represented in the tables.  
-      ! the current implementation limits the given arguments to the actual range in the tables.
-      ! and it does a simple linear interpolation between tabulated values.
+   implicit none
 
-      ! BTW: they use [Fe/H] as a parameter;
-      ! the evolution code uses log10(Z/Zsun) as an approximation for this.
-      
-      ! THE FOLLOWING ARE PRIVATE DEFS -- NOT FOR USE BY CLIENTS
-      
-      type :: lgz_list ! sorted in decreasing order of lgz ([M/H])
-         real(dp) :: lgz ! [Fe_H]
-         type (lgz_list), pointer :: nxt => null()
-         real(dp),dimension(max_num_bcs_per_file) :: colors = -1d99
-      end type
+   public
 
-      type :: lgt_list ! sorted in decreasing order of lgt
-         real(dp) :: lgt ! logTeff
-         integer :: n_colors
-         type (lgt_list), pointer :: nxt => null()
-         type (lgg_list), pointer :: glist => null()
-      end type
+   ! max number of SEDs to keep in the memory cache
+   ! each slot holds one wavelength array (~1200 doubles ~ 10 KB),
+   ! so 256 slots ~ 2.5 MB -- negligible even when the full cube
+   ! cannot be allocated
+   integer, parameter :: sed_mem_cache_cap = 256
 
-      type :: lgg_list ! sorted in decreasing order of lgg
-         real(dp) :: lgg ! log g
-         type (lgg_list), pointer :: nxt => null()
-         type (lgz_list), pointer :: zlist => null()
-      end type
-      
-      type :: col_list
-         !Main data store
-         type(lgt_list), pointer :: thead => null()
-         CHARACTER(len=strlen),dimension(max_num_bcs_per_file) :: color_names
-         integer :: n_colors
-      end type
+   type :: filter_data
+      character(len=100) :: name
+      real(dp), allocatable :: wavelengths(:)
+      real(dp), allocatable :: transmission(:)
+      ! precomputed zero-point fluxes, computed once at init
+      real(dp) :: vega_zero_point = -1.0_dp
+      real(dp) :: ab_zero_point = -1.0_dp
+      real(dp) :: st_zero_point = -1.0_dp
+   end type filter_data
 
-      integer :: num_thead
-      type (col_list),dimension(:),pointer :: thead_all => null()
-         
-      
-      end module colors_def
+   type :: Colors_General_Info
+      character(len=256) :: instrument
+      character(len=256) :: vega_sed
+      character(len=256) :: stellar_atm
+      character(len=256) :: colors_results_directory
+      character(len=256) :: mag_system
+      real(dp) :: metallicity
+      real(dp) :: distance
+      real(dp) :: z_over_x_ref
+      logical :: make_csv
+      logical :: sed_per_model
+      logical :: use_colors
+      integer :: handle
+      logical :: in_use
 
+      ! cached lookup table data
+      logical :: lookup_loaded = .false.
+      character(len=100), allocatable :: lu_file_names(:)
+      real(dp), allocatable :: lu_logg(:)
+      real(dp), allocatable :: lu_meta(:)
+      real(dp), allocatable :: lu_teff(:)
+
+      ! cached vega SED
+      logical :: vega_loaded = .false.
+      real(dp), allocatable :: vega_wavelengths(:)
+      real(dp), allocatable :: vega_fluxes(:)
+
+      ! cached filter data (includes precomputed zero-points)
+      logical :: filters_loaded = .false.
+      type(filter_data), allocatable :: filters(:)
+
+      ! cached flux cube
+      logical :: cube_loaded = .false.
+      real(dp), allocatable :: cube_flux(:, :, :, :)    ! (n_teff, n_logg, n_meta, n_lambda)
+      real(dp), allocatable :: cube_teff_grid(:)
+      real(dp), allocatable :: cube_logg_grid(:)
+      real(dp), allocatable :: cube_meta_grid(:)
+      real(dp), allocatable :: cube_wavelengths(:)
+
+      ! unique sorted grids (built once from lookup table at init)
+      logical :: unique_grids_built = .false.
+      real(dp), allocatable :: u_teff(:), u_logg(:), u_meta(:)
+
+      ! grid_to_lu(i_t, i_g, i_m) gives the lookup-table row index for
+      ! (u_teff(i_t), u_logg(i_g), u_meta(i_m)) -- avoids O(n_lu)
+      ! nearest-neighbour searches at runtime
+      logical :: grid_map_built = .false.
+      integer, allocatable :: grid_to_lu(:, :, :)
+
+      ! fallback-path caches (used only when cube_loaded == .false.)
+
+      ! stencil cache: the extended neighbourhood around the current
+      ! interpolation cell, includes derivative-context points
+      ! (i-1 .. i+2 per axis, clamped to boundaries) so that
+      ! hermite_tensor_interp3d gives the same result as the cube path
+      logical :: stencil_valid = .false.
+      integer :: stencil_i_t = -1, stencil_i_g = -1, stencil_i_m = -1
+      real(dp), allocatable :: stencil_fluxes(:, :, :, :)   ! (st, sg, sm, n_lambda)
+      real(dp), allocatable :: stencil_wavelengths(:)     ! (n_lambda)
+      real(dp), allocatable :: stencil_teff(:)            ! subgrid values (st)
+      real(dp), allocatable :: stencil_logg(:)            ! subgrid values (sg)
+      real(dp), allocatable :: stencil_meta(:)            ! subgrid values (sm)
+
+      ! canonical wavelength grid for fallback SEDs (set once on first disk
+      ! read -- all SEDs in a given atmosphere grid share the same wavelengths)
+      logical :: fallback_wavelengths_set = .false.
+      real(dp), allocatable :: fallback_wavelengths(:)    ! (n_lambda)
+
+      ! bounded SED memory cache (circular buffer, keyed by lu index)
+      ! avoids re-reading text files for SEDs we've already parsed
+      logical :: sed_mcache_init = .false.
+      integer :: sed_mcache_count = 0
+      integer :: sed_mcache_next = 1
+      integer :: sed_mcache_nlam = 0
+      integer, allocatable :: sed_mcache_keys(:)          ! (sed_mem_cache_cap)
+      real(dp), allocatable :: sed_mcache_data(:, :)       ! (n_lambda, sed_mem_cache_cap)
+
+   end type Colors_General_Info
+
+   ! Global filter name list (shared across handles)
+   integer :: num_color_filters
+   character(len=100), allocatable :: color_filter_names(:)
+
+   integer, parameter :: max_colors_handles = 10
+   type(Colors_General_Info), target :: colors_handles(max_colors_handles)
+
+   logical :: colors_is_initialized = .false.
+
+   character(len=1000) :: colors_dir, colors_cache_dir, colors_temp_cache_dir
+   logical :: colors_use_cache = .true.
+
+contains
+
+   subroutine colors_def_init(colors_cache_dir_in)
+      use utils_lib, only: mkdir
+      use const_def, only: mesa_data_dir, mesa_caches_dir, mesa_temp_caches_dir, use_mesa_temp_cache
+      character(*), intent(in) :: colors_cache_dir_in
+      integer :: i
+
+      if (len_trim(colors_cache_dir_in) > 0) then
+         colors_cache_dir = colors_cache_dir_in
+      else if (len_trim(mesa_caches_dir) > 0) then
+         colors_cache_dir = trim(mesa_caches_dir)//'/colors_cache'
+      else
+         colors_cache_dir = trim(mesa_data_dir)//'/colors_data/cache'
+      end if
+      call mkdir(colors_cache_dir)
+
+      do i = 1, max_colors_handles
+         colors_handles(i)%handle = i
+         colors_handles(i)%in_use = .false.
+         colors_handles(i)%lookup_loaded = .false.
+         colors_handles(i)%vega_loaded = .false.
+         colors_handles(i)%filters_loaded = .false.
+         colors_handles(i)%cube_loaded = .false.
+         colors_handles(i)%unique_grids_built = .false.
+         colors_handles(i)%grid_map_built = .false.
+         colors_handles(i)%stencil_valid = .false.
+         colors_handles(i)%stencil_i_t = -1
+         colors_handles(i)%stencil_i_g = -1
+         colors_handles(i)%stencil_i_m = -1
+         colors_handles(i)%sed_mcache_init = .false.
+         colors_handles(i)%sed_mcache_count = 0
+         colors_handles(i)%sed_mcache_next = 1
+         colors_handles(i)%sed_mcache_nlam = 0
+         colors_handles(i)%fallback_wavelengths_set = .false.
+      end do
+
+      colors_temp_cache_dir = trim(mesa_temp_caches_dir)//'/colors_cache'
+      if (use_mesa_temp_cache) call mkdir(colors_temp_cache_dir)
+
+   end subroutine colors_def_init
+
+   integer function do_alloc_colors(ierr)
+      integer, intent(out) :: ierr
+      integer :: i
+      ierr = 0
+      do_alloc_colors = -1
+      !$omp critical (colors_handle)
+      do i = 1, max_colors_handles
+         if (.not. colors_handles(i)%in_use) then
+            colors_handles(i)%in_use = .true.
+            do_alloc_colors = i
+            exit
+         end if
+      end do
+      !$omp end critical (colors_handle)
+      if (do_alloc_colors == -1) then
+         ierr = -1
+         return
+      end if
+      if (colors_handles(do_alloc_colors)%handle /= do_alloc_colors) then
+         ierr = -1
+         return
+      end if
+   end function do_alloc_colors
+
+   subroutine do_free_colors(handle)
+      integer, intent(in) :: handle
+      if (handle >= 1 .and. handle <= max_colors_handles) then
+         colors_handles(handle)%in_use = .false.
+         call free_colors_cache(handle)
+      end if
+   end subroutine do_free_colors
+
+   subroutine free_colors_cache(handle)
+      integer, intent(in) :: handle
+      integer :: i
+
+      if (handle < 1 .or. handle > max_colors_handles) return
+
+      if (allocated(colors_handles(handle)%lu_file_names)) &
+         deallocate (colors_handles(handle)%lu_file_names)
+      if (allocated(colors_handles(handle)%lu_logg)) &
+         deallocate (colors_handles(handle)%lu_logg)
+      if (allocated(colors_handles(handle)%lu_meta)) &
+         deallocate (colors_handles(handle)%lu_meta)
+      if (allocated(colors_handles(handle)%lu_teff)) &
+         deallocate (colors_handles(handle)%lu_teff)
+      colors_handles(handle)%lookup_loaded = .false.
+
+      if (allocated(colors_handles(handle)%vega_wavelengths)) &
+         deallocate (colors_handles(handle)%vega_wavelengths)
+      if (allocated(colors_handles(handle)%vega_fluxes)) &
+         deallocate (colors_handles(handle)%vega_fluxes)
+      colors_handles(handle)%vega_loaded = .false.
+
+      if (allocated(colors_handles(handle)%filters)) then
+         do i = 1, size(colors_handles(handle)%filters)
+            if (allocated(colors_handles(handle)%filters(i)%wavelengths)) &
+               deallocate (colors_handles(handle)%filters(i)%wavelengths)
+            if (allocated(colors_handles(handle)%filters(i)%transmission)) &
+               deallocate (colors_handles(handle)%filters(i)%transmission)
+         end do
+         deallocate (colors_handles(handle)%filters)
+      end if
+      colors_handles(handle)%filters_loaded = .false.
+
+      if (allocated(colors_handles(handle)%cube_flux)) &
+         deallocate (colors_handles(handle)%cube_flux)
+      if (allocated(colors_handles(handle)%cube_teff_grid)) &
+         deallocate (colors_handles(handle)%cube_teff_grid)
+      if (allocated(colors_handles(handle)%cube_logg_grid)) &
+         deallocate (colors_handles(handle)%cube_logg_grid)
+      if (allocated(colors_handles(handle)%cube_meta_grid)) &
+         deallocate (colors_handles(handle)%cube_meta_grid)
+      if (allocated(colors_handles(handle)%cube_wavelengths)) &
+         deallocate (colors_handles(handle)%cube_wavelengths)
+      colors_handles(handle)%cube_loaded = .false.
+
+      if (allocated(colors_handles(handle)%u_teff)) &
+         deallocate (colors_handles(handle)%u_teff)
+      if (allocated(colors_handles(handle)%u_logg)) &
+         deallocate (colors_handles(handle)%u_logg)
+      if (allocated(colors_handles(handle)%u_meta)) &
+         deallocate (colors_handles(handle)%u_meta)
+      colors_handles(handle)%unique_grids_built = .false.
+
+      if (allocated(colors_handles(handle)%grid_to_lu)) &
+         deallocate (colors_handles(handle)%grid_to_lu)
+      colors_handles(handle)%grid_map_built = .false.
+
+      if (allocated(colors_handles(handle)%stencil_fluxes)) &
+         deallocate (colors_handles(handle)%stencil_fluxes)
+      if (allocated(colors_handles(handle)%stencil_wavelengths)) &
+         deallocate (colors_handles(handle)%stencil_wavelengths)
+      if (allocated(colors_handles(handle)%stencil_teff)) &
+         deallocate (colors_handles(handle)%stencil_teff)
+      if (allocated(colors_handles(handle)%stencil_logg)) &
+         deallocate (colors_handles(handle)%stencil_logg)
+      if (allocated(colors_handles(handle)%stencil_meta)) &
+         deallocate (colors_handles(handle)%stencil_meta)
+      colors_handles(handle)%stencil_valid = .false.
+      colors_handles(handle)%stencil_i_t = -1
+      colors_handles(handle)%stencil_i_g = -1
+      colors_handles(handle)%stencil_i_m = -1
+
+      if (allocated(colors_handles(handle)%sed_mcache_keys)) &
+         deallocate (colors_handles(handle)%sed_mcache_keys)
+      if (allocated(colors_handles(handle)%sed_mcache_data)) &
+         deallocate (colors_handles(handle)%sed_mcache_data)
+      colors_handles(handle)%sed_mcache_init = .false.
+      colors_handles(handle)%sed_mcache_count = 0
+      colors_handles(handle)%sed_mcache_next = 1
+      colors_handles(handle)%sed_mcache_nlam = 0
+
+      if (allocated(colors_handles(handle)%fallback_wavelengths)) &
+         deallocate (colors_handles(handle)%fallback_wavelengths)
+      colors_handles(handle)%fallback_wavelengths_set = .false.
+
+   end subroutine free_colors_cache
+
+   subroutine get_colors_ptr(handle, rq, ierr)
+      integer, intent(in) :: handle
+      type(Colors_General_Info), pointer, intent(out) :: rq
+      integer, intent(out):: ierr
+      if (handle < 1 .or. handle > max_colors_handles) then
+         ierr = -1
+         return
+      end if
+      rq => colors_handles(handle)
+      ierr = 0
+   end subroutine get_colors_ptr
+
+   subroutine do_free_colors_tables
+      integer :: i
+
+      if (allocated(color_filter_names)) deallocate (color_filter_names)
+
+      do i = 1, max_colors_handles
+         call free_colors_cache(i)
+      end do
+
+   end subroutine do_free_colors_tables
+
+end module colors_def

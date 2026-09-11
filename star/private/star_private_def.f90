@@ -2,24 +2,18 @@
 !
 !   Copyright (C) 2010-2019  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
@@ -31,7 +25,6 @@
 
       implicit none
 
-
       real(dp), parameter :: del_cntr_rho = 1d0
       real(dp), parameter :: min_cntr_rho = 3d0
       real(dp), parameter :: no_he_ignition_limit = 0.75d0
@@ -41,9 +34,7 @@
       real(dp), parameter :: center_h_going = 1d0/3d0
       real(dp), parameter :: center_he_going = 5d-2
 
-
       contains
-
 
       subroutine star_private_def_init
          use num_def
@@ -53,7 +44,7 @@
          include 'formats'
 
          okay = .true.
-         
+
          auto_diff_star_d1_names(1:auto_diff_star_num_vars) = ''
          auto_diff_star_d1_names(i_lnd_m1) = 'i_lnd_m1'
          auto_diff_star_d1_names(i_lnd_00) = 'i_lnd_00'
@@ -112,10 +103,10 @@
          termination_code_str(t_star_mass_max_limit) = 'star_mass_max_limit'
          termination_code_str(t_remnant_mass_min_limit) = 'remnant_mass_min_limit'
          termination_code_str(t_ejecta_mass_max_limit) = 'ejecta_mass_max_limit'
-         
+
          termination_code_str(t_star_species_mass_min_limit) = 'star_species_mass_min_limit'
          termination_code_str(t_star_species_mass_max_limit) = 'star_species_mass_max_limit'
-         
+
          termination_code_str(t_xmstar_min_limit) = 'xmstar_min_limit'
          termination_code_str(t_xmstar_max_limit) = 'xmstar_max_limit'
          termination_code_str(t_envelope_mass_limit) = 'envelope_mass_limit'
@@ -184,7 +175,7 @@
          termination_code_str(t_phase_IAMS) = 'phase_IAMS'
          termination_code_str(t_phase_TAMS) = 'phase_TAMS'
          termination_code_str(t_phase_He_Burn) = 'phase_He_Burn'
-         termination_code_str(t_phase_ZACHeB) = 'phase_ZACHeB' 
+         termination_code_str(t_phase_ZACHeB) = 'phase_ZACHeB'
          termination_code_str(t_phase_TACHeB) = 'phase_TACHeB'
          termination_code_str(t_phase_TP_AGB) = 'phase_TP_AGB'
          termination_code_str(t_phase_C_Burn) = 'phase_C_Burn'
@@ -352,11 +343,11 @@
          s => star_handles(id)
 
       end subroutine alloc_star
-      
-      
+
+
       subroutine init_star_handles()
          integer :: i
-      
+
          if (.not. have_initialized_star_handles) then
             do i = 1, max_star_handles
                star_handles(i)% id = i
@@ -364,10 +355,10 @@
             end do
             have_initialized_star_handles = .true.
          end if
-      
+
       end subroutine init_star_handles
-      
-      
+
+
       integer function find_next_star_id()
          integer :: id
          id = 0
@@ -377,11 +368,11 @@
                if (star_handles(id)% in_use .eqv. .false.) exit
             end do
          end if
-!$omp end critical (star_handle_next)         
+!$omp end critical (star_handle_next)
          find_next_star_id  = id
       end function find_next_star_id
-      
-      
+
+
       integer function how_many_allocated_star_ids()
          integer :: id
          how_many_allocated_star_ids = 0
@@ -392,7 +383,6 @@
             end do
          end if
       end function how_many_allocated_star_ids
-      
 
 
       subroutine free_star(s)
@@ -411,9 +401,7 @@
             ionization_file_prefix, ionization_Z1_suffix, &
             eosDT_cache_dir, &
             ionization_cache_dir, kap_cache_dir, rates_cache_dir, &
-            color_num_files,color_file_names,color_num_colors,&
             ierr)
-         use iso_fortran_env
          use colors_lib, only : colors_init
          use kap_lib, only: kap_init
          use eos_lib, only: eos_init
@@ -423,8 +411,8 @@
          use ionization_lib, only: ionization_init
          use atm_lib
          use chem_lib
-         use const_lib
-         use const_def, only: mesa_data_dir
+         use const_def, only: dp, mesa_data_dir
+         use const_lib, only: const_init
          use utils_lib
          use star_history_def, only: history_column_names_init
          use star_profile_def, only: profile_column_names_init
@@ -436,9 +424,6 @@
             ionization_file_prefix, ionization_Z1_suffix, &
             eosDT_cache_dir, &
             ionization_cache_dir, kap_cache_dir, rates_cache_dir
-         integer, intent(in) :: color_num_files
-         character (len=*), intent(in) :: color_file_names(:)
-         integer , intent(in):: color_num_colors(:)
          real(dp), intent(in) :: reaclib_min_T9_in
          logical, intent(in) :: use_suzuki_weak_rates, use_special_weak_rates
          integer, intent(out) :: ierr
@@ -476,15 +461,15 @@
          call chem_init(chem_isotopes_filename, ierr)
          if (ierr /= 0) return
 
+         ! TODO: implement caching for colors
          if (dbg) write(*,*) 'call colors_init'
-         call colors_init(color_num_files,color_file_names,color_num_colors,ierr)
+         call colors_init(.false., '', ierr)
          if (ierr /= 0) return
 
          if (dbg) write(*,*) 'call eos_init'
          !write(*,*) 'eos_file_prefix "' // trim(eos_file_prefix) // '"'
          !write(*,*) 'eosDT_cache_dir "' // trim(eosDT_cache_dir) // '"'
-         call eos_init( &
-            eosDT_cache_dir, use_cache, ierr)
+         call eos_init(eosDT_cache_dir, use_cache, ierr)
          if (ierr /= 0) return
 
          if (dbg) write(*,*) 'call kap_init'
@@ -553,12 +538,11 @@
 
          write(*,'(1x,a,1x,a)') 'version_number', trim(version_number)
 
-         !here we store useful information about the compiler and SDK
+         ! here we store useful information about the compiler and SDK
          call get_compiler_version(compiler_name,compiler_version_name)
          call get_mesasdk_version(mesasdk_version_name,ierr)
          call date_and_time(date=date)
-         
-      end subroutine stardata_init
-      
-      end module star_private_def
 
+      end subroutine stardata_init
+
+      end module star_private_def

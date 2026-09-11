@@ -1,3 +1,22 @@
+! ***********************************************************************
+!
+!   Copyright (C) 2022  The MESA Team
+!
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
+!
+!   This program is distributed in the hope that it will be useful,
+!   but WITHOUT ANY WARRANTY; without even the implied warranty of
+!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+!   See the GNU Lesser General Public License for more details.
+!
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+! ***********************************************************************
+
 module ideal
 
    use const_def, only: dp
@@ -12,11 +31,11 @@ module ideal
 
    contains
 
-   subroutine get_ideal_alfa( & 
+   subroutine get_ideal_alfa( &
             rq, logRho, logT, Z, abar, zbar, &
             alfa, d_alfa_dlogT, d_alfa_dlogRho, &
             ierr)
-      use const_def
+      use const_def, only: dp
       use eos_blend
       type (EoS_General_Info), pointer :: rq
       real(dp), intent(in) :: logRho, logT, Z, abar, zbar
@@ -51,18 +70,18 @@ module ideal
    skip = .false.
 
    ! zero all components
-   res(i_frac:i_frac+num_eos_frac_results-1) = 0.0
-   d_dlnd(i_frac:i_frac+num_eos_frac_results-1) = 0.0
-   d_dlnT(i_frac:i_frac+num_eos_frac_results-1) = 0.0
+   res(i_frac:i_frac+num_eos_frac_results-1) = 0.0d0
+   d_dlnd(i_frac:i_frac+num_eos_frac_results-1) = 0.0d0
+   d_dlnT(i_frac:i_frac+num_eos_frac_results-1) = 0.0d0
 
    ! mark this one
-   res(i_frac_ideal) = 1.0
+   res(i_frac_ideal) = 1.0d0
 
    end subroutine get_ideal_for_eosdt
 
    subroutine get_ideal_eos_results( &
          rq, Z, X, abar, zbar, Rho, logRho, T, logT, &
-         species, chem_id, xa, res, d_dlnd, d_dlnT, d_dxa, ierr)   
+         species, chem_id, xa, res, d_dlnd, d_dlnT, d_dxa, ierr)
    type (EoS_General_Info), pointer :: rq
    real(dp), intent(in) :: Z, X, abar, zbar
    real(dp), intent(in) :: Rho, logRho, T, logT
@@ -99,7 +118,6 @@ module ideal
       use skye_thermodynamics
       use auto_diff
 
-      implicit none
       integer :: j
       integer, intent(in) :: species
       integer, pointer :: chem_id(:)
@@ -110,7 +128,7 @@ module ideal
       real(dp), intent(out), dimension(nv) :: res, d_dlnd, d_dlnT
       real(dp), intent(out), dimension(nv, species) :: d_dxa
       real(dp), parameter :: mass_fraction_limit = 1d-10
-      
+
       integer :: relevant_species
       type(auto_diff_real_2var_order3) :: temp, den
       real(dp) :: ACMI(species), A(species), ya(species), select_xa(species), norm
@@ -121,7 +139,7 @@ module ideal
       ierr = 0
       F_ele = 0d0
       F_coul = 0d0
-      
+
       ! No electrons, so extreme negative chemical potential
       etaele = -1d99
       xnefer = 1d-20
@@ -135,7 +153,7 @@ module ideal
       temp = temp_in
       temp%d1val1 = 1d0
       den = den_in
-      den%d1val2 = 1d0      
+      den%d1val2 = 1d0
 
       ! Count and pack relevant species for Coulomb corrections. Relevant means mass fraction above limit.
       relevant_species = 0
@@ -180,8 +198,8 @@ module ideal
       call  pack_for_export(F_ideal_ion, F_coul, F_rad, F_ele, temp, den, xnefer, etaele, abar, zbar, &
                         phase, latent_ddlnT, latent_ddlnRho, res, d_dlnd, d_dlnT, ierr)
       if(ierr/=0) return
-      
-      res(i_mu) = abar ! ideal assumes neutral matter, whereas pack_for_export assumes ionized matter. So we patch it up here.
+
+      res(i_mu) = abar  ! ideal assumes neutral matter, whereas pack_for_export assumes ionized matter. So we patch it up here.
 
    end subroutine ideal_eos
 

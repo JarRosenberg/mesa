@@ -1,10 +1,7 @@
 .. _autodiff example:
 
-Example of auto_diff in run_star_extras
-=======================================
-
-.. toctree::
-   :maxdepth: 1
+Example of ``auto_diff`` in ``run_star_extras``
+===============================================
 
 The ``auto_diff`` module simplifies using ``run_star_extras`` hooks that
 need to provide partial derivatives.
@@ -71,7 +68,7 @@ Instead, we could use ``auto_diff``::
 
  type(auto_diff_real_4var_order1) :: L, lnR, lnM, lnkap, M, R, kap, g, lnT, lnP
  real(dp) :: g
- 
+
  ! Set up auto_diff base variables.
  ! Note that the ordering of which variable goes in which d1val slot doesn't matter.
  ! We just need to use the same ordering when reading the results out.

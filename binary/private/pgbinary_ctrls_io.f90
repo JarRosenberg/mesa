@@ -2,30 +2,24 @@
 !
 !   Copyright (C) 2010-2022  The MESA Team, Bill Paxton & Matthias Fabry
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 module pgbinary_ctrls_io
 
-   use const_def
+   use const_def, only: dp
    use binary_private_def
 
    implicit none
@@ -35,10 +29,9 @@ module pgbinary_ctrls_io
    namelist /pgbinary/ &
 
       file_device, &
-      file_extension, &
       file_digits, &
       pgbinary_interval, &
-      pause, &
+      pause_flag, &
       pause_interval, &
       pgbinary_sleep, &
       clear_history, &
@@ -1372,92 +1365,59 @@ contains
 
 
    subroutine read_pgbinary(b, filename, ierr)
-      use binary_private_def
-      use utils_lib
-      type (binary_info), pointer :: b
+      use binary_private_def, only: binary_info
+      use utils_namelist, only: read_namelist, missing_namelist_warning
+      type (binary_info), intent(inout) :: b
       character(*), intent(in) :: filename
       integer, intent(out) :: ierr
-      !      character (len = strlen) :: pgbinary_namelist_name
-      !      pgbinary_namelist_name = ''
-      ierr = 0
+
       call set_default_pgbinary_controls
-      call read_pgbinary_file(b, filename, 1, ierr)
+      call read_namelist(filename, read_pgbinary_file, "pgbinary", ierr, missing_namelist_warning)
+
+      if (ierr /= 0) return
+
+      call store_pgbinary_controls(b)
    end subroutine read_pgbinary
 
+   subroutine read_pgbinary_file(unit, iostat, iomsg, extra_inlists, extra_inlists_mask)
+      use const_def, only: strlen
+      use utils_namelist, only: max_extra_inlists
 
-   recursive subroutine read_pgbinary_file(b, filename, level, ierr)
-      use binary_private_def
-      use utils_lib
-      character(*), intent(in) :: filename
-      type (binary_info), pointer :: b
-      integer, intent(in) :: level
-      integer, intent(out) :: ierr
-      logical, dimension(max_extra_inlists) :: read_extra
-      character (len=strlen), dimension(max_extra_inlists) :: extra
-      integer :: unit, i
+      integer, intent(in) :: unit
+      integer, intent(out) :: iostat
+      character(len=strlen), intent(out) :: iomsg
+      character(len=strlen), dimension(max_extra_inlists), intent(out) :: extra_inlists
+      logical, dimension(max_extra_inlists), intent(out) :: extra_inlists_mask
 
-      ierr = 0
+      integer :: i
 
-      if (level >= 10) then
-         write(*, *) 'ERROR: too many levels of nested extra pgbinary inlist files'
-         ierr = -1
+      read_extra_pgbinary_inlist(:) = .false.
+
+      read(unit, nml=pgbinary, iostat=iostat, iomsg=iomsg)
+
+      if (iostat /= 0) then
          return
       end if
-      if (len_trim(filename) > 0) then
-         open(newunit = unit, file = trim(filename), action = 'read', delim = 'quote', status = 'old', iostat = ierr)
-         if (ierr /= 0) then
-            write(*, *) 'Failed to open pgbinary namelist file ', trim(filename)
-            return
-         end if
-         read(unit, nml = pgbinary, iostat = ierr)
-         close(unit)
-         if (ierr /= 0) then
-            write(*, *)
-            write(*, *)
-            write(*, '(a)') &
-               'Failed while trying to read pgbinary namelist file: ' // trim(filename)
-            write(*, '(a)') &
-               'Perhaps the following runtime error message will help you find the problem.'
-            write(*, *)
-            open(newunit = unit, file = trim(filename), action = 'read', delim = 'quote', status = 'old', iostat = ierr)
-            read(unit, nml = pgbinary)
-            close(unit)
-            return
-         end if
-      end if
 
-      call store_pgbinary_controls(b, ierr)
-
- ! recursive calls to read other inlists
-         do i=1, max_extra_inlists
-            read_extra(i) = read_extra_pgbinary_inlist(i)
-            read_extra_pgbinary_inlist(i) = .false.
-            extra(i) = extra_pgbinary_inlist_name(i)
-            extra_pgbinary_inlist_name(i) = 'undefined'
-            
-            if (read_extra(i)) then
-               call read_pgbinary_file(b, extra(i), level+1, ierr)
-               if (ierr /= 0) return
-            end if
-         end do
+      do i=1, max_extra_inlists
+         extra_inlists(i) = extra_pgbinary_inlist_name(i)
+         extra_inlists_mask(i) = read_extra_pgbinary_inlist(i)
+      end do
 
    end subroutine read_pgbinary_file
 
+   subroutine store_pgbinary_controls(b)
+      use binary_private_def, only: binary_info
+      type (binary_info), intent(inout), target :: b
 
-   subroutine store_pgbinary_controls(b, ierr)
-      use binary_private_def
-      type (binary_info), pointer :: b
       type (pgbinary_controls), pointer :: pg
-      integer, intent(out) :: ierr
 
-      ierr = 0
       pg => b% pg
 
       pg% file_device = file_device
-      pg% file_extension = file_extension
       pg% file_digits = file_digits
       pg% pgbinary_interval = pgbinary_interval
-      pg% pause = pause
+      pg% pause_flag = pause_flag
       pg% pause_interval = pause_interval
       pg% pgbinary_sleep = pgbinary_sleep
       pg% clear_history = clear_history

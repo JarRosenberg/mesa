@@ -4,6 +4,8 @@
 jdot_ls_check
 *************
 
+.. tags:: binary, angular-momentum, orbital-angular-momentum, tides, tidal-synchronization, conservation, point-mass, low-mass
+
 This test case verifies that models with tidal evolution conserve angular momentum.
 
 This test case has 1 part. Click to see a larger version of a plot.
@@ -14,7 +16,7 @@ This test case has 1 part. Click to see a larger version of a plot.
    :width: 100%
 
 
-|br|
+
 pgstar commands used for the plot above:
 
 .. code-block:: console
@@ -23,10 +25,7 @@ pgstar commands used for the plot above:
 
   file_white_on_black_flag = .true. ! white_on_black flags -- true means white foreground color on black background
   !file_device = 'png'            ! png
-  !file_extension = 'png'
-
   file_device = 'vcps'          ! postscript
-  file_extension = 'ps'
 
   pgstar_interval = 1
 
@@ -191,15 +190,9 @@ pgstar commands used for the plot above:
  Grid1_file_prefix = 'grid_'
  Grid1_file_interval = 10000
  Grid1_file_width = -1
- Grid1_file_aspect_ratio = -1         
+ Grid1_file_aspect_ratio = -1
 
  / ! end of pgstar namelist
 
 
 Last-Updated: 15Jul2021 (MESA 094ff71) by fxt.
-
-
-.. # define a hard line break for HTML
-.. |br| raw:: html
-
-      <br>

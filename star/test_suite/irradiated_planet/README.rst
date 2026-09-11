@@ -4,6 +4,8 @@
 irradiated_planet
 *****************
 
+.. tags:: star, irradiated-planet, irradiation, planetary-cooling
+
 This test case checks the evolution of an ~1 Mjup model after the surface has been irradiated.
 
 This test case has 2 parts. Click to see a larger version of a plot.
@@ -30,10 +32,8 @@ pgstar commands used for the plots above:
 
   file_white_on_black_flag = .true. ! white_on_black flags -- true means white foreground color on black background
   !file_device = 'png'            ! png
-  !file_extension = 'png'
 
   file_device = 'vcps'          ! postscript
-  file_extension = 'ps'
 
    pgstar_interval = 10
 

@@ -2,39 +2,33 @@
 !
 !   Copyright (C) 2010-2019 The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
       module eval_weak
-      
+
       use const_def, only: dp
       use math_lib
       use utils_lib, only: mesa_error
       use rates_def
       use suzuki_tables
+
       implicit none
 
-
       contains
-      
+
       subroutine do_eval_weak_reaction_info( &
             n, ids, reaction_ids, T9, YeRho, &
             eta, d_eta_dlnT, d_eta_dlnRho, &
@@ -53,7 +47,7 @@
             Q, dQ_dlnT, dQ_dlnRho, &
             Qneu, dQneu_dlnT, dQneu_dlnRho
          integer, intent(out) :: ierr
-         
+
          real(dp) :: alfa, beta, d_alfa_dlnT, alfa_hi_Z, beta_hi_Z, d_alfa_hi_Z_dlnT
          integer :: i, ir, cid
 
@@ -72,8 +66,8 @@
          end if
 
          !if (T9 >= max(T9_weaklib_full_on, T9_weaklib_full_on_hi_Z)) return
-         
-         ! revise lambda using rate for low T         
+
+         ! revise lambda using rate for low T
          ! alfa is fraction from weaklib
          if (T9 >= T9_weaklib_full_on) then
             alfa = 1d0
@@ -87,7 +81,7 @@
             alfa = 0d0
             d_alfa_dlnT = 0d0
          end if
-         beta = 1d0 - alfa ! beta is fraction for low T
+         beta = 1d0 - alfa  ! beta is fraction for low T
 
          if (T9 >= T9_weaklib_full_on_hi_Z) then
             alfa_hi_Z = 1d0
@@ -108,7 +102,7 @@
             if (ir == 0) cycle
             cid = weak_reaction_info(1,ir)
             if (weak_lowT_rate(ir) <= 0d0) cycle
-            if (cid <= 0) cycle  
+            if (cid <= 0) cycle
             if (ids(i) <= 0) then
                lambda(i) = weak_lowT_rate(ir)
                dlambda_dlnT(i) = 0d0
@@ -125,10 +119,10 @@
                dlambda_dlnRho(i) = alfa*dlambda_dlnRho(i)
             end if
          end do
-         
+
       end subroutine do_eval_weak_reaction_info
 
-      
+
       subroutine do_eval_weaklib_reaction_info( &
             n, ids, T9_in, YeRho_in, &
             eta, d_eta_dlnT, d_eta_dlnRho, &
@@ -147,9 +141,9 @@
             Q, dQ_dlnT, dQ_dlnRho, &
             Qneu, dQneu_dlnT, dQneu_dlnRho
          integer, intent(out) :: ierr
-         
+
          logical, parameter :: dbg = .false.
-         
+
          real(dp) :: T, T9, YeRho, lYeRho
          integer :: i, ir, in, out, rxn_idx
          logical :: neg
@@ -168,27 +162,27 @@
          include 'formats'
 
          ierr = 0
-         
+
          T9 = T9_in
          YeRho = YeRho_in
          lYeRho = log10(YeRho_in)
          if (is_bad(lYeRho)) then
             ierr = -1
             return
-            
+
             write(*,1) 'lYeRho', lYeRho
             write(*,1) 'YeRho_in', YeRho_in
             write(*,1) 'log10(YeRho_in)', log10(YeRho_in)
             !call mesa_error(__FILE__,__LINE__,'weak lYeRho')
          end if
-         
+
          if (n == 0) then
             write(*,*) 'problem in eval_weak_reaction_info: n == 0'
             write(*,2) 'n', n
             write(*,1) 'T9', T9
            return
          end if
-         
+
        do i = 1, n
 
             lambda(i) = 0d0
@@ -241,7 +235,7 @@
             lYeRho = table % lYeRhos(table % num_lYeRho)
 
             call table% interpolate(T9, lYeRho, &
-               lambda(i), dlambda_dlnT(i), dlambda_dlnRho(i), & 
+               lambda(i), dlambda_dlnT(i), dlambda_dlnRho(i), &
                Qneu(i), dQneu_dlnT(i), dQneu_dlnRho(i), ierr)
 
             in = weak_lhs_nuclide_id(ir)
@@ -282,11 +276,11 @@
           ! these terms are now handled elsewhere, so Q is just the change in rest mass.
           ! since Qx is made from atomic mass excesses, it includes the electron rest mass.
 
-          if (neg) then ! electron capture and positron emission
+          if (neg) then  ! electron capture and positron emission
              Q(i) = Qx
              dQ_dlnT(i) = 0
              dQ_dlnRho(i) = 0
-          else ! positron capture and electron emission
+          else  ! positron capture and electron emission
              Q(i) = Qx
              dQ_dlnT(i) = 0
              dQ_dlnRho(i) = 0
@@ -306,18 +300,18 @@
                write(*,2) 'Qneu', i, Qneu(i)
                call show_stuff
             end if
-            
+
          end do
-                  
+
          if (is_bad(lYeRho)) then
             ierr = -1
             return
             call show_stuff
          end if
-      
-      
+
+
          contains
-         
+
          subroutine show_stuff
             integer :: i
             include 'formats'
@@ -345,12 +339,8 @@
                end if
             end do
             call mesa_error(__FILE__,__LINE__)
-         end subroutine show_stuff         
-         
+         end subroutine show_stuff
+
       end subroutine do_eval_weaklib_reaction_info
-      
-
-
 
       end module eval_weak
-

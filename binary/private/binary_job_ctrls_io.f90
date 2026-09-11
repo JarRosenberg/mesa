@@ -1,25 +1,19 @@
 ! ***********************************************************************
 !
-!   Copyright (C) 2013  Pablo Marchant
+!   Copyright (C) 2013  Pablo Marchant & The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
@@ -75,84 +69,48 @@
 
 
       subroutine do_read_binary_job(b, filename, ierr)
-         use utils_lib
+         use utils_namelist, only: read_namelist, missing_namelist_error
          type (binary_info), pointer :: b
          character(*), intent(in) :: filename
          integer, intent(out) :: ierr
-         character (len=strlen) :: binary_job_namelist_name
-         binary_job_namelist_name = ''
-         ierr = 0
+
          call set_default_binary_job_controls
-         call read_binary_job_file(b, filename, 1, ierr)
+         call read_namelist(filename, read_binary_job_file, "binary_job", ierr, missing_namelist_error)
+
+         if (ierr /= 0) return
+
+         call store_binary_job_controls(b)
       end subroutine do_read_binary_job
 
+      subroutine read_binary_job_file(unit, iostat, iomsg, extra_inlists, extra_inlists_mask)
+         use const_def, only: strlen
+         use utils_namelist, only: max_extra_inlists
 
-      recursive subroutine read_binary_job_file(b, filename, level, ierr)
-         use utils_lib
-         character(*), intent(in) :: filename
-         type (binary_info), pointer :: b
-         integer, intent(in) :: level
-         integer, intent(out) :: ierr
-         logical, dimension(max_extra_inlists) :: read_extra
-         character (len=strlen), dimension(max_extra_inlists) :: extra
-         integer :: unit, i
+         integer, intent(in) :: unit
+         integer, intent(out) :: iostat
+         character(len=strlen), intent(out) :: iomsg
+         character(len=strlen), dimension(max_extra_inlists), intent(out) :: extra_inlists
+         logical, dimension(max_extra_inlists), intent(out) :: extra_inlists_mask
 
-         ierr = 0
+         integer :: i
 
-         if (level >= 10) then
-            write(*,*) 'ERROR: too many levels of nested extra binary_job inlist files'
-            ierr = -1
+         read_extra_binary_job_inlist(:) = .false.
+
+         read(unit, nml=binary_job, iostat=iostat, iomsg=iomsg)
+
+         if (iostat /= 0) then
             return
          end if
 
-         if (len_trim(filename) > 0) then
-            open(newunit=unit, file=trim(filename), action='read', delim='quote', status='old', iostat=ierr)
-            if (ierr /= 0) then
-               write(*, *) 'Failed to open control namelist file ', trim(filename)
-               return
-            end if
-            read(unit, nml=binary_job, iostat=ierr)
-            close(unit)
-            if (ierr /= 0) then
-               write(*, *)
-               write(*, *)
-               write(*, *)
-               write(*, *)
-               write(*, '(a)') &
-                  'Failed while trying to read control namelist file: ' // trim(filename)
-               write(*, '(a)') &
-                  'Perhaps the following runtime error message will help you find the problem.'
-               write(*, *)
-               open(newunit=unit, file=trim(filename), action='read', delim='quote', status='old', iostat=ierr)
-               read(unit, nml=binary_job)
-               close(unit)
-               return
-            end if
-         end if
-
-         call store_binary_job_controls(b, ierr)
-
-         ! recursive calls to read other inlists
          do i=1, max_extra_inlists
-            read_extra(i) = read_extra_binary_job_inlist(i)
-            read_extra_binary_job_inlist(i) = .false.
-            extra(i) = extra_binary_job_inlist_name(i)
-            extra_binary_job_inlist_name(i) = 'undefined'
-            
-            if (read_extra(i)) then
-               call read_binary_job_file(b, extra(i), level+1, ierr)
-               if (ierr /= 0) return
-            end if
+            extra_inlists(i) = extra_binary_job_inlist_name(i)
+            extra_inlists_mask(i) = read_extra_binary_job_inlist(i)
          end do
-         
+
       end subroutine read_binary_job_file
 
-
-      subroutine store_binary_job_controls(b, ierr)
+      subroutine store_binary_job_controls(b)
          type (binary_info), pointer :: b
-         integer, intent(out) :: ierr
-
-         ierr = 0
 
          b% job% show_binary_log_description_at_start = show_binary_log_description_at_start
          b% job% binary_history_columns_file = binary_history_columns_file
@@ -272,64 +230,64 @@
          character(len=*),intent(in) :: name
          character(len=*), intent(out) :: val
          integer, intent(out) :: ierr
-   
+
          character(len(name)) :: upper_name
          character(len=512) :: str
          integer :: iounit,iostat,ind,i
-   
-   
+
+
          ! First save current controls
          call set_binary_job_controls_for_writing(b, ierr)
          if(ierr/=0) return
-   
-         ! Write namelist to temporay file
+
+         ! Write namelist to temporary file
          open(newunit=iounit,status='scratch')
          write(iounit,nml=binary_job)
          rewind(iounit)
-   
-         ! Namelists get written in captials
+
+         ! Namelists get written in capitals
          upper_name = StrUpCase(name)
          val = ''
          ! Search for name inside namelist
-         do 
+         do
             read(iounit,'(A)',iostat=iostat) str
             ind = index(str,trim(upper_name))
             if( ind /= 0 ) then
-               val = str(ind+len_trim(upper_name)+1:len_trim(str)-1) ! Remove final comma and starting =
+               val = str(ind+len_trim(upper_name)+1:len_trim(str)-1)  ! Remove final comma and starting =
                do i=1,len(val)
                   if(val(i:i)=='"') val(i:i) = ' '
                end do
                exit
             end if
             if(is_iostat_end(iostat)) exit
-         end do   
-   
+         end do
+
          if(len_trim(val) == 0 .and. ind==0 ) ierr = -1
-   
+
          close(iounit)
-   
+
       end subroutine get_binary_job
-   
+
       subroutine set_binary_job(b, name, val, ierr)
          type (binary_info), pointer :: b
          character(len=*), intent(in) :: name, val
          character(len=len(name)+len(val)+14) :: tmp
          integer, intent(out) :: ierr
-   
+
          ! First save current controls
          call set_binary_job_controls_for_writing(b, ierr)
          if(ierr/=0) return
-   
+
          tmp=''
          tmp = '&binary_job '//trim(name)//'='//trim(val)//' /'
-   
+
          ! Load into namelist
          read(tmp, nml=binary_job)
-   
+
          ! Add to star
-         call store_binary_job_controls(b, ierr)
+         call store_binary_job_controls(b)
          if(ierr/=0) return
-   
+
       end subroutine set_binary_job
 
 

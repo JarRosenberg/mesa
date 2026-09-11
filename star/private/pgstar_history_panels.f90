@@ -2,39 +2,31 @@
 !
 !   Copyright (C) 2013  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
       module pgstar_history_panels
 
       use star_private_def
-      use const_def
+      use const_def, only: dp
       use pgstar_support
       use star_pgstar
 
       implicit none
 
-
       contains
-
 
       subroutine History_Panels1_plot(id, device_id, ierr)
          integer, intent(in) :: id, device_id
@@ -616,6 +608,7 @@
          use net_def
          use net_lib, only: get_net_reaction_table
          use const_def, only: Msun, Rsun
+         use pgstar_colors
 
          type (star_info), pointer :: s
          integer, intent(in) :: id, device_id, hist_num_panels
@@ -849,12 +842,12 @@
                if (other_ytop > ytop) ytop = other_ytop
                if (ytop > other_ytop) other_ytop = ytop
             end if
-            
+
             if (have_other_yaxis) then
                !write(*,1) trim(other_yname), other_ybot, other_ytop
                call pgswin(xleft, xright, other_ybot, other_ytop)
                call pgscf(1)
-               call pgsci(1)
+               call pgsci(clr_Foreground)
                call show_box_pgstar(s,'','CMSTV')
                call pgsci(other_y_color)
                if (hist_other_yaxis_log(j)) then
@@ -877,7 +870,7 @@
                !write(*,1) trim(yname), ybot, ytop
                call pgswin(xleft, xright, ybot, ytop)
                call pgscf(1)
-               call pgsci(1)
+               call pgsci(clr_Foreground)
                if (j < hist_num_panels) then
                   if (.not. have_other_yaxis) then
                      call show_box_pgstar(s,'BCST1','BCMNSTV1')
@@ -891,7 +884,7 @@
                      call show_box_pgstar(s,'BCNST','BNSTV')
                   end if
                end if
-               
+
                if (len_trim(hist_points_name(j)) > 0) then
                   iounit = 33
                   open(unit=iounit, file=trim(hist_points_name(j)), &
@@ -901,11 +894,11 @@
                      return
                   end if
                   read(iounit,*) num_pts
-                  ishape = s% pg% History_Panel_points_marker ! 5
+                  ishape = s% pg% History_Panel_points_marker  ! 5
                   call pgsave
-                  call pgsci(s% pg% History_Panel_points_ci) !1)
-                  call pgslw(s% pg% History_Panel_points_lw) !2)
-                  call pgsch(s% pg% History_Panel_points_ch) !1.0)
+                  call pgsci(s% pg% History_Panel_points_ci)  !1)
+                  call pgslw(s% pg% History_Panel_points_lw)  !2)
+                  call pgsch(s% pg% History_Panel_points_ch)  !1.0)
                   do k = 1, num_pts
                      if (s% pg% History_Panel_points_error_bars) then
                         read(iounit,*) xpt, ypt, errpt
@@ -930,7 +923,7 @@
                   call show_left_yaxis_label_pgstar(s,'log ' // yname)
                else
                   call show_left_yaxis_label_pgstar(s,yname)
-               end if               
+               end if
                call pgslw(s% pg% pgstar_lw)
                if (yfile_data_len > 0) then
                   call pgsls(s% pg% pgstar_history_line_style)
@@ -945,7 +938,7 @@
                call pgslw(1)
             end if
 
-            call pgsci(1)
+            call pgsci(clr_Foreground)
             call show_pgstar_decorator(s%id,use_decorator,pgstar_decorator, j, ierr)
          end do
 
@@ -958,7 +951,7 @@
          deallocate(xvec, yvec, other_yvec)
 
          call pgunsa
-         
+
          contains
 
 
@@ -968,9 +961,6 @@
             get1_yvec = get1_hist_yvec(s, step_min, step_max, n, name, vec)
          end function get1_yvec
 
-
       end subroutine do_history_panels_plot
 
-
       end module pgstar_history_panels
-

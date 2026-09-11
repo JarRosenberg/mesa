@@ -2,42 +2,33 @@
 !
 !   Copyright (C) 2017-2018  Rich Townsend & The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 module conv_premix
 
-  ! Uses
-
-  use const_def
+  use const_def, only: dp, i8, msun, convective_mixing
   use star_private_def
   use chem_def
   use chem_lib
   use num_lib
 
-  ! No implicit typing
-
   implicit none
 
-  ! Parameter definitions
+  private
+  public :: do_conv_premix
 
   integer, parameter :: BURN_TYPE_NONE = 1
   integer, parameter :: BURN_TYPE_H = 2
@@ -48,8 +39,6 @@ module conv_premix
   integer, parameter :: FIXED_DT_MODE = 6
 
   logical, parameter :: TRACE_ALL = .FALSE.
-
-  ! Derived-type definitions
 
   ! The zone_info type stores information about the extent &
   ! properties of each convective zone
@@ -63,7 +52,7 @@ module conv_premix
      real(dp)              :: vp_b = 0._dp               ! Penetration velocity at bot boundary
      real(dp)              :: dt_t = 0._dp               ! Clock for top boundary
      real(dp)              :: dt_b = 0._dp               ! Clock for bottom boundary
-     integer               :: burn_type = BURN_TYPE_NONE ! Type of burning in zone
+     integer               :: burn_type = BURN_TYPE_NONE  ! Type of burning in zone
      logical               :: sel_t = .FALSE.            ! Flag to select top boundary for modification
      logical               :: sel_b = .FALSE.            ! Flag to select bot boundary for modification
      logical               :: split_retreat = .FALSE.    ! Flag to indicate the zone has split, or the trailing bdy retreated
@@ -88,14 +77,6 @@ module conv_premix
      integer               :: kc_b = 0
   end type saved_data
 
-  ! Access specifers
-
-  private
-
-  public :: do_conv_premix
-
-  ! Procedures
-
 contains
 
   subroutine do_conv_premix (s, ierr)
@@ -117,7 +98,7 @@ contains
     integer                      :: i_bdy
     logical                      :: t_bdy
 
-    integer(8)                   :: time0
+    integer(i8)                   :: time0
     real(dp)                     :: total
 
     ierr = 0
@@ -133,7 +114,7 @@ contains
     !   update_mode = FIXED_PT_MODE
     !else
        update_mode = FIXED_DT_MODE
-    !endif
+    !end if
 
     ! Allocate the saved data arrays
 
@@ -192,17 +173,14 @@ contains
        deallocate(dt_b)
 
     end do iter_loop
-
-    ! Finish
     s% need_to_setvars = .true.
 
     if (s% doing_timing) call update_time(s, time0, total, s% time_conv_premix)
-    
+
     return
 
   end subroutine do_conv_premix
-  
-  !****
+
 
   subroutine advance_bdy_ (s, update_mode, zi, i_bdy, t_bdy, sd, j_it)
 
@@ -249,8 +227,8 @@ contains
           zi(i_bdy)%sel_t = .FALSE.
        elseif (.NOT. t_bdy .AND. zi(i_bdy)%kc_b == s%nz) then
           zi(i_bdy)%sel_b = .FALSE.
-       endif
-       
+       end if
+
        ! Check whether the advancing face is still selected
 
        if ((t_bdy .AND. .NOT. zi(i_bdy)%sel_t) .OR. &
@@ -286,13 +264,10 @@ contains
        write(*,*) 'Done advancing zone boundary'
     end if
 
-    ! Finish
-
     return
 
   end subroutine advance_bdy_
 
-  !****
 
   subroutine advance_bdy_by_one_cell_ (s, update_mode, zi, i_bdy, t_bdy, sd)
 
@@ -344,9 +319,9 @@ contains
           dr = s%r(kc_b) - s%r(kc_b+1)
        else
           dr = s%r(kc_b)
-       endif
+       end if
        vp = zi(i_bdy)%vp_b
-    endif
+    end if
 
     delta_dt = dr/vp
 
@@ -356,12 +331,12 @@ contains
        dt_limit = s%conv_premix_time_factor*s%dt
     else
        dt_limit = HUGE(0._dp)
-    endif
+    end if
 
     if (t_bdy) then
 
        if (zi(i_bdy)%dt_t + delta_dt > dt_limit) then
-        
+
           zi(i_bdy)%sel_t = .FALSE.
 
           if (TRACE_MIX_CELL) then
@@ -374,7 +349,7 @@ contains
 
           zi(i_bdy)%dt_t = zi(i_bdy)%dt_t + delta_dt
 
-       endif
+       end if
 
     else
 
@@ -392,9 +367,9 @@ contains
 
           zi(i_bdy)%dt_b = zi(i_bdy)%dt_b + delta_dt
 
-       endif
+       end if
 
-    endif
+    end if
 
     ! Determine the index of the new cell we're going to add
 
@@ -402,7 +377,7 @@ contains
        kc_new = zi(i_bdy)%kc_t - 1
     else
        kc_new = zi(i_bdy)%kc_b + 1
-    endif
+    end if
 
     ! Save the current model state over all cells we *might* modify
 
@@ -410,7 +385,7 @@ contains
        call save_model_(s, update_mode, kc_new, zi(i_bdy)%kc_b, sd)
     else
        call save_model_(s, update_mode, zi(i_bdy)%kc_t, kc_new, sd)
-    endif
+    end if
 
     ! Loop over subcell refinement levels
 
@@ -439,7 +414,7 @@ contains
           update_mode(kc_t:kc_b) = FIXED_PT_MODE
        else
           update_mode(kc_t:kc_b) = FIXED_DT_MODE
-       endif
+       end if
 
        ! Set gradL_composition_term to zero on interior faces plus the
        ! advancing face
@@ -448,7 +423,7 @@ contains
           s%gradL_composition_term(kf_t:kf_b-1) = 0._dp
        else
           s%gradL_composition_term(kf_t+1:kf_b) = 0._dp
-       endif
+       end if
 
        ! Divide the new cell into n_sub virtual subcells, and store the
        ! (initially uniform) abundances of these subcells
@@ -476,7 +451,7 @@ contains
           ! subcells
 
           m_zone = SUM(s%dm(kc_t:kc_b))
-   
+
           do l = 1, s%species
              avg_xa(l) = (SUM(s%dm(kc_t:kc_b)*s%xa(l,kc_t:kc_b)) + &
                           SUM(m_sub*xa_sub(l,1:kc_sub))) / (m_zone + m_sub*kc_sub)
@@ -517,7 +492,7 @@ contains
              ! advancing boundary)
 
              has_split = .TRUE.
-             
+
              if (t_bdy) then
 
                 search_down_loop : do kf = kf_t+1, kf_b-1
@@ -539,12 +514,12 @@ contains
 
                 kc_t = kf
                 kf_t = kc_t
-                
+
                 if (TRACE_MIX_SUBCELL) then
                    write(*,*) '  Moved upper boundary to', kc_t
                 end if
 
-             endif
+             end if
 
           end if
 
@@ -569,7 +544,7 @@ contains
        update_mode(kc_new) = FIXED_PT_MODE
     else
        update_mode(kc_new) = FIXED_DT_MODE
-    endif
+    end if
 
     if (t_bdy) then
        kc_t = kc_new
@@ -577,7 +552,7 @@ contains
     else
        kc_b = kc_new
        kf_b = kc_b + 1
-    endif
+    end if
 
     call update_model_(s, update_mode, kc_t, kc_b)
 
@@ -604,7 +579,7 @@ contains
                zi(i_bdy)%sel_t = .FALSE.
             else
                zi(i_bdy)%sel_b = .FALSE.
-            endif
+            end if
 
             if (TRACE_MIX_CELL) then
                write(*,*) '  Outcome: abundance reversal for isotope', iso
@@ -621,7 +596,7 @@ contains
     ! Determine whether the face just inside the advancing boundary
     ! has become/remained convective; if not, revert back to the
     ! starting model and return
-       
+
     if (t_bdy) then
 
        if (s%mlt_mixing_type(kf_t+1) /= convective_mixing) then
@@ -636,10 +611,10 @@ contains
 
           return
 
-       endif
+       end if
 
     else
-       
+
        if (s%mlt_mixing_type(kf_b-1) /= convective_mixing) then
 
           call restore_model_(s, update_mode, sd)
@@ -652,7 +627,7 @@ contains
 
           return
 
-       endif
+       end if
 
     end if
 
@@ -660,13 +635,10 @@ contains
 
     call update_zone_info_(s, i_bdy, t_bdy, has_split, zi)
 
-    ! Finish
-
     return
 
   end subroutine advance_bdy_by_one_cell_
 
-  !****
 
   subroutine init_zone_info_ (s, zi)
 
@@ -706,13 +678,10 @@ contains
 
     end do zone_loop
 
-    ! Finish
-
     return
 
   end subroutine init_zone_info_
 
-  !****
 
   subroutine create_zone_info_ (s, kc_t, kc_b, zi)
 
@@ -737,7 +706,7 @@ contains
     if (kc_t >= kc_b) then
        write(*,*) 'conv_premix: Invalid cell range in create_zone_info_'
        stop
-    endif
+    end if
 
     ! Create the empty zone info table
 
@@ -755,14 +724,14 @@ contains
        zi_new%kc_b = kf
        zi_new%vc_b = s%mlt_vc(kf)
 
-    endif
+    end if
 
     face_loop : do kf = kc_b-1, kc_t+1, -1
 
        if (in_conv .AND. s%mlt_mixing_type(kf) /= convective_mixing) then
 
           ! Transitioning out of a convective zone; complete
-          ! definition of new zone info and add to to the table
+          ! definition of new zone info and add to the table
 
           zi_new%kc_t = kf
           zi_new%vc_t = s%mlt_vc(kf+1)
@@ -781,7 +750,7 @@ contains
 
           in_conv = .TRUE.
 
-       endif
+       end if
 
     end do face_loop
 
@@ -796,13 +765,10 @@ contains
 
     end if
 
-    ! Finish
-
     return
 
   end subroutine create_zone_info_
 
-  !****
 
   subroutine update_zone_info_ (s, i_bdy, t_bdy, has_split, zi)
 
@@ -828,7 +794,7 @@ contains
     else
        zi(i_bdy)%kc_b = zi(i_bdy)%kc_b + 1
        zi(i_bdy)%vc_b = s%mlt_vc(zi(i_bdy)%kc_b)
-    endif
+    end if
 
     call set_penetration_velocities_(s, zi(i_bdy))
 
@@ -851,8 +817,8 @@ contains
              if (TRACE_UPDATE_ZONE) then
                 write(*,*) 'Truncated zone above to', zi(i_bdy+1)%kc_b, zi(i_bdy+1)%vc_b, &
                      s%mlt_mixing_type(zi(i_bdy+1)%kc_b), zi(i_bdy+1)%kc_b-zi(i_bdy+1)%kc_t+1
-             endif
-             
+             end if
+
           else
 
              ! Delete the zone
@@ -861,7 +827,7 @@ contains
 
              if (TRACE_UPDATE_ZONE) then
                 write(*,*) 'Deleted zone above'
-             endif
+             end if
 
           end if
 
@@ -876,30 +842,30 @@ contains
           if (zi(i_bdy-1)%kc_b-zi(i_bdy-1)%kc_t > 1) then
 
              ! Truncate the zone
-          
+
              zi(i_bdy-1)%kc_t = zi(i_bdy-1)%kc_t + 1
              zi(i_bdy-1)%vc_t = s%mlt_vc(zi(i_bdy-1)%kc_t+1)
 
              if (TRACE_UPDATE_ZONE) then
                 write(*,*) 'Truncated zone below to', zi(i_bdy-1)%kc_t
-             endif
-             
+             end if
+
           else
 
              ! Delete the zone
-             
+
              zi = [zi(:i_bdy-2),zi(i_bdy:)]
              i_bdy = i_bdy - 1
 
              if (TRACE_UPDATE_ZONE) then
                 write(*,*) 'Deleted zone below'
-             endif
+             end if
 
           end if
 
        end if
 
-    endif
+    end if
 
     ! If the zone has split (or its trailing boundary has retreated),
     ! then replace the zone with as many new zones as necessary
@@ -926,9 +892,9 @@ contains
              else
                 zi_new(i)%dt_t = zi(i_bdy)%dt_b
                 zi_new(i)%sel_t = .FALSE.
-             endif
-          endif
-          
+             end if
+          end if
+
           if (zi_new(i)%kc_b == zi(i_bdy)%kc_b) then
              zi_new(i)%dt_b = zi(i_bdy)%dt_b
              zi_new(i)%sel_b = zi(i_bdy)%sel_b
@@ -939,8 +905,8 @@ contains
              else
                 zi_new(i)%dt_b = zi(i_bdy)%dt_b
                 zi_new(i)%sel_b = .FALSE.
-             endif
-          endif
+             end if
+          end if
 
           ! Penetration velocities
 
@@ -950,7 +916,7 @@ contains
 
           call set_burn_data_(s, zi_new(i))
 
-          ! Initial abundances 
+          ! Initial abundances
 
           zi_new(i)%avg_xa = zi(i_bdy)%avg_xa
           zi_new(i)%davg_xa_dt = zi(i_bdy)%davg_xa_dt
@@ -974,13 +940,10 @@ contains
 
     end if
 
-    ! Finish
-
     return
 
   end subroutine update_zone_info_
 
-  !****
 
   subroutine set_penetration_velocities_ (s, zi)
 
@@ -1011,7 +974,7 @@ contains
           z_s = MIN(zi%vc_b*zi%vc_b/(2._dp*s%grav(kf)*(1._dp - mu_i/mu_e)), s%mlt_mixing_length(kf))
        else
           z_s = s%mlt_mixing_length(kf)
-       endif
+       end if
 
        zi%vp_b = zi%vc_b*z_s/s%mlt_mixing_length(kf)
 
@@ -1036,7 +999,7 @@ contains
           z_s = MIN(zi%vc_t*zi%vc_t/(2._dp*s%grav(kf)*(1._dp - mu_e/mu_i)), s%mlt_mixing_length(kf))
        else
           z_s = s%mlt_mixing_length(kf)
-       endif
+       end if
 
        zi%vp_t = zi%vc_t*z_s/s%mlt_mixing_length(kf)
 
@@ -1048,20 +1011,17 @@ contains
 
     if (zi%vp_t == 0._dp) print *,'Top bdy has zero vp', zi%kc_t, zi%vp_t, zi%vc_t, z_s
 
-    ! Finish
-
     return
 
   end subroutine set_penetration_velocities_
 
-  !****
 
   subroutine set_burn_data_ (s, zi)
 
     type(star_info), pointer       :: s
     type(zone_info), intent(inout) :: zi
 
-    real(dp), parameter :: EPS_THRESHOLD = 1._dp ! Threshold eps for a zone to be classified as burning
+    real(dp), parameter :: EPS_THRESHOLD = 1._dp  ! Threshold eps for a zone to be classified as burning
 
     integer  :: iso_h1
     integer  :: iso_he4
@@ -1072,7 +1032,7 @@ contains
     integer  :: kc
 
     ! Set burning data for the zone info
-    
+
     iso_h1 = s%net_iso(chem_get_iso_id('h1'))
     iso_he4 = s%net_iso(chem_get_iso_id('he4'))
     iso_c12 = s%net_iso(chem_get_iso_id('c12'))
@@ -1097,8 +1057,8 @@ contains
                         s%eps_nuc_categories(icno, kc)
             eps_he_max = s%eps_nuc_categories(i3alf, kc) + &
                          s%eps_nuc_categories(i_burn_c, kc)
-            
-         endif
+
+         end if
 
       end do cell_loop
 
@@ -1132,7 +1092,7 @@ contains
 
          zi%burn_type = BURN_TYPE_NONE
 
-      endif
+      end if
 
     end associate
 
@@ -1150,15 +1110,12 @@ contains
           zi%avoid_inc_iso = 0
        end select
 
-    endif
-
-    ! Finish
+    end if
 
     return
 
   end subroutine set_burn_data_
 
-  !****
 
   subroutine set_abund_data_ (s, zi)
 
@@ -1169,7 +1126,7 @@ contains
     integer  :: l
 
     ! Set abundance data for the zone info
-    
+
     allocate(zi%avg_xa(s%species))
     allocate(zi%davg_xa_dt(s%species))
 
@@ -1192,13 +1149,10 @@ contains
 
     end associate
 
-    ! Finish
-
     return
 
   end subroutine set_abund_data_
 
-  !****
 
   subroutine validate_zone_info_ (s, zi)
 
@@ -1231,7 +1185,7 @@ contains
        if (zi(i)%kc_t == zi(i)%kc_b) then
           write(*,*) 'conv_premix: Degenerate zone'
           valid = .FALSE.
-       endif
+       end if
 
        ! (iii) Out of bounds zone (cells outside grid)
 
@@ -1248,31 +1202,31 @@ contains
        ! (iv) Overlapping zone (cells inside previous/next zone)
 
        if (i > 1) then
-          if (zi(i)%kc_b >= zi(max(1,i-1))%kc_t) then 
+          if (zi(i)%kc_b >= zi(max(1,i-1))%kc_t) then
              ! bp: max(1,i-1) to prevent bogus warning from gfortran
              write(*,*) 'conv_premix: Zone bottom inside previous zone'
              valid = .FALSE.
-          endif
-       endif
+          end if
+       end if
 
        if (i < n_zi) then
           if (zi(i)%kc_t <= zi(i+1)%kc_b) then
              write(*,*) 'conv_premix: Zone top inside next zone'
              valid = .FALSE.
-          endif
-       endif
+          end if
+       end if
 
        ! (vi) Convective velocities
 
        if (zi(i)%vc_t <= 0._dp) then
           write(*,*) 'conv_premix: Convective velocity is not greater than zero at zone top'
           valid = .FALSE.
-       endif
+       end if
 
        if (zi(i)%vc_b <= 0._dp) then
           write(*,*) 'conv_premix: Convective velocity is not greater than zero at zone bottom'
           valid = .FALSE.
-       endif
+       end if
 
        ! (vii) Mixing type
 
@@ -1290,13 +1244,10 @@ contains
 
     if (.NOT. valid) stop
 
-    ! Finish
-
     return
 
   end subroutine validate_zone_info_
 
-  !****
 
   subroutine print_zone_info_ (s, zi)
 
@@ -1313,7 +1264,7 @@ contains
        write(*,*) '  mass(kf_b)    :', (s%M_center + s%xmstar*s%q(zi%kc_b+1))/Msun
     else
        write(*,*) '  mass(kf_b)    :', (s%M_center)/Msun
-    endif
+    end if
     write(*,*) '  vc_t          :', zi%vc_t
     write(*,*) '  vc_b          :', zi%vc_b
     write(*,*) '  dt_t          :', zi%dt_t
@@ -1324,13 +1275,10 @@ contains
     write(*,*) '  avoid_inc_iso :', zi%avoid_inc_iso
     write(*,'(A)')
 
-    ! Finish
-
     return
 
   end subroutine print_zone_info_
 
-  !****
 
   subroutine update_model_ (s, update_mode, kc_t, kc_b)
 
@@ -1391,19 +1339,23 @@ contains
     kf_t = kc_t
     kf_b = kc_b + 1
 
+    if (s% use_face_reconstruction) then
+       ! update_model_ changed the local composition and refreshed EOS and kap
+       ! on kc_t:kc_b, so the cached face thermo bundle must be rebuilt for the
+       ! interior faces before set_mlt_vars uses it.
+       s% reconstructed_face_state_valid(kf_t+1:kf_b-1) = .false.
+    end if
+
     call set_mlt_vars(s, kf_t+1, kf_b-1, ierr)
     if (ierr /= 0) then
        write(*,*) 'conv_premix: failed in call to set_mlt_vars during update_model_'
        stop
-    endif
-
-    ! Finish
+    end if
 
     return
 
   end subroutine update_model_
 
-  !****
 
   subroutine dump_snapshot_ (s, filename)
 
@@ -1440,7 +1392,7 @@ contains
        write(*,*) 'conv_premix: error from call to set_grads'
        stop
     end if
-       
+
     ! Dump the snapshot
 
     open(NEWUNIT=unit, FILE=filename, STATUS='REPLACE')
@@ -1470,13 +1422,10 @@ contains
 
     s%gradL_composition_term(1:s%nz) = gradL_composition_term
 
-    ! Finish
-
     return
 
   end subroutine dump_snapshot_
 
-  !****
 
   subroutine alloc_saved_data_ (s, sd)
 
@@ -1497,11 +1446,8 @@ contains
 
     allocate(sd%gradL_composition_term(s%nz))
 
-    ! Finish
-
   end subroutine alloc_saved_data_
 
-  !****
 
   subroutine save_model_ (s, update_mode, kc_t, kc_b, sd)
 
@@ -1530,7 +1476,7 @@ contains
     end if
 
     sd%update_mode(kc_t:kc_b) = update_mode(kc_t:kc_b)
-    
+
     sd%xa(:,kc_t:kc_b) = s%xa(:,kc_t:kc_b)
 
     sd%lnd(kc_t:kc_b) = s%lnd(kc_t:kc_b)
@@ -1548,7 +1494,7 @@ contains
        write(*,*) '    kf_t:', kf_t
        write(*,*) '    kf_b:', kf_b
     end if
-    
+
     sd%gradL_composition_term(kf_t+1:kf_b-1) = s%gradL_composition_term(kf_t+1:kf_b-1)
 
     ! Store indices (used when we call restore_model_)
@@ -1556,13 +1502,10 @@ contains
     sd%kc_t = kc_t
     sd%kc_b = kc_b
 
-    ! Finish
-
     return
 
   end subroutine save_model_
 
-  !****
 
   subroutine restore_model_ (s, update_mode, sd)
 
@@ -1594,12 +1537,12 @@ contains
     end if
 
     update_mode(kc_t:kc_b) = sd%update_mode(kc_t:kc_b)
-    
+
     s%xa(:,kc_t:kc_b) = sd%xa(:,kc_t:kc_b)
-    
+
     s%lnd(kc_t:kc_b) = sd%lnd(kc_t:kc_b)
     s%rho(kc_t:kc_b) = sd%rho(kc_t:kc_b)
-    
+
     s%lnPgas(kc_t:kc_b) = sd%lnPgas(kc_t:kc_b)
     s%Pgas(kc_t:kc_b) = sd%Pgas(kc_t:kc_b)
 
@@ -1612,7 +1555,7 @@ contains
        write(*,*) '    kf_t:', kf_t
        write(*,*) '    kf_b:', kf_b
     end if
-    
+
     s%gradL_composition_term(kf_t+1:kf_b-1) = sd%gradL_composition_term(kf_t+1:kf_b-1)
 
     ! Update the model set those quantities that are not stored
@@ -1620,11 +1563,6 @@ contains
 
     call update_model_(s, update_mode, kc_t, kc_b)
 
-    ! Finish
-
-    return
-
   end subroutine restore_model_
 
 end module conv_premix
-

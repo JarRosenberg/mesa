@@ -4,6 +4,8 @@
 12M_pre_ms_to_core_collapse
 ***************************
 
+.. tags:: star, massive-star, pre-main-sequence, full-evolution, core-collapse, carbon-burning, silicon-burning
+
 This test suite evolves a solar metallicity 12 |MSun| model from the pre-ms to core collapse.
 
 Physical checks
@@ -30,4 +32,3 @@ This test case has six parts.
 
 
 Last-Updated: 18Dec2023 by EbF
-

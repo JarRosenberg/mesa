@@ -2,35 +2,56 @@
 !
 !   Copyright (C) 2010-2019  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
       module relax
 
       use star_private_def
-      use const_def
+      use const_def, only: dp, msun, rsun, secyer, one_third, four_thirds_pi
       use utils_lib
 
       implicit none
 
+      private
+      public :: do_relax_z
+      public :: do_relax_mass
+      public :: do_relax_to_limit
+      public :: do_relax_mass_scale
+      public :: do_relax_num_steps
+      public :: do_relax_to_radiative_core
+      public :: do_relax_composition
+      public :: do_relax_angular_momentum
+      public :: do_relax_entropy
+      public :: do_relax_core
+      public :: do_relax_m_center
+      public :: do_relax_r_center
+      public :: do_relax_v_center
+      public :: do_relax_l_center
+      public :: do_relax_dxdt_nuc_factor
+      public :: do_relax_eps_nuc_factor
+      public :: do_relax_opacity_max
+      public :: do_relax_max_surf_dq
+      public :: do_relax_to_xaccrete
+      public :: do_relax_y
+      public :: do_relax_tau_factor
+      public :: do_relax_opacity_factor
+      public :: do_relax_uniform_omega
+      public :: do_relax_irradiation
+      public :: do_relax_mass_change
+      public :: do_internal_evolve
 
       real(dp), parameter :: min_dlnz = -12
       real(dp), parameter :: min_z = 1d-12
@@ -42,7 +63,6 @@
       real(dp), pointer :: relax_work_array(:)
 
       contains
-
 
       subroutine do_relax_to_limit(id, restore_at_end, ierr)
          integer, intent(in) :: id
@@ -73,8 +93,8 @@
       subroutine before_relax_to_limit(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
       end subroutine before_relax_to_limit
@@ -82,8 +102,8 @@
       integer function relax_to_limit_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_to_limit_adjust_model = keep_going
       end function relax_to_limit_adjust_model
 
@@ -91,8 +111,8 @@
          use do_one_utils, only: do_bare_bones_check_model, do_check_limits
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_to_limit_check_model = do_bare_bones_check_model(id)
          if (relax_to_limit_check_model == keep_going) then
             relax_to_limit_check_model = do_check_limits(id)
@@ -186,8 +206,8 @@
       subroutine before_evolve_relax_mass(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
@@ -198,8 +218,8 @@
       integer function relax_mass_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_mass_adjust_model = keep_going
       end function relax_mass_adjust_model
 
@@ -207,8 +227,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer :: ramp
          real(dp) :: &
             new_mass, old_mass, mdot, max_abs_mdot, abs_diff, lg_max_abs_mdot
@@ -227,7 +247,7 @@
 
          new_mass = rpar(1)
          lg_max_abs_mdot = rpar(2)
-         if (lg_max_abs_mdot <= -100) then ! use default
+         if (lg_max_abs_mdot <= -100) then  ! use default
             if (s% star_mass < 0.003d0) then
                lg_max_abs_mdot = -7d0
             else if (s% star_mass < 0.006d0) then
@@ -295,12 +315,12 @@
       subroutine do_relax_composition(  &
             id, num_steps_to_use, num_pts, species, xa, xq, ierr)
          integer, intent(in) :: id
-         integer, intent(in) :: num_steps_to_use ! use this many steps to do conversion
+         integer, intent(in) :: num_steps_to_use  ! use this many steps to do conversion
          integer, intent(in) :: num_pts
             ! length of composition vector; need not equal nz for current model
          integer, intent(in) :: species
             ! per point; must = number of species for current model
-         real(dp), intent(in) :: xa(species,num_pts) ! desired composition profile
+         real(dp), intent(in) :: xa(species,num_pts)  ! desired composition profile
          real(dp), intent(in) :: xq(num_pts)
          integer, intent(out) :: ierr
 
@@ -346,13 +366,13 @@
          write(*,*) 'relax_composition: num_steps_to_use', num_steps_to_use
 
          dxdt_nuc_factor = s% dxdt_nuc_factor
-         s% dxdt_nuc_factor = 0 ! turn off composition change by nuclear burning
+         s% dxdt_nuc_factor = 0  ! turn off composition change by nuclear burning
          mix_factor = s% mix_factor
-         s% mix_factor = 0 ! turn off mixing
+         s% mix_factor = 0  ! turn off mixing
          do_element_diffusion = s% do_element_diffusion
-         s% do_element_diffusion = .false. ! turn off diffusion
+         s% do_element_diffusion = .false.  ! turn off diffusion
          include_composition_in_eps_grav = s% include_composition_in_eps_grav
-         s% include_composition_in_eps_grav = .false. ! don't need energetic effects of artificial changes
+         s% include_composition_in_eps_grav = .false.  ! don't need energetic effects of artificial changes
          starting_dt_next = s% dt_next
          call do_internal_evolve( &
                id, before_evolve_relax_composition, &
@@ -365,7 +385,7 @@
          s% mix_factor = mix_factor
          s% do_element_diffusion = do_element_diffusion
          s% include_composition_in_eps_grav = include_composition_in_eps_grav
-         
+
          call error_check('relax composition',ierr)
 
          deallocate(rpar)
@@ -374,7 +394,7 @@
          contains
 
 
-         subroutine store_rpar(species, num_pts, ierr) ! get interpolation info
+         subroutine store_rpar(species, num_pts, ierr)  ! get interpolation info
             use interp_1d_def, only: pm_work_size
             use interp_1d_lib, only: interp_pm
             integer, intent(in) :: species, num_pts
@@ -384,7 +404,7 @@
             allocate(interp_work(num_pts*pm_work_size*species), stat=ierr)
             if (ierr /= 0) return
             x(:) = xq(:)
-            do j=1, species ! make piecewise monotonic cubic interpolants
+            do j=1, species  ! make piecewise monotonic cubic interpolants
                op_err = 0
                f(1,1:num_pts,j) = xa(j,1:num_pts)
                work(1:num_pts*pm_work_size) => &
@@ -403,8 +423,8 @@
       subroutine before_evolve_relax_composition(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
@@ -413,13 +433,13 @@
       integer function relax_composition_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer :: num_pts, num_steps_to_use, species, starting_model_number, ierr
          real(dp) :: lambda, avg_err
 
-         real(dp), pointer :: x(:) ! =(num_pts)
-         real(dp), pointer :: f1(:) ! =(4, num_pts, species)
+         real(dp), pointer :: x(:)  ! =(num_pts)
+         real(dp), pointer :: f1(:)  ! =(4, num_pts, species)
 
          include 'formats'
 
@@ -465,12 +485,12 @@
             nz = s% nz
             allocate(vals(species, nz), xq(nz), stat=ierr)
             if (ierr /= 0) return
-            xq(1) = 0.5d0*s% dq(1) ! xq for cell center
+            xq(1) = 0.5d0*s% dq(1)  ! xq for cell center
             do k = 2, nz
                xq(k) = xq(k-1) + 0.5d0*(s% dq(k) + s% dq(k-1))
             end do
 !$OMP PARALLEL DO PRIVATE(j,op_err,f) SCHEDULE(dynamic,2)
-            do j=1, species ! interpolate target composition
+            do j=1, species  ! interpolate target composition
                f(1:4*num_pts) => f1(1+(j-1)*4*num_pts:j*4*num_pts)
                call interp_values(x, num_pts, f, nz, xq, vals(j,:), op_err)
                ! enforce non-negative mass fractions
@@ -493,8 +513,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
 
          integer :: num_steps_to_use, starting_model_number
 
@@ -530,7 +550,7 @@
          use adjust_xyz, only: get_xa_for_accretion
 
          integer, intent(in) :: id
-         integer, intent(in) :: num_steps_to_use ! use this many steps to do conversion
+         integer, intent(in) :: num_steps_to_use  ! use this many steps to do conversion
          integer, intent(out) :: ierr
 
          integer, parameter :: lipar=2
@@ -579,11 +599,11 @@
          write(*,*) 'num_steps_to_use', num_steps_to_use
 
          dxdt_nuc_factor = s% dxdt_nuc_factor
-         s% dxdt_nuc_factor = 0 ! turn off composition change by nuclear burning
+         s% dxdt_nuc_factor = 0  ! turn off composition change by nuclear burning
          mix_factor = s% mix_factor
-         s% mix_factor = 0 ! turn off mixing
+         s% mix_factor = 0  ! turn off mixing
          do_element_diffusion = s% do_element_diffusion
-         do_element_diffusion = .false. ! turn off diffusion
+         do_element_diffusion = .false.  ! turn off diffusion
          starting_dt_next = s% dt_next
 
          call do_internal_evolve( &
@@ -607,8 +627,8 @@
       subroutine before_evolve_relax_to_xaccrete(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
@@ -617,8 +637,8 @@
       integer function relax_to_xaccrete_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_to_xaccrete_adjust_model = keep_going
       end function relax_to_xaccrete_adjust_model
 
@@ -626,8 +646,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
 
          integer :: num_steps_to_use, starting_model_number, species, k, j
          real(dp), pointer :: xa(:)
@@ -674,10 +694,10 @@
             id, max_steps_to_use, num_pts, entropy, xq, ierr)
          use alloc, only: alloc_extras, dealloc_extras
          integer, intent(in) :: id
-         integer, intent(in) :: max_steps_to_use ! use this many steps to do conversion
+         integer, intent(in) :: max_steps_to_use  ! use this many steps to do conversion
          integer, intent(in) :: num_pts
             ! length of entropy vector; need not equal nz for current model
-         real(dp), intent(in) :: entropy(num_pts) ! desired entropy profile
+         real(dp), intent(in) :: entropy(num_pts)  ! desired entropy profile
          real(dp), intent(in) :: xq(num_pts)
          integer, intent(out) :: ierr
 
@@ -715,21 +735,21 @@
          x(1:num_pts) => rpar(1:num_pts)
          f1(1:4*num_pts) => rpar(num_pts+1:lrpar)
          f(1:4,1:num_pts) => f1(1:4*num_pts)
-    
+
          call store_rpar(num_pts, ierr)
          if (ierr /= 0) return
-         
+
          ! need to use global variables, as relax_entropy uses
          ! the other_energy routine to which it can't pass rpar
          relax_num_pts = num_pts
          relax_work_array => rpar
 
          dxdt_nuc_factor = s% dxdt_nuc_factor
-         s% dxdt_nuc_factor = 0 ! turn off composition change by nuclear burning
+         s% dxdt_nuc_factor = 0  ! turn off composition change by nuclear burning
          mix_factor = s% mix_factor
-         s% mix_factor = 0 ! turn off mixing
+         s% mix_factor = 0  ! turn off mixing
          do_element_diffusion = s% do_element_diffusion
-         s% do_element_diffusion = .false. ! turn off diffusion
+         s% do_element_diffusion = .false.  ! turn off diffusion
          starting_dt_next = s% dt_next
          max_years_for_timestep = s% max_years_for_timestep
          s% max_years_for_timestep = s% job% max_dt_for_relax_entropy
@@ -764,7 +784,7 @@
          contains
 
 
-         subroutine store_rpar(num_pts, ierr) ! get interpolation info
+         subroutine store_rpar(num_pts, ierr)  ! get interpolation info
             use interp_1d_def, only: pm_work_size
             use interp_1d_lib, only: interp_pm
             integer, intent(in) :: num_pts
@@ -790,8 +810,8 @@
       subroutine before_evolve_relax_entropy(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
@@ -800,8 +820,8 @@
       integer function relax_entropy_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_entropy_adjust_model = keep_going
       end function relax_entropy_adjust_model
 
@@ -809,13 +829,13 @@
          use do_one_utils, only: do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
 
          integer :: num_pts, ierr, max_model_number
          real(dp) :: avg_err
-         real(dp), pointer :: x(:) ! =(num_pts)
-         real(dp), pointer :: f1(:) ! =(4, num_pts)
+         real(dp), pointer :: x(:)  ! =(num_pts)
+         real(dp), pointer :: f1(:)  ! =(4, num_pts)
 
          include 'formats'
 
@@ -875,7 +895,7 @@
             nz = s% nz
             allocate(vals(nz), xq(nz), stat=ierr)
             if (ierr /= 0) return
-            xq(1) = s% dq(1)/2 ! xq for cell center
+            xq(1) = s% dq(1)/2  ! xq for cell center
             do k = 2, nz
                xq(k) = xq(k-1) + (s% dq(k) + s% dq(k-1))/2
             end do
@@ -887,7 +907,7 @@
             do k=1,nz
                entropy(k) = exp(s% lnS(k))
             end do
-            
+
             dentropy_sum = sum(abs((entropy(1:nz)-vals(1:nz))/vals(1:nz)))
             avg_err = dentropy_sum/nz
             deallocate(vals, xq, entropy)
@@ -911,7 +931,7 @@
          allocate(vals(nz), xq(nz), stat=ierr)
          f(1:4*num_pts) => relax_work_array(num_pts+1:5*num_pts)
          x(1:num_pts) => relax_work_array(1:num_pts)
-         xq(1) = s% dq(1)/2 ! xq for cell center
+         xq(1) = s% dq(1)/2  ! xq for cell center
          do k = 2, nz
             xq(k) = xq(k-1) + (s% dq(k) + s% dq(k-1))/2
          end do
@@ -927,10 +947,10 @@
             id, max_steps_to_use, num_pts, angular_momentum, xq, ierr)
          use alloc, only: alloc_extras, dealloc_extras
          integer, intent(in) :: id
-         integer, intent(in) :: max_steps_to_use ! use this many steps to do conversion
+         integer, intent(in) :: max_steps_to_use  ! use this many steps to do conversion
          integer, intent(in) :: num_pts
             ! length of angular momentum vector; need not equal nz for current model
-         real(dp), intent(in) :: angular_momentum(num_pts) ! desired angular momentum profile
+         real(dp), intent(in) :: angular_momentum(num_pts)  ! desired angular momentum profile
          real(dp), intent(in) :: xq(num_pts)
          integer, intent(out) :: ierr
 
@@ -971,20 +991,20 @@
          f(1:4,1:num_pts) => f1(1:4*num_pts)
          call store_rpar(num_pts, ierr)
          if (ierr /= 0) return
-         
+
          ! need to use global variables, as relax_angular_momentum uses
          ! the other_torque routine to which it can't pass rpar
          relax_num_pts = num_pts
          relax_work_array => rpar
 
          dxdt_nuc_factor = s% dxdt_nuc_factor
-         s% dxdt_nuc_factor = 0 ! turn off composition change by nuclear burning
+         s% dxdt_nuc_factor = 0  ! turn off composition change by nuclear burning
          mix_factor = s% mix_factor
-         s% mix_factor = 0 ! turn off mixing
+         s% mix_factor = 0  ! turn off mixing
          am_D_mix_factor = s% am_D_mix_factor
          s% am_D_mix_factor = 0d0
          do_element_diffusion = s% do_element_diffusion
-         s% do_element_diffusion = .false. ! turn off diffusion
+         s% do_element_diffusion = .false.  ! turn off diffusion
          starting_dt_next = s% dt_next
          max_timestep = s% max_timestep
          s% max_timestep = s% job% max_dt_for_relax_angular_momentum * secyer
@@ -1020,7 +1040,7 @@
          contains
 
 
-         subroutine store_rpar(num_pts, ierr) ! get interpolation info
+         subroutine store_rpar(num_pts, ierr)  ! get interpolation info
             use interp_1d_def, only: pm_work_size
             use interp_1d_lib, only: interp_pm
             integer, intent(in) :: num_pts
@@ -1046,8 +1066,8 @@
       subroutine before_evolve_relax_angular_momentum(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
@@ -1056,8 +1076,8 @@
       integer function relax_angular_momentum_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_angular_momentum_adjust_model = keep_going
       end function relax_angular_momentum_adjust_model
 
@@ -1065,13 +1085,13 @@
          use do_one_utils, only: do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
 
          integer :: num_pts, ierr, max_model_number
          real(dp) :: avg_err
-         real(dp), pointer :: x(:) ! =(num_pts)
-         real(dp), pointer :: f1(:) ! =(4, num_pts)
+         real(dp), pointer :: x(:)  ! =(num_pts)
+         real(dp), pointer :: f1(:)  ! =(4, num_pts)
 
          include 'formats'
 
@@ -1132,7 +1152,7 @@
             nz = s% nz
             allocate(vals(nz), xq(nz), stat=ierr)
             if (ierr /= 0) return
-            xq(1) = s% dq(1)/2 ! xq for cell center
+            xq(1) = s% dq(1)/2  ! xq for cell center
             do k = 2, nz
                xq(k) = xq(k-1) + (s% dq(k) + s% dq(k-1))/2
             end do
@@ -1163,7 +1183,7 @@
          allocate(vals(nz), xq(nz), stat=ierr)
          f(1:4*num_pts) => relax_work_array(num_pts+1:5*num_pts)
          x(1:num_pts) => relax_work_array(1:num_pts)
-         xq(1) = s% dq(1)/2 ! xq for cell center
+         xq(1) = s% dq(1)/2  ! xq for cell center
          do k = 2, nz
             xq(k) = xq(k-1) + (s% dq(k) + s% dq(k-1))/2
          end do
@@ -1237,7 +1257,7 @@
 
          call get_star_ptr(id, s, ierr)
          if (ierr /= 0) return
-         
+
          if (.not. s% rotation_flag) return
 
          rpar(1) = target_value
@@ -1261,7 +1281,7 @@
          end if
 
          dxdt_nuc_factor = s% dxdt_nuc_factor
-         s% dxdt_nuc_factor = 0d0 ! turn off composition change by nuclear burning
+         s% dxdt_nuc_factor = 0d0  ! turn off composition change by nuclear burning
          mix_factor = s% mix_factor
          am_D_mix_factor = s% am_D_mix_factor
          s% mix_factor = 0d0
@@ -1292,8 +1312,8 @@
       subroutine before_evolve_relax_omega(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
@@ -1302,8 +1322,8 @@
       integer function relax_omega_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_omega_adjust_model = keep_going
       end function relax_omega_adjust_model
 
@@ -1313,8 +1333,8 @@
             set_surf_avg_rotation_info
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
 
          integer :: num_steps_to_use, starting_model_number, kind_of_relax, ierr
          real(dp) :: frac, target_value, starting_omega, new_omega, this_step_omega
@@ -1421,8 +1441,8 @@
       subroutine before_evolve_relax_tau_factor(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call turn_off_winds(s)
@@ -1432,8 +1452,8 @@
       integer function relax_tau_factor_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_tau_factor_adjust_model = keep_going
       end function relax_tau_factor_adjust_model
 
@@ -1441,8 +1461,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          real(dp) :: new_tau_factor, dlogtau_factor, current_tau_factor, next
          logical, parameter :: dbg = .false.
 
@@ -1532,8 +1552,8 @@
       subroutine before_evolve_relax_opacity_factor(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call turn_off_winds(s)
@@ -1543,8 +1563,8 @@
       integer function relax_opacity_factor_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_opacity_factor_adjust_model = keep_going
       end function relax_opacity_factor_adjust_model
 
@@ -1552,8 +1572,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          real(dp) :: new_opacity_factor, dopacity_factor, current_opacity_factor, next
          logical, parameter :: dbg = .false.
 
@@ -1587,137 +1607,12 @@
          end if
 
          if (mod(s% model_number, s% terminal_interval) == 0) &
-            write(*,1) 'next opacity_factor', next ! provide terminal feedback to show working.
+            write(*,1) 'next opacity_factor', next  ! provide terminal feedback to show working.
 
          s% opacity_factor = next
          s% max_timestep = secyer*s% time_step
 
       end function relax_opacity_factor_check_model
-
-
-      subroutine do_relax_Tsurf_factor(id, new_Tsurf_factor, dlogTsurf_factor, ierr)
-         integer, intent(in) :: id
-         real(dp), intent(in) :: new_Tsurf_factor, dlogTsurf_factor
-         integer, intent(out) :: ierr
-         integer, parameter ::  lipar=1, lrpar=2
-         integer :: max_model_number
-         real(dp) :: Tsurf_factor
-         type (star_info), pointer :: s
-         integer, target :: ipar_ary(lipar)
-         integer, pointer :: ipar(:)
-         real(dp), target :: rpar_ary(lrpar)
-         real(dp), pointer :: rpar(:)
-         rpar => rpar_ary
-         ipar => ipar_ary
-         include 'formats'
-         ierr = 0
-         if (new_Tsurf_factor <= 0) then
-            ierr = -1
-            write(*,*) 'invalid new_Tsurf_factor', new_Tsurf_factor
-            return
-         end if
-         call get_star_ptr(id, s, ierr)
-         if (ierr /= 0) return
-         Tsurf_factor = s% Tsurf_factor
-         if (abs(new_Tsurf_factor - Tsurf_factor) <= 1d-6) then
-            s% Tsurf_factor = new_Tsurf_factor
-            return
-         end if
-         write(*,'(A)')
-         write(*,1) 'current Tsurf_factor', Tsurf_factor
-         write(*,1) 'relax to new Tsurf_factor', new_Tsurf_factor
-         write(*,'(A)')
-         write(*,1) 'dlogTsurf_factor', dlogTsurf_factor
-         write(*,'(A)')
-         rpar(1) = new_Tsurf_factor
-         rpar(2) = dlogTsurf_factor
-         max_model_number = s% max_model_number
-         s% max_model_number = -1111
-         call do_internal_evolve( &
-               id, before_evolve_relax_Tsurf_factor, &
-               relax_Tsurf_factor_adjust_model, relax_Tsurf_factor_check_model, &
-               null_finish_model, .true., lipar, ipar, lrpar, rpar, ierr)
-         s% max_model_number = max_model_number
-         if (ierr /= 0) then
-            write(*,'(A)')
-            write(*,1) 'ERROR: failed doing relax Tsurf_factor', new_Tsurf_factor
-            write(*,'(A)')
-            call mesa_error(__FILE__,__LINE__,'do_relax_Tsurf_factor')
-         end if
-         
-         if (new_Tsurf_factor == 1d0) then
-            s% force_Tsurf_factor = 0d0
-         else
-            s% force_Tsurf_factor = s% Tsurf_factor
-         end if
-         
-         call error_check('relax tsurf factor',ierr)
-
-      end subroutine do_relax_Tsurf_factor
-
-
-      subroutine before_evolve_relax_Tsurf_factor(s, id, lipar, ipar, lrpar, rpar, ierr)
-         type (star_info), pointer :: s
-         integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
-         integer, intent(out) :: ierr
-         ierr = 0
-         call turn_off_winds(s)
-         s% max_model_number = -111
-      end subroutine before_evolve_relax_Tsurf_factor
-
-      integer function relax_Tsurf_factor_adjust_model(s, id, lipar, ipar, lrpar, rpar)
-         type (star_info), pointer :: s
-         integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
-         relax_Tsurf_factor_adjust_model = keep_going
-      end function relax_Tsurf_factor_adjust_model
-
-      integer function relax_Tsurf_factor_check_model(s, id, lipar, ipar, lrpar, rpar)
-         use do_one_utils, only:do_bare_bones_check_model
-         type (star_info), pointer :: s
-         integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
-         real(dp) :: new_Tsurf_factor, dlogTsurf_factor, current_Tsurf_factor, next
-         logical, parameter :: dbg = .false.
-
-         include 'formats'
-
-         relax_Tsurf_factor_check_model = do_bare_bones_check_model(id)
-         if (relax_Tsurf_factor_check_model /= keep_going) return
-
-         new_Tsurf_factor = rpar(1)
-         dlogTsurf_factor = rpar(2)
-         current_Tsurf_factor = s% Tsurf_factor
-
-         if (mod(s% model_number, s% terminal_interval) == 0) &
-            write(*,1) 'Tsurf_factor target current', new_Tsurf_factor, current_Tsurf_factor
-
-         if (abs(current_Tsurf_factor-new_Tsurf_factor) < 1d-15) then
-            s% Tsurf_factor = new_Tsurf_factor
-            s% termination_code = t_relax_finished_okay
-            relax_Tsurf_factor_check_model = terminate
-            return
-         end if
-
-         if (new_Tsurf_factor < current_Tsurf_factor) then
-            next = exp10(safe_log10(current_Tsurf_factor) - dlogTsurf_factor)
-            if (next < new_Tsurf_factor) next = new_Tsurf_factor
-         else
-            next = exp10(safe_log10(current_Tsurf_factor) + dlogTsurf_factor)
-            if (next > new_Tsurf_factor) next = new_Tsurf_factor
-         end if
-
-         if (dbg) write(*,1) 'next Tsurf_factor', next, log10(next)
-
-         s% Tsurf_factor = next
-         s% max_timestep = secyer*s% time_step
-
-      end function relax_Tsurf_factor_check_model
-
 
       subroutine do_relax_irradiation(id, &
             min_steps, new_irrad_flux, new_irrad_col_depth, relax_irradiation_max_yrs_dt, ierr)
@@ -1779,8 +1674,8 @@
       subroutine before_evolve_relax_irradiation(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call turn_off_winds(s)
@@ -1790,8 +1685,8 @@
       integer function relax_irradiation_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_irradiation_adjust_model = keep_going
       end function relax_irradiation_adjust_model
 
@@ -1799,8 +1694,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
 
          integer :: adjust_model, max_num_steps, num_steps
          real(dp) :: old_irrad_flux, old_irrad_col_depth
@@ -1911,8 +1806,8 @@
       subroutine before_evolve_relax_mass_change(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call turn_off_winds(s)
@@ -1922,8 +1817,8 @@
       integer function relax_mass_change_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_mass_change_adjust_model = keep_going
       end function relax_mass_change_adjust_model
 
@@ -1931,8 +1826,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
 
          integer :: adjust_model, max_num_steps, num_steps
          real(dp) :: init_mass_change, final_mass_change, frac
@@ -1952,7 +1847,7 @@
          frac = dble(num_steps)/dble(max_num_steps)
 
          if (s% dt < s% max_years_for_timestep*secyer) then
-            ipar(1) = adjust_model + 1 ! don't count this one
+            ipar(1) = adjust_model + 1  ! don't count this one
             write(*,'(a60,2i6,3x,99e12.3)') 'relax_mass_change wait for dt: model, step, frac', &
                s% model_number, num_steps, frac
             return
@@ -1979,7 +1874,7 @@
             id, new_core_mass, dlg_core_mass_per_step, &
             relax_core_years_for_dt, core_avg_rho, core_avg_eps, ierr)
          integer, intent(in) :: id
-         real(dp), intent(in) :: new_core_mass ! in Msun units
+         real(dp), intent(in) :: new_core_mass  ! in Msun units
          real(dp), intent(in) :: dlg_core_mass_per_step, relax_core_years_for_dt
          real(dp), intent(in) :: core_avg_rho, core_avg_eps
             ! adjust R_center according to core_avg_rho (g cm^-3)
@@ -2042,8 +1937,8 @@
       subroutine before_evolve_relax_core(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          real(dp) :: relax_core_years_for_dt
          ierr = 0
@@ -2056,8 +1951,8 @@
       integer function relax_core_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_core_adjust_model = keep_going
       end function relax_core_adjust_model
 
@@ -2065,8 +1960,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          real(dp) :: new_core_mass, dlg_core_mass_per_step, next
          real(dp) :: relax_core_dt, relax_core_years_for_dt
          real(dp) :: core_avg_rho, core_avg_eps, current_core_mass
@@ -2111,7 +2006,7 @@
             write(*,1) 's% max_timestep', s% max_timestep
             write(*,1) 's% max_years_for_timestep*secyer', s% max_years_for_timestep*secyer
             write(*,'(A)')
-            return ! give a chance to stabilize
+            return  ! give a chance to stabilize
          end if
 
          end_now=.false.
@@ -2144,11 +2039,11 @@
             write(*,1) 's% xmstar', s% xmstar
             write(*,'(A)')
          end if
-         
+
          if(end_now) then
             relax_core_check_model = terminate
             s% termination_code = t_relax_finished_okay
-            return         
+            return
          end if
 
       end function relax_core_check_model
@@ -2240,8 +2135,8 @@
       subroutine before_evolve_relax_mass_scale(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          real(dp) :: change_mass_years_for_dt
          ierr = 0
@@ -2254,8 +2149,8 @@
       integer function relax_mass_scale_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_mass_scale_adjust_model = keep_going
       end function relax_mass_scale_adjust_model
 
@@ -2263,8 +2158,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          real(dp) :: new_mass, dlgm_per_step, next
          real(dp) :: relax_mass_scale_dt, change_mass_years_for_dt
          logical, parameter :: dbg = .false.
@@ -2296,7 +2191,7 @@
 
          relax_mass_scale_dt = secyer*change_mass_years_for_dt
 
-         if (s% dt < relax_mass_scale_dt*0.9d0) return ! give a chance to stabilize
+         if (s% dt < relax_mass_scale_dt*0.9d0) return  ! give a chance to stabilize
 
          if (new_mass < s% star_mass) then
             next = exp10(safe_log10(s% star_mass) - dlgm_per_step)
@@ -2371,20 +2266,20 @@
       subroutine before_evolve_relax_M_center(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
          s% max_model_number = -111
-         s% dt_next =  rpar(3) ! relax_M_center_dt
+         s% dt_next =  rpar(3)  ! relax_M_center_dt
       end subroutine before_evolve_relax_M_center
 
       integer function relax_M_center_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_M_center_adjust_model = keep_going
       end function relax_M_center_adjust_model
 
@@ -2392,8 +2287,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer :: ierr
          real(dp) :: new_mass, dlgm_per_step, relax_M_center_dt, next
          logical, parameter :: dbg = .false.
@@ -2408,9 +2303,9 @@
          dlgm_per_step = rpar(2)
          relax_M_center_dt = rpar(3)
 
-         if (mod(s% model_number, s% terminal_interval) == 0 .and. s% M_center>0.0) &
+         if (mod(s% model_number, s% terminal_interval) == 0 .and. s% M_center>0.0d0) &
             write(*,1) 'relax_M_center target/current', new_mass/(s% M_center/Msun)
-         
+
          end_now=.false.
          if (new_mass < s% star_mass) then
             next = exp10(safe_log10(s% star_mass) - dlgm_per_step)
@@ -2439,7 +2334,7 @@
             return
          end if
 
-         if (s% dt < relax_M_center_dt*0.9d0) return ! give a chance to stabilize
+         if (s% dt < relax_M_center_dt*0.9d0) return  ! give a chance to stabilize
 
          if (dbg) write(*,1) 'next', next, log10(next)
 
@@ -2456,7 +2351,7 @@
       subroutine set_new_mass_for_relax_M_center(s, new_mass, ierr)
          use star_utils, only: set_qs
          type (star_info), pointer :: s
-         real(dp), intent(in) :: new_mass ! Msun
+         real(dp), intent(in) :: new_mass  ! Msun
          integer, intent(out) :: ierr
          include 'formats'
          ierr = 0
@@ -2520,20 +2415,20 @@
       subroutine before_evolve_relax_R_center(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
          s% max_model_number = -111
-         s% dt_next =  rpar(3) ! relax_R_center_dt
+         s% dt_next =  rpar(3)  ! relax_R_center_dt
       end subroutine before_evolve_relax_R_center
 
       integer function relax_R_center_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_R_center_adjust_model = keep_going
       end function relax_R_center_adjust_model
 
@@ -2541,8 +2436,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer :: ierr
          real(dp) :: new_R_center, dlgR_per_step, relax_R_center_dt, next
          logical, parameter :: dbg = .false.
@@ -2569,7 +2464,7 @@
             return
          end if
 
-         if (s% dt < relax_R_center_dt*0.9d0) return ! give a chance to stabilize
+         if (s% dt < relax_R_center_dt*0.9d0) return  ! give a chance to stabilize
 
          if (new_R_center < s% R_center) then
             next = exp10(safe_log10(s% R_center) - dlgR_per_step)
@@ -2596,7 +2491,7 @@
          ! adjust all lnR's to keep same density for each cell as 1st guess for next model
          use star_utils, only: set_qs, store_lnR_in_xh
          type (star_info), pointer :: s
-         real(dp), intent(in) :: new_Rcenter ! cm
+         real(dp), intent(in) :: new_Rcenter  ! cm
          integer, intent(out) :: ierr
          real(dp) :: dm, rho, dr3, rp13
          integer :: k
@@ -2608,7 +2503,7 @@
          do k = s% nz, 1, -1
             dm = s% dm(k)
             rho = s% rho(k)
-            dr3 = dm/(rho*four_thirds_pi) ! dm/rho is cell volume
+            dr3 = dm/(rho*four_thirds_pi)  ! dm/rho is cell volume
             call store_lnR_in_xh(s, k, log(rp13 + dr3)*one_third)
             rp13 = rp13 + dr3
          end do
@@ -2670,20 +2565,20 @@
       subroutine before_evolve_relax_v_center(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
          s% max_model_number = -111
-         s% dt_next =  rpar(3) ! relax_v_center_dt
+         s% dt_next =  rpar(3)  ! relax_v_center_dt
       end subroutine before_evolve_relax_v_center
 
       integer function relax_v_center_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_v_center_adjust_model = keep_going
       end function relax_v_center_adjust_model
 
@@ -2691,8 +2586,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          real(dp) :: new_v_center, dv_per_step, relax_v_center_dt, next
          logical, parameter :: dbg = .false.
 
@@ -2716,7 +2611,7 @@
             return
          end if
 
-         if (s% dt < relax_v_center_dt*0.9d0) return ! give a chance to stabilize
+         if (s% dt < relax_v_center_dt*0.9d0) return  ! give a chance to stabilize
 
          if (new_v_center < s% v_center) then
             next = s% v_center - dv_per_step
@@ -2783,20 +2678,20 @@
       subroutine before_evolve_relax_L_center(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
          s% max_model_number = -111
-         s% dt_next =  rpar(3) ! relax_L_center_dt
+         s% dt_next =  rpar(3)  ! relax_L_center_dt
       end subroutine before_evolve_relax_L_center
 
       integer function relax_L_center_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_L_center_adjust_model = keep_going
       end function relax_L_center_adjust_model
 
@@ -2804,8 +2699,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer :: ierr
          real(dp) :: new_L_center, dL, relax_L_center_dt, next
          logical, parameter :: dbg = .false.
@@ -2833,7 +2728,7 @@
             return
          end if
 
-         if (s% dt < relax_L_center_dt*0.9d0) return ! give a chance to stabilize
+         if (s% dt < relax_L_center_dt*0.9d0) return  ! give a chance to stabilize
 
          next = s% L_center + dL
          if (dbg) write(*,1) 'next', next
@@ -2921,8 +2816,8 @@
       subroutine before_evolve_relax_dxdt_nuc_factor(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call turn_off_winds(s)
@@ -2933,8 +2828,8 @@
       integer function relax_dxdt_nuc_factor_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_dxdt_nuc_factor_adjust_model = keep_going
       end function relax_dxdt_nuc_factor_adjust_model
 
@@ -2942,8 +2837,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          real(dp) :: new_value, per_step_multiplier
          logical, parameter :: dbg = .false.
 
@@ -3025,8 +2920,8 @@
       subroutine before_evolve_relax_eps_nuc_factor(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call turn_off_winds(s)
@@ -3037,8 +2932,8 @@
       integer function relax_eps_nuc_factor_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_eps_nuc_factor_adjust_model = keep_going
       end function relax_eps_nuc_factor_adjust_model
 
@@ -3046,8 +2941,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          real(dp) :: new_value, per_step_multiplier
          logical, parameter :: dbg = .false.
 
@@ -3125,10 +3020,10 @@
                id, before_evolve_relax_opacity_max, &
                relax_opacity_max_adjust_model, relax_opacity_max_check_model, &
                null_finish_model, .true., lipar, ipar, lrpar, rpar, ierr)
-         
+
          s% max_model_number = max_model_number
          s% opacity_max = new_value
-         s% dt_next = rpar(1) ! keep dt from relax
+         s% dt_next = rpar(1)  ! keep dt from relax
          call error_check('relax opacity max',ierr)
       end subroutine do_relax_opacity_max
 
@@ -3136,8 +3031,8 @@
       subroutine before_evolve_relax_opacity_max(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          s% max_model_number = -111
@@ -3148,8 +3043,8 @@
       integer function relax_opacity_max_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_opacity_max_adjust_model = keep_going
       end function relax_opacity_max_adjust_model
 
@@ -3157,8 +3052,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          real(dp) :: new_value, per_step_multiplier
          logical, parameter :: dbg = .false.
 
@@ -3240,7 +3135,7 @@
                null_finish_model, .true., lipar, ipar, lrpar, rpar, ierr)
          s% max_model_number = max_model_number
          s% max_surface_cell_dq = new_value
-         s% dt_next = rpar(1) ! keep dt from relax
+         s% dt_next = rpar(1)  ! keep dt from relax
          call error_check('relax max surf dq',ierr)
       end subroutine do_relax_max_surf_dq
 
@@ -3248,8 +3143,8 @@
       subroutine before_evolve_relax_max_surf_dq(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          s% max_model_number = -111
@@ -3260,8 +3155,8 @@
       integer function relax_max_surf_dq_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_max_surf_dq_adjust_model = keep_going
       end function relax_max_surf_dq_adjust_model
 
@@ -3269,8 +3164,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          real(dp) :: new_value, per_step_multiplier
          logical, parameter :: dbg = .false.
 
@@ -3318,7 +3213,7 @@
          include 'formats'
          ierr = 0
          if (num_steps <= 0) return
-         
+
 
          call get_star_ptr(id, s, ierr)
          if (ierr /= 0) return
@@ -3356,8 +3251,8 @@
       subroutine before_evolve_relax_num_steps(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
@@ -3370,18 +3265,18 @@
       integer function relax_num_steps_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_num_steps_adjust_model = keep_going
       end function relax_num_steps_adjust_model
 
       integer function relax_num_steps_check_model(s, id, lipar, ipar, lrpar, rpar)
          use do_one_utils, only:do_bare_bones_check_model
-         
+
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
 
          logical, parameter :: dbg = .false.
 
@@ -3417,14 +3312,14 @@
 
          call get_star_ptr(id, s, ierr)
          if (ierr /= 0) return
-         
+
          if (s% star_mass < s% job% pre_ms_check_radiative_core_min_mass) then
             write(*,*) 'stop relax to begin radiative core because star_mass < pre_ms_check_radiative_core_min_mass'
             return
          end if
-         
+
          max_timestep = 1d3*secyer  ! can provide a parameter for this if necessary
-         
+
          write(*,'(A)')
          write(*,1) 'relax_to_radiative_core'
          write(*,'(A)')
@@ -3433,7 +3328,7 @@
          else
             rpar(1) = max_timestep
          end if
-         rpar(2) = 1d99 ! min_conv_mx1_bot
+         rpar(2) = 1d99  ! min_conv_mx1_bot
          max_model_number = s% max_model_number
          model_number = s% model_number
          save_max_timestep = s% max_timestep
@@ -3454,8 +3349,8 @@
       subroutine before_evolve_relax_to_radiative_core(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
@@ -3467,8 +3362,8 @@
       integer function relax_to_radiative_core_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_to_radiative_core_adjust_model = keep_going
       end function relax_to_radiative_core_adjust_model
 
@@ -3477,8 +3372,8 @@
          use report, only: set_power_info
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          logical, parameter :: dbg = .false.
          integer :: ierr
          real(dp) :: min_conv_mx1_bot
@@ -3573,8 +3468,8 @@
       subroutine before_evolve_relax_Z(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
@@ -3586,8 +3481,8 @@
       integer function relax_Z_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_Z_adjust_model = keep_going
       end function relax_Z_adjust_model
 
@@ -3597,8 +3492,8 @@
          use do_one_utils, only:do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer :: ierr, klo, khi
          real(dp) :: lnz_target, new_z, new_lnz, dlnz, lnz, current_z, next_z, &
             min_q_for_relax_Z, max_q_for_relax_Z
@@ -3680,8 +3575,6 @@
       end function relax_Z_check_model
 
 
-
-
       subroutine do_relax_Y(id, new_Y, dY, minq, maxq, ierr)
          use star_utils, only: k_for_q, eval_current_y
          integer, intent(in) :: id
@@ -3701,17 +3594,17 @@
          ierr = 0
          call get_star_ptr(id, s, ierr)
          if (ierr /= 0) return
-         
+
          khi = k_for_q(s, minq)
          klo = k_for_q(s, maxq)
-         
+
          y = eval_current_y(s, klo, khi, ierr)
          if (ierr /= 0) return
          if (is_bad(y)) then
             write(*,1) 'y', y
             call mesa_error(__FILE__,__LINE__,'do_relax_Y')
          end if
-         
+
          if (abs(new_Y - y) <= 1d-6*new_Y) return
          if (new_Y < 0 .or. new_Y > 1) then
             ierr = -1
@@ -3742,8 +3635,8 @@
       subroutine before_evolve_relax_Y(s, id, lipar, ipar, lrpar, rpar, ierr)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer, intent(out) :: ierr
          ierr = 0
          call setup_before_relax(s)
@@ -3755,8 +3648,8 @@
       integer function relax_Y_adjust_model(s, id, lipar, ipar, lrpar, rpar)
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          relax_Y_adjust_model = keep_going
       end function relax_Y_adjust_model
 
@@ -3766,8 +3659,8 @@
          use do_one_utils, only: do_bare_bones_check_model
          type (star_info), pointer :: s
          integer, intent(in) :: id, lipar, lrpar
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          integer :: ierr, klo, khi
          real(dp) :: new_y, dy, current_y, next_y, minq, maxq, actual_next_y
          logical, parameter :: ydbg = .true.
@@ -3784,14 +3677,14 @@
          dy = rpar(2)
          minq = rpar(3)
          maxq = rpar(4)
-         
+
          khi = k_for_q(s, minq)
          klo = k_for_q(s, maxq)
 
          if (ydbg) then
             write(*,4) 'klo, khi nz', klo, khi, s% nz
          end if
-         
+
          current_y = eval_current_y(s, klo, khi, ierr)
          if (is_bad(current_y)) then
             write(*,1) 'current_y', current_y
@@ -3894,42 +3787,46 @@
          use profile, only: set_profile_columns
          integer, intent(in) :: id, lipar, lrpar
          logical, intent(in) :: restore_at_end
-         integer, intent(inout), pointer :: ipar(:) ! (lipar)
-         real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+         integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+         real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
          interface
             subroutine before_evolve(s, id, lipar, ipar, lrpar, rpar, ierr)
                use const_def, only: dp
                use star_private_def, only:star_info
+               implicit none
                type (star_info), pointer :: s
                integer, intent(in) :: id, lipar, lrpar
-               integer, intent(inout), pointer :: ipar(:) ! (lipar)
-               real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+               integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+               real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
                integer, intent(out) :: ierr
             end subroutine before_evolve
             integer function adjust_model(s, id, lipar, ipar, lrpar, rpar)
                use const_def, only: dp
                use star_private_def, only:star_info
+               implicit none
                type (star_info), pointer :: s
                integer, intent(in) :: id, lipar, lrpar
-               integer, intent(inout), pointer :: ipar(:) ! (lipar)
-               real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+               integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+               real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
             end function adjust_model
             integer function check_model(s, id, lipar, ipar, lrpar, rpar)
                use const_def, only: dp
                use star_private_def, only:star_info
+               implicit none
                type (star_info), pointer :: s
                integer, intent(in) :: id, lipar, lrpar
-               integer, intent(inout), pointer :: ipar(:) ! (lipar)
-               real(dp), intent(inout), pointer :: rpar(:) ! (lrpar)
+               integer, intent(inout), pointer :: ipar(:)  ! (lipar)
+               real(dp), intent(inout), pointer :: rpar(:)  ! (lrpar)
             end function check_model
             integer function finish_model(s)
                use star_def, only:star_info
+               implicit none
                type (star_info), pointer :: s
             end function finish_model
          end interface
          integer, intent(out) :: ierr
          type (star_info), pointer :: s
-         character (len=10) MLT_option
+         character (len=10) :: MLT_option
          integer :: result, model_number, model_number_for_last_retry, &
             recent_log_header, num_retries, &
             photo_interval, profile_interval, priority_profile_interval, &
@@ -3951,7 +3848,7 @@
          procedure(integer), pointer :: tmp_ptr1 => null(), tmp_ptr3 => null()
          procedure(), pointer :: tmp_ptr2 => null(), tmp_ptr4 => null()
          logical, parameter :: dbg = .false.
-         
+
          include 'formats'
 
          ierr = 0
@@ -3980,26 +3877,26 @@
             s% tol_correction_norm = s% relax_tol_correction_norm
          if (s% relax_tol_max_correction /= 0) &
             s% tol_max_correction = s% relax_tol_max_correction
-            
+
          if (s% relax_iter_for_resid_tol2 /= 0) &
             s% iter_for_resid_tol2 = s% relax_iter_for_resid_tol2
          if (s% relax_tol_residual_norm1 /= 0) &
             s% tol_residual_norm1 = s% relax_tol_residual_norm1
          if (s% relax_tol_max_residual1 /= 0) &
             s% tol_max_residual1 = s% relax_tol_max_residual1
-         
+
          if (s% relax_iter_for_resid_tol3 /= 0) &
             s% iter_for_resid_tol3 = s% relax_iter_for_resid_tol3
          if (s% relax_tol_residual_norm2 /= 0) &
             s% tol_residual_norm2 = s% relax_tol_residual_norm2
          if (s% relax_tol_max_residual2 /= 0) &
             s% tol_max_residual2 = s% relax_tol_max_residual2
-            
+
          if (s% relax_tol_residual_norm3 /= 0) &
             s% tol_residual_norm3 = s% relax_tol_residual_norm3
          if (s% relax_tol_max_residual3 /= 0) &
             s% tol_max_residual3 = s% relax_tol_max_residual3
-            
+
          if (s% relax_maxT_for_gold_tolerances /= 0) &
             s% maxT_for_gold_tolerances = s% relax_maxT_for_gold_tolerances
 
@@ -4036,12 +3933,12 @@
          s% doing_relax = .true.
          s% need_to_setvars = .true.
 
-         evolve_loop: do ! evolve one step per loop
+         evolve_loop: do  ! evolve one step per loop
 
             first_try = .true.
 
-            step_loop: do ! may need to repeat this loop for retry
-            
+            step_loop: do  ! may need to repeat this loop for retry
+
                result = do_evolve_step_part1(id, first_try)
                if (result == keep_going) &
                   result = adjust_model(s, id, lipar, ipar, lrpar, rpar)
@@ -4069,12 +3966,12 @@
                if(dbg) write(*,2) 'after step_loop: call update_pgstar_data', s% model_number
                call update_pgstar_data(s, ierr)
                if (failed()) return
-               call do_read_pgstar_controls(s, s% inlist_fname, ierr) 
+               call do_read_pgstar_controls(s, s% inlist_fname, ierr)
                if (failed()) return
                call do_pgstar_plots( s, .false., ierr)
                if (failed()) return
             end if
-            
+
             result = finish_model(s)
             if (result /= keep_going) exit evolve_loop
 
@@ -4115,8 +4012,8 @@
          end if
 
          s% doing_relax = .false.
-         s% need_to_setvars = .true. ! just to be safe
-         s% have_ST_start_info = .false. ! for ST time smoothing
+         s% need_to_setvars = .true.  ! just to be safe
+         s% have_ST_start_info = .false.  ! for ST time smoothing
 
          if (.not. (s% termination_code == t_relax_finished_okay .or. &
                     s% termination_code == t_extras_check_model)) ierr = -1
@@ -4126,7 +4023,7 @@
          if (associated(s% finished_relax)) call s% finished_relax(id)
 
          if (restore_at_end) call restore_stuff
-         
+
          if (s% job% set_cumulative_energy_error_each_relax) &
             s% cumulative_energy_error = s% job% new_cumulative_energy_error
 
@@ -4137,7 +4034,7 @@
          s% model_number_for_last_retry = -100
 
          contains
-         
+
          logical function failed()
             failed = .false.
             if (ierr == 0) return
@@ -4179,20 +4076,20 @@
             dt_next = s% dt_next
             max_number_retries = s% max_number_retries
             MLT_option = s% MLT_option
-            
+
             use_gold2_tolerances = s% use_gold2_tolerances
             steps_before_use_gold2_tolerances = s% steps_before_use_gold2_tolerances
             use_gold_tolerances = s% use_gold_tolerances
             steps_before_use_gold_tolerances = s% steps_before_use_gold_tolerances
             solver_iters_timestep_limit = s% solver_iters_timestep_limit
             tol_correction_norm = s% tol_correction_norm
-            tol_max_correction = s% tol_max_correction            
+            tol_max_correction = s% tol_max_correction
             iter_for_resid_tol2 = s% iter_for_resid_tol2
             tol_residual_norm1 = s% tol_residual_norm1
-            tol_max_residual1 = s% tol_max_residual1         
+            tol_max_residual1 = s% tol_max_residual1
             iter_for_resid_tol3 = s% iter_for_resid_tol3
             tol_residual_norm2 = s% tol_residual_norm2
-            tol_max_residual2 = s% tol_max_residual2         
+            tol_max_residual2 = s% tol_max_residual2
             tol_residual_norm3 = s% tol_residual_norm3
             tol_max_residual3 = s% tol_max_residual3
             maxT_for_gold_tolerances = s% maxT_for_gold_tolerances
@@ -4236,7 +4133,7 @@
             s% dt_next = dt_next
             s% max_number_retries = max_number_retries
             s% MLT_option = MLT_option
-            
+
             s% use_gold2_tolerances = use_gold2_tolerances
             s% steps_before_use_gold2_tolerances = steps_before_use_gold2_tolerances
             s% use_gold_tolerances = use_gold_tolerances
@@ -4314,7 +4211,4 @@
          write(*,'(A)')
       end subroutine error_check
 
-
       end module relax
-
-

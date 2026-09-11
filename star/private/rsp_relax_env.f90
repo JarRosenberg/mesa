@@ -2,24 +2,18 @@
 !
 !   Copyright (C) 2018-2019  Radek Smolec & The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
@@ -31,14 +25,13 @@
       use rsp_def
       use rsp_eval_eos_and_kap, only: X, Y, Z
       use rsp_lina, only: mesa_eos_kap
-      
+
       implicit none
-      
+
       private
       public :: EOP, RELAX_ENV
-      
-      contains
 
+      contains
 
       subroutine EOP(s,k,T,P,V,E,CP,QQ,SVEL,OP,ierr)
       use rsp_eval_eos_and_kap, only: &
@@ -53,8 +46,8 @@
       data R,A/8.317d7,7.5641d-15/
       data PRECEQ/5.d-13/
 
-      if(P<=0.d0) goto 100 !negative pressure, stop
-      
+      if(P<=0.d0) GOTO 100  !negative pressure, stop
+
       ierr = 0
       Prad = Radiation_Pressure(T)
       if (P <= Prad) then
@@ -82,14 +75,14 @@
          return
          call mesa_error(__FILE__,__LINE__,'EOP')
       end if
-      V = 1d0/rho ! initial guess to be improved below
-      
+      V = 1d0/rho  ! initial guess to be improved below
+
          !write(*,*) 'eval1_mesa_Rho_given_PT', k
          !write(*,*) 'P', P
          !write(*,*) 'T', T
          !write(*,*) 'rho_guess', rho_guess
          !write(*,*) 'V', 0, V
-      
+
       I=0
       !     NEWTON-RAPHSON ITERATION (TO MAKE P1->P)
  1    I=I+1
@@ -97,7 +90,7 @@
         T,V,P1,DPV,DU1,E,DU2,DU3,CP,DU4,DU5,QQ,DU6,DU7,OP &
            ,DU8,DU9,ierr)
       if (ierr /= 0) return
-      if(I>25) goto 2 !no convergence, stop
+      if(I>25) GOTO 2  !no convergence, stop
       F2=P1/P-1.d0
       V=V-F2*P/DPV
       if (is_bad(V)) then
@@ -110,11 +103,11 @@
          return
          stop
       end if
-      
+
          !write(*,*) 'V', I, V
-         
-      if(abs(F2)<PRECEQ) goto 3
-      goto 1
+
+      if(abs(F2)<PRECEQ) GOTO 3
+      GOTO 1
  3    continue
        if (abs(P - P_test) > 1d-10*P) then
        end if
@@ -131,7 +124,7 @@
       end subroutine EOP
 
 
-      subroutine RELAX_ENV(s, L0, TH0, TE, NZT, NZN, &         
+      subroutine RELAX_ENV(s, L0, TH0, TE, NZT, NZN, &
          M, DM, DM_BAR, R, Vol, T, Et, ierr)
       use star_utils, only: rand
       type (star_info), pointer :: s
@@ -140,16 +133,16 @@
       real(dp), intent(inout), dimension(:) :: &
          M, DM, DM_BAR, R, Vol, T, Et
       integer, intent(out) :: ierr
-      
-      logical, parameter :: RSP_eddi = .true. ! use Eddington approx at surface
-      
+
+      logical, parameter :: RSP_eddi = .true.  ! use Eddington approx at surface
+
       real(dp), allocatable, dimension(:) :: &
          E, P, Lr, Lc, Hp_face, Y_face, K, CPS, QQS, &
          dC_dr_in,dC_dr_00,dC_dr_out,dC_dT_00,dC_dT_out, &
          dC_dw_00,dC_dr_in2,dC_dT_in, &
          DPV,dP_dT_00,DEV,dE_dT_00,dK_dV_00, &
          dK_dT_00,DVR,DVRM, &
-         CPV, dCp_dT_00, QQV,dQQ_dT_00, & 
+         CPV, dCp_dT_00, QQV,dQQ_dT_00, &
          dP_dr_00, dCp_dr_00, dQQ_dr_00, &
          dP_dr_in,dCp_dr_in,dQQ_dr_in, &
          dHp_dr_in,dHp_dr_out,dHp_dr_00,dHp_dT_00,dHp_dT_out, &
@@ -170,18 +163,18 @@
          DLTXM,DLTX0,DLTXP,DLTY0, &
          DLTYP,DLTZ0,DLTZP,Lt, &
          PTURB,dPtrb_dw_00,dPtrb_dr_00,dPtrb_dr_in
-      
+
       real(dp) :: T1,DLR,DLRP,DLRM,DLT,DLTP,DLMR,DLMRP,DLMRM,DLMT,DLMTP
       real(dp) :: W_00,W_out,BW,BK,T2,T3,DLK,DLKP,SVEL,T_0
       real(dp) :: POM3,POM2,POM
       integer :: I,J,IW,IR,IC, IMAXR, IMAXW, IMAXC
       real(dp) :: MAXR,MAXW,MAXC,PB,PPB,ELB,ELMB
-      
+
       integer :: INFO,II,ITROUBC,ITROUBT,IZIP
       real(dp) :: XXR,XXC,XXT,EZH,DXH,DXXC,DXXT,DXKC,DXKT, &
          IGR1,IGR1XM,IGR1X0,IGR1XP,IGR1Y0,IGR1YP, &
          IGR2,IGR2XM,IGR2X0,IGR2XP,IGR2Y0,IGR2YP
-      
+
       real(dp) :: FFXM,FFX0,FFXP,FFY0,FFYP,FF
       real(dp) :: GGXM,GGX0,GGXP,GGY0,GGYP,GG,GPF
       real(dp) :: EFL02
@@ -191,7 +184,7 @@
       real(dp) :: TT,dmN,dmNL,TNL,DDT,MSTAR,PRECR
       real(dp) :: RINNER,ROUTER,TINNER,MENVEL
       integer :: IOP,NEGFLU
-      logical ending
+      logical :: ending
 
       real(dp) :: SUMM,AONE,HAHA
       real(dp) :: AAA(100),AAP(100),AAT(100)
@@ -207,7 +200,7 @@
 
       !write(*,*) 'RELAX_ENV'
       EFL02 = EFL0*EFL0
-      FSUB = s% RSP_dq_1_factor         
+      FSUB = s% RSP_dq_1_factor
       EMR = s% RSP_mass
       ELR = s% RSP_L
 
@@ -243,18 +236,18 @@
 !     STORE SOME VALUES FOR FURTHER COMPARISON
       MSTAR  = M(NZN)
       TINNER = T(1)
-      RINNER = s% R_center ! R0
+      RINNER = s% R_center  ! R0
       ROUTER = R(NZN)
       MENVEL = MSTAR-M(1)+dm(1)
 
-      TNL = 0d0 
+      TNL = 0d0
 
       if (s% RSP_use_Prad_for_Psurf) then
-         if(.not.RSP_eddi) then !     EXACT GREY RELATION
-            T_0= pow(sqrt(3.d0)/4.d0,0.25d0)*TE !0.811194802d0*TE
-         else !     EDDINGTON APPROXIMATION
-            T_0= pow(0.5d0, 0.25d0)*TE ! T_0= pow(1.0d0/2.d0,0.25d0)*TE 
-         endif      
+         if(.not.RSP_eddi) then  !     EXACT GREY RELATION
+            T_0= pow(sqrt(3.d0)/4.d0,0.25d0)*TE  !0.811194802d0*TE
+         else  !     EDDINGTON APPROXIMATION
+            T_0= pow(0.5d0, 0.25d0)*TE  ! T_0= pow(1.0d0/2.d0,0.25d0)*TE
+         end if
          Psurf = crad*T_0*T_0*T_0*T_0/3d0
       else
          Psurf = 0d0
@@ -262,29 +255,29 @@
 
       ending=.false.
       if (s% RSP_trace_RSP_build_model) &
-         write(*,*) '*** relax envelope ***'  
-      
+         write(*,*) '*** relax envelope ***'
+
       NEGFLU=0
-      NDIVAA = 20 ! s% RSP_NDIVAA
-      NDIVAP = 20 ! s% RSP_NDIVAP
-      NDIVAT = 20 ! s% RSP_NDIVAT
-      ok_to_adjust_mass = .true. ! s% RSP_ok_to_adjust_mass
-      ok_to_adjust_Tsurf = .true. ! s% RSP_ok_to_adjust_Tsurf
+      NDIVAA = 20  ! s% RSP_NDIVAA
+      NDIVAP = 20  ! s% RSP_NDIVAP
+      NDIVAT = 20  ! s% RSP_NDIVAT
+      ok_to_adjust_mass = .true.  ! s% RSP_ok_to_adjust_mass
+      ok_to_adjust_Tsurf = .true.  ! s% RSP_ok_to_adjust_Tsurf
       dmN_cnt = 0
       max_dmN_cnt = s% RSP_relax_max_tries
       PREC1 = s% RSP_relax_dm_tolerance
 
-!     SUMM IS ZONE OF THE ENVELOPE UP TO ANCHOR 
+!     SUMM IS ZONE OF THE ENVELOPE UP TO ANCHOR
 !     (NOT CHANGED IN THE ITERATIONS)
       SUMM=0.d0
       do I=1,NZN-NZT+1
          SUMM=SUMM+dm(I)
-      enddo
+      end do
 
 !     IF BOTH ALFAP NAD ALFAT /= 0, IT IS NECESSARY TO ITERATE WITHOUT
 !     TURBULENT FLUX, WITH TURBULENT PRESSURE ONLY, AND AFTER
 !     CONVERGENCE TURBULENT FLUX IS ITERATED
-      AALFA = -1 ! turn off ALFA relax
+      AALFA = -1  ! turn off ALFA relax
       if (AALFA <= 0d0) AALFA = ALFA
       AALFAT = ALFAT
       AALFAP = ALFAP
@@ -294,43 +287,43 @@
 !     SET ALFA TO ITERATE
       do I=1,NDIVAA
          AAA(I)=ALFA+(AALFA-ALFA)*I/dble(NDIVAA)
-      enddo
+      end do
       ICAA=1
-      
+
 !     SET ITERATIONS FOR ALFAP
       if(AALFAP/=0.d0)then
          do I=1,NDIVAP
             AAP(I)=AALFAP*I/dble(NDIVAP)
-         enddo
+         end do
          ICAP=1
-      endif
+      end if
 
 !     SET ITERATIONS FOR ALFAT
       if(AALFAT/=0.d0)then
          do I=1,NDIVAT
             AAT(I)=AALFAT*I/dble(NDIVAT)
-         enddo
+         end do
          ICAT=1
-      endif
+      end if
 !-
-      PRECR = 1.d-10  !PRECISION FOR NEWTON-RHAPSON ITERAIONS
-      DXH = 0.01d0   !UNDERCORRECTION FOR NEWTON-RHAPSON CORRECTIONS
-      DDT = -dm(NZN)/1000.d0 !INITIAL CHANGE IN OUTER ZONE MASS
+      PRECR = 1.d-10  !PRECISION FOR NEWTON-RAPHSON ITERATIONS
+      DXH = 0.01d0   !UNDERCORRECTION FOR NEWTON-RAPHSON CORRECTIONS
+      DDT = -dm(NZN)/1000.d0  !INITIAL CHANGE IN OUTER ZONE MASS
 
-      IOP = 0           
+      IOP = 0
 
  999  continue
 
       IZIP = 0
-      if(IOP==0) goto 100
+      if(IOP==0) GOTO 100
 
 !------ MASS TRICKS ---
 !     dmN = dm(NZN) ! THIS IS NOT WORKING IF FSUB/=1
-      dmN = dm(NZN-1) !THIS IS WORKING FOR ALL FSUB VALUES
-      
+      dmN = dm(NZN-1)  !THIS IS WORKING FOR ALL FSUB VALUES
+
       TT  = T(NZN-NZT+1)-TH0
 
-      if(IOP==1) goto 24
+      if(IOP==1) GOTO 24
 
       DDT = TT*(dmN-dmNL)/(TT-TNL)
       !if (is_bad(DDT)) then
@@ -346,86 +339,86 @@
       CFIDDLE=0.1d0
       if(abs(DDT/dmN)>CFIDDLE) DDT=CFIDDLE*dmN*(DDT/abs(DDT))
 
-!     CHECK IF ALFA ITERATION IS FINISHED 
+!     CHECK IF ALFA ITERATION IS FINISHED
       if(abs(DDT/dmN)<PREC1.and.ALFA/=AALFA) then
          ALFA=AAA(ICAA)
          ICAA=ICAA+1
 !        APPLY ARTIFICIAL ZONE MASS CHANGE TO ALLOW ITERATIONS
          DDT = -dm(NZN)/100000.d0
          write(*,*) 'ALFA =',ALFA
-         goto 24
-      endif
+         GOTO 24
+      end if
       if(abs(DDT/dmN)<PREC1.and.ICAA==NDIVAA+1)then
          write(*,*) '***** ALFA ITERATION FINISHED *****'
          write(*,*) 'final ALFA =', ALFA, s% RSP_alfa
          dmN_cnt = 0
          NDIVAA=-99
-      endif
-      
+      end if
+
       if (s% RSP_relax_alfap_before_alfat) then
-      
-         ! CHECK IF ALFAP ITERATION IS FINISHED 
+
+         ! CHECK IF ALFAP ITERATION IS FINISHED
          if(abs(DDT/dmN)<PREC1.and.ALFAP/=AALFAP) then
             ALFAP=AAP(ICAP)
             ICAP=ICAP+1
             ! APPLY ARTIFICIAL ZONE MASS CHANGE TO ALLOW ITERATIONS
             DDT = -dm(NZN)/100000.d0
             write(*,*) 'ALFAP=',ALFAP
-            goto 24
-         endif
+            GOTO 24
+         end if
          if(abs(DDT/dmN)<PREC1.and.ICAP==NDIVAP+1)then
             write(*,*) '***** ALFAP ITERATION FINISHED *****'
             dmN_cnt = 0
             NDIVAP=-99
-         endif
+         end if
 
-         ! CHECK IF ALFAT ITERATION IS FINISHED 
+         ! CHECK IF ALFAT ITERATION IS FINISHED
          if(abs(DDT/dmN)<PREC1.and.ALFAT/=AALFAT) then
             ALFAT=AAT(ICAT)
             ICAT=ICAT+1
             ! APPLY ARTIFICIAL ZONE MASS CHANGE TO ALLOW ITERATIONS
             DDT = -dm(NZN)/100000.d0
             write(*,*) 'ALFAT =',ALFAT
-            goto 24
-         endif
+            GOTO 24
+         end if
          if(abs(DDT/dmN)<PREC1.and.ICAT==NDIVAT+1)then
             write(*,*) '***** ALFAT ITERATION FINISHED *****'
             dmN_cnt = 0
             NDIVAT=-99
-         endif
-      
+         end if
+
       else
 
-         ! CHECK IF ALFAT ITERATION IS FINISHED 
+         ! CHECK IF ALFAT ITERATION IS FINISHED
          if(abs(DDT/dmN)<PREC1.and.ALFAT/=AALFAT) then
             ALFAT=AAT(ICAT)
             ICAT=ICAT+1
             ! APPLY ARTIFICIAL ZONE MASS CHANGE TO ALLOW ITERATIONS
             DDT = -dm(NZN)/100000.d0
             write(*,*) 'ALFAT =',ALFAT
-            goto 24
-         endif
+            GOTO 24
+         end if
          if(abs(DDT/dmN)<PREC1.and.ICAT==NDIVAT+1)then
             write(*,*) '***** ALFAT ITERATION FINISHED *****'
             dmN_cnt = 0
             NDIVAT=-99
-         endif
-      
-         ! CHECK IF ALFAP ITERATION IS FINISHED 
+         end if
+
+         ! CHECK IF ALFAP ITERATION IS FINISHED
          if(abs(DDT/dmN)<PREC1.and.ALFAP/=AALFAP) then
             ALFAP=AAP(ICAP)
             ICAP=ICAP+1
             ! APPLY ARTIFICIAL ZONE MASS CHANGE TO ALLOW ITERATIONS
             DDT = -dm(NZN)/100000.d0
             write(*,*) 'ALFAP=',ALFAP
-            goto 24
-         endif
+            GOTO 24
+         end if
          if(abs(DDT/dmN)<PREC1.and.ICAP==NDIVAP+1)then
             write(*,*) '***** ALFAP ITERATION FINISHED *****'
             dmN_cnt = 0
             NDIVAP=-99
-         endif
-      
+         end if
+
       end if
 
       if(abs(DDT/dmN)<PREC1) then
@@ -433,27 +426,27 @@
             if (NEGFLU==2)then
                !write(*,*) '*** ENVELOPE IS RELAXED ***'
                ending=.true.
-               goto 100
-            endif
+               GOTO 100
+            end if
             !write(*,*) 'NEGATIVE FLUX IS ON'
             DDT = -dm(NZN)/100000.d0
             NEGFLU=2
-            goto 24
-         endif
+            GOTO 24
+         end if
          !write(*,*) 'NEGATIVE FLUX WITHOUT Z-DERIV. IS ON'
          DDT = -dm(NZN)/100000.d0
          NEGFLU=1
-         goto 24
-      endif
-      
+         GOTO 24
+      end if
+
       !write(*,*) 'abs(DDT/dmN), PREC1', DDT, dmN, abs(DDT/dmN), PREC1
 
       if(abs(DDT/dmN)<PREC1) then
          !write(*,*) '*** ENVELOPE IS RELAXED ***'
          ending=.true.
-         goto 100
-      endif
-      
+         GOTO 100
+      end if
+
       if (dmN_cnt >= max_dmN_cnt) then
          write(*,*) 'RELAX_ENV has reached max num allowed tries for outer dm', max_dmN_cnt
          ierr = -1
@@ -464,9 +457,9 @@
  24   TNL  = TT
       dmNL = dmN
       dmN_cnt = dmN_cnt + 1
-      
+
       if (s% RSP_relax_adjust_inner_mass_distribution) then
-      
+
          dmN  = dmN-DDT
 
          if(IOP>=1) then
@@ -476,13 +469,13 @@
             HAHA=1.01d0
             do I=1,100
                POM=1.d0/(NZN-NZT+1)*dlog10(1.d0-SUMM/AONE*(1.d0-HAHA))
-               if(dabs(HAHA-10.d0**POM)<1d-10) goto 22
-               HAHA=10.d0**POM         
-            enddo
+               if(dabs(HAHA-10.d0**POM)<1d-10) GOTO 22
+               HAHA=10.d0**POM
+            end do
             write(*,*) 'NO CONVERGENCE IN RELAX_ENV ITERATION FOR H'
             stop
  22      continue
-            HAHA=10.d0**POM  
+            HAHA=10.d0**POM
    !        SET NEW MASS DISTRIBUTION
             do I=NZN,1,-1
                if(I==NZN) then
@@ -491,24 +484,24 @@
                   dm(I)=dmN*FSUB
                   dm_bar(I)=dm(I)*0.5d0
                else
-                  if(I>=NZN-NZT+1) dm(I)=dmN !DEFINITION DOWN TO ANCHOR
+                  if(I>=NZN-NZT+1) dm(I)=dmN  !DEFINITION DOWN TO ANCHOR
                   if(I<NZN-NZT+1.and.ok_to_adjust_mass)  &
                                      dm(I)=AONE*pow(HAHA,(NZN-NZT+1)-I)
                   dm_bar(I)=(dm(I)+dm(I+1))*0.5d0
-                  M(I)=M(I+1)-dm(I+1)             
-               endif
-            enddo
-         endif
-         
+                  M(I)=M(I+1)-dm(I+1)
+               end if
+            end do
+         end if
+
       end if
 
  100  continue
 
-      do 102 II=1,8000
+      do II=1,8000
 
 !     LOOP 1 .. EOS
       !$OMP PARALLEL DO PRIVATE(I,T1,POM,EDFAC,op_err) SCHEDULE(dynamic,2)
-      do 1 I=2,NZN
+      do I=2,NZN
          T1=P43/dm(I)
          Vol(I)=T1*(R(I)**3-R(I-1)**3)
          DVRM(I) = -3.d0*T1*R(I-1)**2
@@ -522,7 +515,7 @@
             end if
             POM=(EDFAC*L0/(4.d0*PI*SIG*R(NZN)**2))**0.25d0
             T(NZN)=POM
-         endif
+         end if
 
          call mesa_eos_kap(s,0, &
            T(I),Vol(I),P(I),DPV(I),dP_dT_00(I),E(I), &
@@ -537,14 +530,14 @@
             write(*,*) 'Vol(I)', i, Vol(I)
             stop
          end if
-         
+
          dP_dr_00(I)  = DPV(I)*DVR(I)
          dP_dr_in(I) = DPV(I)*DVRM(I)
          dCp_dr_00(I)  = CPV(I)*DVR(I)
          dCp_dr_in(I) = CPV(I)*DVRM(I)
          dQQ_dr_00(I)  = QQV(I)*DVR(I)
-         dQQ_dr_in(I) = QQV(I)*DVRM(I) 
- 1    continue
+         dQQ_dr_in(I) = QQV(I)*DVRM(I)
+      end do
       !$OMP END PARALLEL DO
       if (ierr /= 0) return
 
@@ -578,21 +571,21 @@
       Et(NZN) = 0.d0
       do I=1,IBOTOM
          Et(I) = 0.d0
-      enddo
+      end do
 
       do I=1,NZN-1
          POM=  (R(I)**2)/(2.d0*G*M(I))
          Hp_face(I)=POM*(P(I)*Vol(I)+P(I+1)*Vol(I+1))
          dHp_dr_in(I)=POM*(P(I)*DVRM(I)+Vol(I)*dP_dr_in(I))
          dHp_dr_00(I)=2.d0*Hp_face(I)/R(I)+POM*(P(I)*DVR(I)+Vol(I)*dP_dr_00(I) &
-                   +P(I+1)*DVRM(I+1)+Vol(I+1)*dP_dr_in(I+1)) 
+                   +P(I+1)*DVRM(I+1)+Vol(I+1)*dP_dr_in(I+1))
          dHp_dr_out(I)=POM*(P(I+1)*DVR(I+1)+Vol(I+1)*dP_dr_00(I+1))
          dHp_dT_00(I)=POM*Vol(I)*dP_dT_00(I)
          dHp_dT_out(I)=POM*Vol(I+1)*dP_dT_00(I+1)
-      enddo
+      end do
       POM=(R(NZN)**2)/(2.d0*G*M(NZN))
       Hp_face(NZN)=POM*P(NZN)*Vol(NZN)
-      dHp_dr_in(NZN)=POM*(P(NZN)*DVRM(NZN)+Vol(NZN)*dP_dr_in(NZN))     
+      dHp_dr_in(NZN)=POM*(P(NZN)*DVRM(NZN)+Vol(NZN)*dP_dr_in(NZN))
       dHp_dr_00(NZN)=2.d0*Hp_face(NZN)/R(NZN)+POM* &
                   (P(NZN)*DVR(NZN)+Vol(NZN)*dP_dr_00(NZN))
       dHp_dr_out(NZN)=0.d0
@@ -634,15 +627,15 @@
          dY_dr_out(I)=IGR1*IGR2XP+IGR2*IGR1XP
          dY_dT_00(I)=IGR1*IGR2Y0+IGR2*IGR1Y0
          dY_dT_out(I)=IGR1*IGR2YP+IGR2*IGR1YP
-      enddo
+      end do
 
 !     PROTECT FROM 'ALWAYS ZERO' SOLUTION WHEN (Y>0)
 !     (SEEMS UNNECESSARY)
       do I=IBOTOM+1,NZN-1
-!         if((Y_face(I)+Y_face(I-1))>0.d0.and.Et(I)==0.d0) 
+!         if((Y_face(I)+Y_face(I-1))>0.d0.and.Et(I)==0.d0)
 !     x                    Et(I)=1.d+6!1.d-6
          if(ALFA==0.d0) Et(I)=0.d0
-      enddo
+      end do
 
       do I=1,NZN-1
          POM=sqrt(2.d0/3.d0)*0.5d0
@@ -656,7 +649,7 @@
               ((DEV(I+1)+P(I+1))*DVRM(I+1)+Vol(I+1)*dP_dr_in(I+1)) &
               /T(I+1))
          FFXM=POM* ((DEV(I)  +P(I)  )*DVRM(I) +Vol(I)*dP_dr_in(I))/T(I)
-         
+
          POM=ALFAS*ALFA
          POM2=0.5d0*(CPS(I)+CPS(I+1))
          GG=POM*POM2*Y_face(I)
@@ -666,18 +659,18 @@
          GGY0=POM*(POM2*dY_dT_00(I)+Y_face(I)*0.5d0*dCp_dT_00(I))
          GGYP=POM*(POM2*dY_dT_out(I)+Y_face(I)*0.5d0*dCp_dT_00(I+1))
          GPF=GG/FF
-    
-!        corelation PI defined without e_t
+
+!        correlation PI defined without e_t
          POM=1.d0
 
          PII(I)=POM*GG
          DPIIZ0(I)=0.d0
          dPII_dr_00(I)=POM*GGX0
-         dPII_dr_in(I)=POM*GGXM 
+         dPII_dr_in(I)=POM*GGXM
          dPII_dr_out(I)=POM*GGXP
          dPII_dT_00(I)=POM*GGY0
          dPII_dT_out(I)=POM*GGYP
-      enddo
+      end do
 
       do I=IBOTOM+1,NZN-1
 !        SOURCE TERM
@@ -688,7 +681,7 @@
          TEM1=POM2*POM3*0.5d0
          TEMI=-PII(I)/Hp_face(I)**2
          TEMM=-PII(I-1)/Hp_face(I-1)**2
-         
+
          ! X -> w
          ! Y -> T
          ! Z -> R
@@ -738,7 +731,7 @@
 !           dsrc_dT_in(I) = 0.d0
 !           dsrc_dT_00(I) = 0.d0
 !           dsrc_dw_00(I) = 0.d0
-!        endif
+!        end if
 
 !        DAMP TERM
          POM=(CEDE/ALFA)*(Et(I)**1.5d0-EFL02**1.5d0)
@@ -790,7 +783,7 @@
                      +TEM1*T(I)**3*(2.d0*Vol(I)*DVR(I) &
                     -Vol(I)**2*( 1.d0/CPS(I)*dCp_dr_00(I) &
                                  +1.d0/K(I)*dK_dV_00(I)*DVR(I))) &
-                      /(CPS(I)*K(I))              
+                      /(CPS(I)*K(I))
 
             d_dampR_dr_in(I)=d_dampR_dr_in(I) &
                     +TEM1*T(I)**3*(2.d0*Vol(I)*DVRM(I) &
@@ -804,7 +797,7 @@
                                        +1.d0/K(I)*dK_dT_00(I))) &
                          /(CPS(I)*K(I))
 
-         endif
+         end if
 
          dC_dr_00(I) =dsrc_dr_00(I) -d_damp_dr_00(I) -d_dampR_dr_00(I)
          dC_dr_out(I) =dsrc_dr_out(I) -d_damp_dr_out(I) -d_dampR_dr_out(I)
@@ -814,7 +807,7 @@
          dC_dT_00(I) =dsrc_dT_00(I) -d_damp_dT_00(I) -d_dampR_dT_00(I)
          dC_dT_out(I) =dsrc_dT_out(I) -d_damp_dT_out(I) -d_dampR_dT_out(I)
          dC_dw_00(I) =dsrc_dw_00(I) -d_damp_dw_00(I) -d_dampR_dw_00(I)
-      enddo
+      end do
 
       do I=1,NZN
 !        CONVECTIVE LUMINOSITY
@@ -858,15 +851,15 @@
                DLCYP(I)=0.d0
                DLCZ0(I)=0.d0
                DLCZP(I)=0.d0
-            endif
+            end if
             if(NEGFLU==1.and.PII(I)<0.d0)then
                if(II>300)then
                   DLCZ0(I)=0.d0
                   DLCZP(I)=0.d0
-               endif
-            endif
+               end if
+            end if
          end if
- 
+
 !        TURBULENT LUMINOSITY
          if(I<IBOTOM.or.I>=NZN.or. &
             ALFAT==0.d0.or.ALFA==0.d0)then
@@ -901,10 +894,10 @@
                     +Lt(I)/Hp_face(I)*dHp_dr_out(I)
             DLTY0(I)=Lt(I)/Hp_face(I)*dHp_dT_00(I)
             DLTYP(I)=Lt(I)/Hp_face(I)*dHp_dT_out(I)
-            DLTZ0(I)=-POM*POM2*1.5d0*sqrt(Et(I)  )/dm_bar(I) 
-            DLTZP(I)= POM*POM2*1.5d0*sqrt(Et(I+1))/dm_bar(I) 
-         endif
-      enddo
+            DLTZ0(I)=-POM*POM2*1.5d0*sqrt(Et(I)  )/dm_bar(I)
+            DLTZP(I)= POM*POM2*1.5d0*sqrt(Et(I+1))/dm_bar(I)
+         end if
+      end do
 
 !     TURBULENT PRESSURE (ZONE)
       do I=IBOTOM+1,NZN-1
@@ -919,8 +912,8 @@
             TEM1=-ALFAP*Et(I)/Vol(I)**2
             dPtrb_dr_00(I) = TEM1*DVR(I)
             dPtrb_dr_in(I) = TEM1*DVRM(I)
-         endif
-      enddo
+         end if
+      end do
 
       do I=1,IBOTOM
          PTURB(I)= 0.d0
@@ -935,7 +928,7 @@
          dC_dT_00(I) = 0.d0
          dC_dT_out(I) = 0.d0
          dC_dw_00(I) = 0.d0
-      enddo
+      end do
       do I=1,IBOTOM-1
          DLCX0(I)= 0.d0
          DLCXM(I)= 0.d0
@@ -951,7 +944,7 @@
          DLTYP(I)= 0.d0
          DLTZ0(I)= 0.d0
          DLTZP(I)= 0.d0
-      enddo
+      end do
       PTURB(NZN)= 0.d0
       dPtrb_dw_00(NZN)= 0.d0
       dPtrb_dr_00(NZN)= 0.d0
@@ -978,7 +971,7 @@
       dC_dT_00(NZN) = 0.d0
       dC_dT_out(NZN) = 0.d0
       dC_dw_00(NZN) = 0.d0
-      
+
       if(ALFA==0.d0) then     !RADIATIVE CASE
          SOURCE(I) = 0.d0
          DAMP(I)   = 0.d0
@@ -991,15 +984,15 @@
          dC_dT_00(I)   = 0.d0
          dC_dT_out(I)   = 0.d0
          dC_dw_00(I)   = 0.d0
-      endif
+      end if
 
 
 !     INITIALIZE HD(11,3*NZN)
-      do I=1,3*NZN       
+      do I=1,3*NZN
          do J=1,11
             HD(J,I)=0.d0
-         enddo
-      enddo
+         end do
+      end do
 
 !     LOOP 2 .. LUM PLUGS
       DLR  =  0.d0
@@ -1007,7 +1000,7 @@
       DLRM =  0.d0
       DLT  =  0.d0
       DLTP =  0.d0
-      DLR  =  0.d0 !!-1.d0
+      DLR  =  0.d0  !!-1.d0
       do 5 I=1,NZN
          IR = 3+3*(I-1)
          IC = 2+3*(I-1)
@@ -1018,7 +1011,7 @@
          DLMRM = DLRM
          DLMT  = DLT
          DLMTP = DLTP
-         if(I==NZN) goto 6
+         if(I==NZN) GOTO 6
 !        Lr(I)=Eq. A.4, Stellingwerf 1975, Appendix A
 !        CALC LUM(I)
          W_00=T(I)**4
@@ -1029,14 +1022,14 @@
          T2=(W_out/K(I+1)-W_00/K(I))/(1.d0-BK/BW)
          Lr(I)=T1*T2
          T3=T1/(BW-BK)
-         DLK=  (T3/K(I))  *(W_00*BW/K(I)  -T2) !dL(i)/dK(i)
-         DLKP=-(T3/K(I+1))*(W_out*BW/K(I+1)-T2) !dL(i)/dK(i+1)
+         DLK=  (T3/K(I))  *(W_00*BW/K(I)  -T2)  !dL(i)/dK(i)
+         DLKP=-(T3/K(I+1))*(W_out*BW/K(I+1)-T2)  !dL(i)/dK(i+1)
          DLRP= DLKP*dK_dV_00(I+1)*DVR(I+1)
-         DLRM= DLK *dK_dV_00(I)  *DVRM(I)         
+         DLRM= DLK *dK_dV_00(I)  *DVRM(I)
          DLR= 4.d0*T1*T2/R(I)+DLK*dK_dV_00(I)*DVR(I)+DLKP*dK_dV_00(I+1)*DVRM(I+1)
          DLTP=4.d0*(T3/T(I+1))*(W_out*BW/K(I+1)-T2*BK/BW)+DLKP*dK_dT_00(I+1)
          DLT=-4.d0*(T3/T(I))*(W_00*BW/K(I)-T2*BK/BW)+DLK*dK_dT_00(I)
-         goto 7
+         GOTO 7
 !        OUTER LUM BOUNDARY CONDITION
  6       continue
          Lr(I)=L0
@@ -1062,8 +1055,8 @@
          HD(8,IW)  = (DLR +DLCX0(I)+DLTX0(I))/L0     !X(i)
          HD(11,IW) = (DLRP+DLCXP(I)+DLTXP(I))/L0     !X(i+1)
          HD(7,IW)  = (     DLCZ0(I)+DLTZ0(I))/L0     !Z(i)
-         HD(10,IW) = (     DLCZP(I)+DLTZP(I))/L0     !Z(i+1) 
-!        CALC MOMEMTUM EQUATION(I)
+         HD(10,IW) = (     DLCZP(I)+DLTZP(I))/L0     !Z(i+1)
+!        CALC MOMENTUM EQUATION(I)
          T1=-P4*(R(I)**2)/dm_bar(I)
          if(I==NZN) then
             HR(IR) = -T1*(Psurf-P(I)-PTURB(I))+G*M(I)/R(I)**2
@@ -1078,22 +1071,22 @@
          HD(5,IR) = +T1*(-dPtrb_dw_00(I))          !Z(i)
          HD(8,IR) = +T1*(dPtrb_dw_00(I+1))         !Z(i+1)
 
-         if(I==NZN) goto 111
+         if(I==NZN) GOTO 111
          HD(6,IR) = +T1*(dP_dr_in(I+1)-dP_dr_00(I)+dPtrb_dr_in(I+1)-dPtrb_dr_00(I))+ &
                     4.d0*G*M(I)/(R(I)**3)    !X(i)
          HD(7,IR) = +T1*(dP_dT_00(I+1))           !Y(i+1)
-         HD(9,IR) = +T1*(dP_dr_00(I+1)+dPtrb_dr_00(I+1))!X(i+1)
-         goto 112
+         HD(9,IR) = +T1*(dP_dr_00(I+1)+dPtrb_dr_00(I+1))  !X(i+1)
+         GOTO 112
  111     HD(7,IR)=  0.d0
          HD(9,IR)=  0.d0
          HD(6,IR)= +T1*(-dP_dr_00(I))+4.d0*G*M(I)/(R(I)**3)
  112     continue
- 
+
 !        CALC CONVECTIVE ENERGY EQUATION
          if(I<=IBOTOM.or.I==NZN.or.ALFA==0.d0)then
             do J=1,11
                HD(J,IC)=0.d0
-            enddo
+            end do
             HD(6,IC)=1.d0
             HR(IC)=0.d0
          else
@@ -1123,40 +1116,40 @@
 !        SET ANCHOR T(NZN)=CONST
          if(I==NZN) then
             do j=1,11
-               HD(J,IW) = 0.d0 
-            enddo
+               HD(J,IW) = 0.d0
+            end do
 !           SET dT(NZN)=0
-            HD(6,IW) = 1.d0 
-            HR(IW)   = 0.d0 
+            HD(6,IW) = 1.d0
+            HR(IW)   = 0.d0
 !           SET DERIVATIVES d(*)/dT(NZN)=0 IN ZONE/ITERFACE NZN
-            HD(4,IR) = 0.d0 
-            HD(5,IC) = 0.d0 
-         endif   
+            HD(4,IR) = 0.d0
+            HD(5,IC) = 0.d0
+         end if
          if(I==NZN-1)then
 !           SET DERIVATIVES d(*)/dT(NZN)=0 IN ZONE/ITERFACE NZN-1
             HD(9,IW)  = 0.d0
             HD(7,IR)  = 0.d0
             HD(8,IC)  = 0.d0
-         endif
+         end if
 
   5   continue
 
-      if(ending) goto 889
+      if(ending) GOTO 889
 
       do J=1,5     !translate hd into band storage of LAPACK/LINPACK
          do I=1,3*NZN+1
             ABB(J,I)=0.0d0
-         enddo
-      enddo      
-      do J=1,5      
+         end do
+      end do
+      do J=1,5
          do I=1,3*NZN+1-J
-            ABB(11-J,I+J)=HD(6+J,I) !upper diagonals
-            ABB(11+J,I)=HD(6-J,I+J) !lower diagonals
-         enddo  
-      enddo
+            ABB(11-J,I+J)=HD(6+J,I)  !upper diagonals
+            ABB(11+J,I)=HD(6-J,I+J)  !lower diagonals
+         end do
+      end do
       do I=1,3*NZN+1
          ABB(11,I)=HD(6,I)
-      enddo  
+      end do
 
 !-    LAPACK
       call DGBTRF(3*NZN,3*NZN,5,5,ABB,LD_ABB,IPVT,INFO)
@@ -1165,21 +1158,21 @@
          open(61,file='x.dat',status='unknown')
          write(61,'(F6.3,tr2,f8.2,tr2,f7.2,tr2,d9.3)')EMR,ELR,TE-0.5d0, &
               gam
-         close(61) 
+         close(61)
          open(61,file='logic.dat',status='unknown')
          write(61,'(I1)') 3
          close(61)
          stop
-      endif
+      end if
       call DGBTRS('n',3*NZN,5,5,1,ABB,LD_ABB,IPVT,HR,3*NZN,INFO)
       if(INFO/=0) then
          write(*,*) 'hyd: LAPACK/dgbtrs problem no., iter.',INFO,II
          stop
-      endif            
+      end if
 !-
       do I=1,3*NZN,1
          DX(I) = HR(I)
-      enddo
+      end do
 
       EZH = 1.d0
       XXR = 0.d0
@@ -1190,14 +1183,14 @@
          XX_max_dx = 0
          i_XX_max = 0
          var_XX_max = 0
-      do 14 I=2,NZN
+      do I=2,NZN
          IR = 3+3*(I-1)
          IC = IR-1
          IW = IR-2
          if(Et(I)>(1.d-20)*EFL02) XXC=dabs(DX(IC)/Et(I))
          XXR=((DX(IR-3)-DX(IR))/(R(I)-R(I-1)))/DXH
          XXT=dabs(DX(IW)/T(I))/DXH
-         
+
          if (XXC > XX_max) then
             XX_max = XXC
             XX_max_val = Et(I)
@@ -1219,9 +1212,9 @@
             i_XX_max = i
             var_XX_max = 3
          end if
-            
+
          EZH=1.d0/dmax1(1.d0/EZH,XXR,XXT,XXC)
-   14 continue
+      end do
 
       DXXR = 0.d0
       DXXT = 0.d0
@@ -1229,10 +1222,10 @@
       ITROUBT = 0
       ITROUBC = 0
 !     It seems that for BL Her models fixed undercorrection factor works best
-      do 103 I=1,NZN
+      do I=1,NZN
          IW=1+3*(I-1)
          IR=IW+2
-         IC=IW+1  
+         IC=IW+1
          T(I)      = T(I)     +EZH*DX(IW)/2d0
          R(I)      = R(I)     +EZH*DX(IR)/2d0
          Et(I) = Et(I)+EZH*DX(IC)/2d0
@@ -1247,7 +1240,7 @@
             DXXC=dmax1(DXXC,dabs(DX(IC)/Et(I)))
          if(DXXC>DXKC) ITROUBC=I
          if(DXXT>DXKT) ITROUBT=I
- 103  continue
+      end do
       !write(*,*) 'apply corr', II,dabs(DXXC),dabs(DXXR),dabs(DXXT),ITROUBC, &
       !      Et(ITROUBC),EZH
       !call mesa_error(__FILE__,__LINE__,'debug')
@@ -1256,11 +1249,11 @@
          dabs(DXXT)<PRECR) then
          IZIP=1
          IOP=IOP+1
-         goto 999
-      endif
+         GOTO 999
+      end if
 
- 102  continue
- 
+      end do
+
       write(*,'(A)')
       write(*,*) ' NO CONVERGENCE IN RELAX_ENV, ITERATION: ',II
       write(*,*) ' try increasing RSP_relax_dm_tolerance', s% RSP_relax_dm_tolerance
@@ -1276,7 +1269,7 @@
       !do I=1,NZN
       !   if(abs(HR(1+3*(I-1)))>MAXFLUXD) &
       !      MAXFLUXD=abs(HR(1+3*(I-1)))
-      !enddo
+      !end do
       !write(*,*) 'MAXFLUXD= ',MAXFLUXD
 
       POM=MSTAR-M(1)+dm(1)
@@ -1295,7 +1288,7 @@
          !open(15,file='ss_lin.dat',status='unknown')
          do J=1,NZN
             IR=4+3*(J-1)
-            IW=2+3*(J-1)            
+            IW=2+3*(J-1)
             PB=P(J)+PTURB(J)
             if (J == NZN) then
                PPB = 0
@@ -1308,7 +1301,7 @@
             if (dabs((T3+T1*T2)/T3)>MAXR)then
                MAXR=dabs((T3+T1*T2)/T3)
                IMAXR=J
-            endif
+            end if
             ELB=Lc(J)+Lr(J)+Lt(J)
             if (J == 1) then
                ELMB=0
@@ -1318,26 +1311,25 @@
             if (dabs((ELB-L0)/L0)>MAXW)then
                MAXW=dabs((ELB-L0)/L0)
                IMAXW=J
-            endif
+            end if
             if (J > IBOTOM .and. J < NZN) then
                ELB=Lt(J)
-               ELMB=Lt(J-1) 
-               T1=(ELB-ELMB)/dm(J)            
+               ELMB=Lt(J-1)
+               T1=(ELB-ELMB)/dm(J)
                T2=SOURCE(J)-DAMP(J)-DAMPR(J)
                if ((T2/=0.d0).and.(T1/=0.d0))then
                   if (dabs(T1-T2)/max(T1,T2)>MAXC)then
                      MAXC=dabs(T1-T2)/max(T1,T2)
                      IMAXC=J
-                  endif
-               endif
+                  end if
+               end if
             end if
-         enddo
+         end do
          if (MAXR/=-1d0)write(*,*) 'MAX DIFFERENCE R: ',MAXR,' ZONE: ',IMAXR
          if (MAXW/=-1d0)write(*,*) 'MAX DIFFERENCE W: ',MAXW,' ZONE: ',IMAXW
          if (MAXC/=-1d0)write(*,*) 'MAX DIFFERENCE C: ',MAXC,' ZONE: ',IMAXC
       end if
-      return 
+      return
       end subroutine RELAX_ENV
 
-            
       end module rsp_relax_env

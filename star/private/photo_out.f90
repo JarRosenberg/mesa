@@ -2,24 +2,18 @@
 !
 !   Copyright (C) 2010  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
@@ -33,7 +27,6 @@
       public :: output_star_photo
 
       contains
-
 
       subroutine output_star_photo(s,iounit,ierr)
          use rates_def,only:num_rvs
@@ -51,13 +44,13 @@
          ierr = 0
          nz = s% nz
 
-         part_number = 0 ! part_numbers are just a consistency check on the data file
+         part_number = 0  ! part_numbers are just a consistency check on the data file
 
          write(iounit) star_def_version
-         
+
          call write_part_number(iounit)
          write(iounit) &
-            s% initial_z, & ! need this since read_model can change what is in the inlist
+            s% initial_z, &  ! need this since read_model can change what is in the inlist
             s% total_num_solver_iterations, &
             s% nz, s% nvar_hydro, s% nvar_chem, s% nvar_total, &
             s% v_flag, s% u_flag, s% rotation_flag, s% RSP2_flag, s% RSP_flag, &
@@ -75,7 +68,7 @@
             s% astero_revised_max_yr_dt, &
             s% cumulative_energy_error, s% cumulative_extra_heating, &
             s% have_initial_energy_integrals, s% total_energy_initial, &
-            s% force_tau_factor, s% force_Tsurf_factor, s% force_opacity_factor, &
+            s% force_tau_factor, s% force_opacity_factor, &
             s% crystal_core_boundary_mass
 
          write(iounit) s% net_name
@@ -84,8 +77,8 @@
          write(iounit) &
             s% dq(1:nz), s% xa(:,1:nz), s% xh(:,1:nz), &
             s% omega(1:nz), s% j_rot(1:nz), s% mlt_vc(1:nz), s% conv_vel(1:nz), &
-            s% D_ST_start(1:nz), s% nu_ST_start(1:nz), & ! needed for ST time smoothing
-            s% have_ST_start_info
+            s% D_ST_start(1:nz), s% nu_ST_start(1:nz), &  ! needed for ST time smoothing
+            s% have_ST_start_info, s% mstar_old
 
          call write_part_number(iounit)
          write(iounit) &
@@ -108,12 +101,12 @@
          write(iounit) &
             s% recent_log_header, s% phase_of_evolution, s% dt_next, s% dt_next_unclipped
 
-         call write_part_number(iounit) 
+         call write_part_number(iounit)
          write(iounit) &
-            s% num_skipped_setvars, s% num_retries, s% num_setvars, &  
+            s% num_skipped_setvars, s% num_retries, s% num_setvars, &
             s% total_num_solver_iterations, &
             s% total_num_solver_relax_iterations, &
-            s% total_num_solver_calls_made, &            
+            s% total_num_solver_calls_made, &
             s% total_num_solver_relax_calls_made, &
             s% total_num_solver_calls_converged, &
             s% total_num_solver_relax_calls_converged, &
@@ -150,7 +143,7 @@
             write(iounit) len_history_col_spec
             write(iounit) s% history_column_spec(1:len_history_col_spec)
          else
-            write(iounit) 0 ! len_log_col_spec
+            write(iounit) 0  ! len_log_col_spec
          end if
 
          write(iounit)  &
@@ -162,7 +155,7 @@
                write(iounit) s% history_names(k)
             end do
          end if
-         
+
          if (s% rsp_flag) call rsp_photo_out(s, iounit)
 
          call write_part_number(iounit)
@@ -170,7 +163,7 @@
          call s% other_photo_write(s% id, iounit)
 
          call write_part_number(iounit)
-         
+
          s% need_to_setvars = .true.
 
          contains
@@ -181,8 +174,6 @@
             write(iounit) part_number
          end subroutine write_part_number
 
-
       end subroutine output_star_photo
-
 
       end module photo_out

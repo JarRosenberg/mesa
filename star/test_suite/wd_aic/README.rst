@@ -4,6 +4,8 @@
 wd_aic
 ******
 
+.. tags:: star, compact-remnant, white-dwarf, oxygen-neon-white-dwarf, accretion, electron-capture, accretion-induced-collapse
+
 This test case evolves an accreting ONeMg WD up to the point of
 thermal runaway in the core (see |Schwab2015|).
 
@@ -38,10 +40,9 @@ Similarly, it is critical to use the Ledoux criterion::
 
 so that the stabilizing effects of the composition gradient is
 included.
-    
+
 The test succeeds if the 20Ne electron captures cause a temperature
 spike at the center of the model.
-
 
 .. image:: ../../../star/test_suite/wd_aic/docs/grid1000492.png
 
@@ -49,4 +50,3 @@ spike at the center of the model.
 
 
 Last-Updated: 2020-10-30 (mesa r14735) by Josiah Schwab
-

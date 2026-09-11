@@ -1,14 +1,11 @@
 &pgstar
 
-   ! device
    file_white_on_black_flag = .true.
-   !file_device = 'vcps'      ! postscript
-   !file_extension = 'ps'
+   !file_device = 'vcps'    ! postscript
    file_device = 'png'      ! png
-   file_extension = 'png'
 
    pgstar_interval = 1
-   pause = .false.
+   pause_flag = .false.
 
    Grid1_win_flag = .false.
    Grid1_title = 'TW92 Flame'
@@ -95,7 +92,7 @@
 
    ! file output
    Grid1_file_flag = .true.
-   Grid1_file_dir = 'png'
+   Grid1_file_dir = 'pgstar_out'
    Grid1_file_prefix = 'grid1'
    Grid1_file_interval = 10000 ! output when mod(model_number,Grid1_file_interval)==0
    Grid1_file_width = 16 ! negative means use same value as for window

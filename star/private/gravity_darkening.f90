@@ -1,26 +1,44 @@
+! ***********************************************************************
+!
+!   Copyright (C) 2022  The MESA Team
+!
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
+!
+!   This program is distributed in the hope that it will be useful,
+!   but WITHOUT ANY WARRANTY; without even the implied warranty of
+!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+!   See the GNU Lesser General Public License for more details.
+!
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
+! ***********************************************************************
 
-!!% This module contains code to interpolate gravity darkening coefficients.
-!!% The coefficients scale surface-averaged Teff and Luminosity as a function
-!!% of the orientation of the observer w.r.t. the rotation axis of the star
-!!% and the ratio of the surface angular velocity to the Keplerian angular
-!!% velocity. The orientation angle is denoted "inclination" and the angular
-!!% velocity is denoted "omega". Permissible ranges are
-!!%
-!!%         0 (no rotation) <= omega <= 1 (critical rotation)
-!!%         0 (equator) <= inclination in radians <= pi/2 (pole)
-!!% 
-!!%
-!!% The coefficients are obtained via 2D interpolation using the interp_2d
-!!% module in tables. The tables were computed using the code at
-!!%
-!!% https://github.com/aarondotter/GDit
-!!%
-!!% where the reader can also find documentation on how the calculations are
-!!% performed. The table included in mesa/data/star_data consists of a square
-!!% array with 21 values each of omega and inclination, equally spaced between
-!!% the limits quoted above. The interpolated results fall with roughly 0.001
-!!% of exact values calculated using the code referenced above over the full
-!!% range.
+! This module contains code to interpolate gravity darkening coefficients.
+! The coefficients scale surface-averaged Teff and Luminosity as a function
+! of the orientation of the observer w.r.t. the rotation axis of the star
+! and the ratio of the surface angular velocity to the Keplerian angular
+! velocity. The orientation angle is denoted "inclination" and the angular
+! velocity is denoted "omega". Permissible ranges are
+!
+!         0 (no rotation) <= omega <= 1 (critical rotation)
+!         0 (equator) <= inclination in radians <= pi/2 (pole)
+!
+!
+! The coefficients are obtained via 2D interpolation using the interp_2d
+! module in tables. The tables were computed using the code at
+!
+! https://github.com/aarondotter/GDit
+!
+! where the reader can also find documentation on how the calculations are
+! performed. The table included in mesa/data/star_data consists of a square
+! array with 21 values each of omega and inclination, equally spaced between
+! the limits quoted above. The interpolated results fall with roughly 0.001
+! of exact values calculated using the code referenced above over the full
+! range.
 
 module gravity_darkening
 
@@ -45,7 +63,7 @@ module gravity_darkening
 
   private
   public :: gravity_darkening_Teff_coeff, gravity_darkening_L_coeff
-  
+
 contains
 
   subroutine GD_init(ierr)
@@ -63,12 +81,12 @@ contains
     ibcxmin = 0; bcxmin = 0
     ibcxmax = 0; bcxmax = 0
     ibcymin = 0; bcymin = 0
-    ibcymax = 0; bcymax = 0    
+    ibcymax = 0; bcymax = 0
 
     coefficient_filename = trim(mesa_data_dir) // '/star_data/gravity_darkening_coefficients.data'
 
     open(newunit=io,file=trim(coefficient_filename),status='old',action='read')
-    read(io,*) !skip header
+    read(io,*)  !skip header
     do i=1,ndim
        do j=1,ndim
           read(io,*) dummy(1:4)
@@ -76,8 +94,8 @@ contains
           if(j==1) omega_grid(i) = dummy(1)
           C_T(1,i,j) = dummy(3)
           C_L(1,i,j) = dummy(4)
-       enddo
-    enddo
+       end do
+    end do
     close(io)
 
     ! construct interpolant for C_T
@@ -90,7 +108,7 @@ contains
          ibcxmin, bcxmin, ibcxmax, bcxmax, ibcymin, bcymin, ibcymax, bcymax, &
          ilinx, iliny, ierr)
 
-    if(ierr==0) GD_initialized = .true.    
+    if(ierr==0) GD_initialized = .true.
   end subroutine GD_init
 
 
@@ -99,7 +117,8 @@ contains
     real(dp), intent(in) :: omega, inclination
     real(dp), pointer :: C1(:)
     real(dp) :: coeff, coeff_eval(6), safe_omega, safe_incl
-    integer :: ict(6)=[1,0,0,0,0,0], ierr
+    integer, parameter :: ict(6)=[1,0,0,0,0,0]
+    integer :: ierr
     if(.not.GD_initialized) call GD_init(ierr)
     !ensure that omega and inclination are within table bounds
     safe_omega = min(max(omega,0.0d0),1.0d0)
@@ -110,7 +129,7 @@ contains
        coeff = coeff_eval(1)
     else
        coeff = 1.0d0
-    endif
+    end if
   end function GD_coeff
 
 
@@ -127,7 +146,4 @@ contains
     L_coeff = GD_coeff(omega,inclination,C_L1)
   end function gravity_darkening_L_coeff
 
-
 end module gravity_darkening
-
-

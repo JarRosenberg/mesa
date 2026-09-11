@@ -2,50 +2,33 @@
 !
 !   Copyright (C) 2010-2019  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 module math_lib
 
-  ! Uses
-
-  use const_lib, only: dp, PI
+  use const_def, only: dp, pi
+  use utils_lib, only: is_inf, is_nan
 
   use math_io
   use math_pown
   use math_def
 
-  use IEEE_ARITHMETIC
-
-  ! No implicit typing
-
   implicit none
 
-  ! Parameter definitions
-
   character(LEN=16), parameter :: MATH_BACKEND = 'INTRINSIC'
-
-  ! Interfaces
-
-  ! Generic interfaces
 
   interface safe_sqrt
      module procedure safe_sqrt_
@@ -104,11 +87,7 @@ module math_lib
      module procedure atanpi_
   end interface atanpi
 
-  ! Module variables
-
-  real(dp), save :: ln10_m
-
-  ! Access specifiers
+  real(dp) :: ln10_m
 
   private
 
@@ -141,8 +120,6 @@ module math_lib
   public :: str_to_double
   public :: double_to_str
 
-  ! Procedures
-
 contains
 
   subroutine math_init ()
@@ -153,7 +130,6 @@ contains
 
   end subroutine math_init
 
-  !****
 
   elemental function safe_sqrt_ (x) result (sqrt_x)
 
@@ -163,15 +139,14 @@ contains
     sqrt_x = SQRT(MAX(x, 0._dp))
 
   end function safe_sqrt_
-  
-  !****
+
 
   elemental function safe_log_ (x) result (log_x)
 
     real(dp), intent(in) :: x
     real(dp)             :: log_x
 
-    if (.NOT. IEEE_IS_FINITE(x)) then
+    if (is_nan(x) .or. is_inf(x)) then
 
        log_x = -99._dp
 
@@ -183,14 +158,13 @@ contains
 
   end function safe_log_
 
-  !****
 
   elemental function safe_log10_ (x) result (log10_x)
 
     real(dp), intent(in) :: x
     real(dp)             :: log10_x
 
-    if (.NOT. IEEE_IS_FINITE(x)) then
+    if (is_nan(x) .or. is_inf(x)) then
 
        log10_x = -99._dp
 
@@ -202,7 +176,6 @@ contains
 
   end function safe_log10_
 
-  !****
 
   elemental function log1p_ (x) result (log1p_x)
 
@@ -213,7 +186,6 @@ contains
 
   end function log1p_
 
-  !****
 
   elemental function log2_ (x) result (log2_x)
 
@@ -224,7 +196,6 @@ contains
 
   end function log2_
 
-  !****
 
   elemental function exp10_ (x) result (exp10_x)
 
@@ -236,25 +207,24 @@ contains
 
     ix = FLOOR(x)
 
-    if (x == ix) then ! integer power of 10
+    if (x == ix) then  ! integer power of 10
 
        exp10_x = 1._dp
 
        do i = 1, ABS(ix)
           exp10_x = exp10_x*10._dp
        end do
-       
+
        if (ix < 0) exp10_x = 1._dp/exp10_x
 
     else
 
        exp10_x = EXP(x*ln10_m)
 
-    endif
+    end if
 
   end function exp10_
 
-  !****
 
   elemental function expm1_ (x) result (expm1_x)
 
@@ -265,7 +235,6 @@ contains
 
   end function expm1_
 
-  !****
 
   elemental function pow_i_ (x, iy) result (pow_x)
 
@@ -274,10 +243,9 @@ contains
     real(dp)             :: pow_x
 
     pow_x = x**iy
-    
+
   end function pow_i_
 
-  !****
 
   elemental function pow_r_ (x, y) result (pow_x)
 
@@ -286,10 +254,9 @@ contains
     real(dp)             :: pow_x
 
     pow_x = x**y
-    
+
   end function pow_r_
 
-  !****
 
   elemental function cospi_ (x) result (cospi_x)
 
@@ -300,7 +267,6 @@ contains
 
   end function cospi_
 
-  !****
 
   elemental function sinpi_ (x) result (sinpi_x)
 
@@ -311,7 +277,6 @@ contains
 
   end function sinpi_
 
-  !****
 
   elemental function tanpi_ (x) result (tanpi_x)
 
@@ -322,7 +287,6 @@ contains
 
   end function tanpi_
 
-  !****
 
   elemental function acospi_ (x) result (acospi_x)
 
@@ -333,7 +297,6 @@ contains
 
   end function acospi_
 
-  !****
 
   elemental function asinpi_ (x) result (asinpi_x)
 
@@ -344,7 +307,6 @@ contains
 
   end function asinpi_
 
-  !****
 
   elemental function atanpi_ (x) result (atanpi_x)
 

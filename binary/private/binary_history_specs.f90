@@ -2,31 +2,25 @@
 !
 !   Copyright (C) 2010-2019  Pablo Marchant & The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 
 module binary_history_specs
 
-   use const_def
+   use const_def, only: dp
    use star_lib
    use star_def
    use math_lib
@@ -41,7 +35,7 @@ module binary_history_specs
 contains
 
    recursive subroutine add_binary_history_columns(&
-      b, level, capacity, spec, history_columns_file, ierr)
+      b, level, capacity, spec, history_columns_file, report, ierr)
       use utils_lib
       use utils_def
       use const_def, only : mesa_dir
@@ -49,6 +43,7 @@ contains
       integer, intent(in) :: level
       integer, intent(inout) :: capacity
       integer, pointer :: spec(:)
+      logical, intent(in) :: report
       character (len = *), intent(in) :: history_columns_file
       integer, intent(out) :: ierr
 
@@ -72,11 +67,11 @@ contains
       filename = history_columns_file
       if (len_trim(filename) == 0) filename = 'binary_history_columns.list'
       open(newunit = iounit, file = trim(filename), action = 'read', status = 'old', iostat = ierr)
-      if (ierr /= 0) then ! if don't find that file, look in binary/defaults
+      if (ierr /= 0) then  ! if don't find that file, look in binary/defaults
          filename = trim(mesa_dir) // '/binary/defaults/' // trim(filename)
          ierr = 0
          open(newunit = iounit, file = trim(filename), action = 'read', status = 'old', iostat = ierr)
-         if (ierr /= 0) then ! fail
+         if (ierr /= 0) then  ! fail
             write(*, *) 'failed to open ' // trim(history_columns_file)
             return
          end if
@@ -107,7 +102,7 @@ contains
             if (t /= string_token) then
                call error; return
             end if
-            call add_binary_history_columns(b, level + 1, capacity, spec, string, ierr)
+            call add_binary_history_columns(b, level + 1, capacity, spec, string, report, ierr)
             if (ierr /= 0) then
                write(*, *) 'failed for included log columns list ' // trim(string)
                bad_item = .true.
@@ -116,7 +111,7 @@ contains
             cycle
          end if
 
-         nxt_spec = do1_binary_history_spec(iounit, t, n, i, string, buffer, ierr)
+         nxt_spec = do1_binary_history_spec(iounit, t, n, i, string, buffer, report, ierr)
          if (ierr /= 0) bad_item = .true.
          if (.not. bad_item) then
             call insert_spec(nxt_spec, string, ierr)
@@ -190,13 +185,14 @@ contains
 
 
    integer function do1_binary_history_spec(&
-      iounit, t, n, i, string, buffer, ierr) result(spec)
+      iounit, t, n, i, string, buffer, report, ierr) result(spec)
       use utils_lib
       use utils_def
       use chem_lib
 
       integer :: iounit, t, n, i, j
       character (len = *) :: string, buffer
+      logical, intent(in) :: report
       integer, intent(out) :: ierr
 
       ierr = 0
@@ -209,15 +205,16 @@ contains
          end if
       end do
 
-      write(*, *) 'bad history list name: ' // trim(string)
+      if (report) write(*, *) 'bad history list name: ' // trim(string)
       ierr = -1
 
    end function do1_binary_history_spec
 
-   subroutine set_binary_history_columns(b, binary_history_columns_file, ierr)
+   subroutine set_binary_history_columns(b, binary_history_columns_file, report, ierr)
       use utils_lib, only : realloc_integer
       type(binary_info), pointer :: b
       character (len = *), intent(in) :: binary_history_columns_file
+      logical, intent(in) :: report
       integer, intent(out) :: ierr
       integer :: capacity, cnt, i
       logical, parameter :: dbg = .false.
@@ -230,12 +227,12 @@ contains
       if (associated(b% binary_history_column_spec)) &
          old_binary_history_column_spec => b% binary_history_column_spec
       nullify(b% binary_history_column_spec)
-      capacity = 100 ! will increase if needed
+      capacity = 100  ! will increase if needed
       allocate(b% binary_history_column_spec(capacity), stat = ierr)
       if (ierr /= 0) return
       b% binary_history_column_spec(:) = 0
       call add_binary_history_columns(b, 1, capacity, &
-         b% binary_history_column_spec, binary_history_columns_file, ierr)
+         b% binary_history_column_spec, binary_history_columns_file, report, ierr)
       if (ierr /= 0) then
          if (associated(old_binary_history_column_spec)) &
             deallocate(old_binary_history_column_spec)

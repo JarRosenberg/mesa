@@ -1,38 +1,31 @@
 ! ***********************************************************************
 !
-!   Copyright (C) 2010-2024  The MESA Team
+!   Copyright (C) 2010-2019  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
 module turb_lib
-
-   use const_def, only: dp
+   use const_def, only: dp, pi, boltz_sigma, sqrt_2_div_3, crad, clight, no_mixing, convective_mixing, thermohaline_mixing
    use num_lib
    use math_lib
    use utils_lib
    use auto_diff
    use turb_def
    use thermohaline, only: set_info_HG19, set_info_FRG24 ! Used by plotter routine
-   
+
    implicit none
 
    private
@@ -134,9 +127,9 @@ contains
    !!
    !! @param conv_vel_start The convection speed at the start of the step.
    !! @param mixing_length_alpha The mixing length parameter.
-   !! @param alpha_TDC_DAMP TDC turbulent damping parameter
-   !! @param alpha_TDC_DAMPR TDC radiative damping parameter
-   !! @param alpha_TDC_PtdVdt TDC coefficient on P_turb*dV/dt. Physically should probably be 1.
+   !! @param TDC_alpha_D TDC turbulent damping parameter
+   !! @param TDC_alpha_R TDC radiative damping parameter
+   !! @param TDC_alpha_Pt TDC coefficient on P_turb*dV/dt. Physically should probably be 1.
    !! @param The time-step (s).
    !! @param cgrav gravitational constant (erg*cm/g^2).
    !! @param m Mass inside the face (g).
@@ -162,20 +155,25 @@ contains
    !! @param gradT The temperature gradient dlnT/dlnP (output).
    !! @param tdc_num_iters Number of iterations taken in the TDC solver.
    !! @param ierr Tracks errors (output).
+   !! @param Y_face_guess Candidate superadiabaticity for the local solve. Non-positive values disable seeding.
    subroutine set_TDC( &
-            conv_vel_start, mixing_length_alpha, alpha_TDC_DAMP, alpha_TDC_DAMPR, alpha_TDC_PtdVdt, dt, cgrav, m, report, &
+            conv_vel_start, mixing_length_alpha, TDC_alpha_D, TDC_alpha_R, TDC_alpha_Pt, dt, cgrav, m, report, &
             mixing_type, scale, chiT, chiRho, gradr, r, P, T, rho, dV, Cp, opacity, &
-            scale_height, gradL, grada, conv_vel, D, Y_face, gradT, tdc_num_iters, ierr)
+            scale_height, gradL, grada, conv_vel, D, Y_face, gradT, tdc_num_iters, &
+            max_conv_vel, Eq_div_w, grav, include_mlt_corr_to_TDC, TDC_alpha_C, &
+            TDC_alpha_S, use_TDC_enthalpy_flux_limiter, energy, Y_face_guess, ierr)
       use tdc
       use tdc_support
-      real(dp), intent(in) :: conv_vel_start, mixing_length_alpha, alpha_TDC_DAMP, alpha_TDC_DAMPR, alpha_TDC_PtdVdt, dt, cgrav, m, scale
+      real(dp), intent(in) :: conv_vel_start, mixing_length_alpha, TDC_alpha_D, TDC_alpha_R, TDC_alpha_Pt
+      real(dp), intent(in) :: dt, cgrav, m, scale, max_conv_vel, TDC_alpha_C, TDC_alpha_S
       type(auto_diff_real_star_order1), intent(in) :: &
-         chiT, chiRho, gradr, r, P, T, rho, dV, Cp, opacity, scale_height, gradL, grada
-      logical, intent(in) :: report
+         chiT, chiRho, gradr, r, P, T, rho, dV, Cp, opacity, scale_height, gradL, grada, Eq_div_w, grav, energy
+      logical, intent(in) :: report, include_mlt_corr_to_TDC, use_TDC_enthalpy_flux_limiter
+      real(dp), intent(in) :: Y_face_guess
       type(auto_diff_real_star_order1),intent(out) :: conv_vel, Y_face, gradT, D
       integer, intent(out) :: tdc_num_iters, mixing_type, ierr
       type(tdc_info) :: info
-      type(auto_diff_real_star_order1) :: L, grav, Lambda, Gamma
+      type(auto_diff_real_star_order1) :: L, Lambda, Gamma, h
       real(dp), parameter :: alpha_c = (1d0/2d0)*sqrt_2_div_3
       real(dp), parameter :: lower_bound_Z = -1d2
       real(dp), parameter :: upper_bound_Z = 1d2
@@ -183,28 +181,41 @@ contains
       type(auto_diff_real_tdc) :: Zub, Zlb
       include 'formats'
 
-      ! Do a call to MLT
-      grav = cgrav * m / pow2(r)
-      L = 64 * pi * boltz_sigma * pow4(T) * grav * pow2(r) * gradr / (3d0 * P * opacity)
-      Lambda = mixing_length_alpha * scale_height
-      call set_MLT('Cox', mixing_length_alpha, 0d0, 0d0, &
-                     chiT, chiRho, Cp, grav, Lambda, rho, P, T, opacity, &
-                     gradr, grada, gradL, &
-                     Gamma, gradT, Y_face, conv_vel, D, mixing_type, ierr)
+      !grav = cgrav * m / pow2(r)
+      L = 64d0 * pi * boltz_sigma * pow4(T) * grav * pow2(r) * gradr / (3d0 * P * opacity)
+      if (include_mlt_corr_to_TDC) then
+         Lambda = mixing_length_alpha * scale_height
+         call set_MLT('Cox', mixing_length_alpha, 0d0, 0d0, &
+                        chiT, chiRho, Cp, grav, Lambda, rho, P, T, opacity, &
+                        gradr, grada, gradL, &
+                        Gamma, gradT, Y_face, conv_vel, D, mixing_type,1d99, ierr)
+      else
+         Gamma = 0d0
+         gradT = gradr
+         Y_face = gradT - gradL
+         conv_vel = 0d0
+         D = 0d0
+         mixing_type = no_mixing
+         ierr = 0
+      end if
+
 
       ! Pack TDC info
       info%report = report
+      info%include_mlt_corr_to_TDC = include_mlt_corr_to_TDC
+      info%use_TDC_enthalpy_flux_limiter = use_TDC_enthalpy_flux_limiter
       info%mixing_length_alpha = mixing_length_alpha
-      info%alpha_TDC_DAMP = alpha_TDC_DAMP
-      info%alpha_TDC_DAMPR = alpha_TDC_DAMPR
-      info%alpha_TDC_PtdVdt = alpha_TDC_PtdVdt
+      info%TDC_alpha_D = TDC_alpha_D
+      info%TDC_alpha_R = TDC_alpha_R
+      info%TDC_alpha_Pt = TDC_alpha_Pt
       info%dt = dt
       info%L = convert(L)
       info%gradL = convert(gradL)
       info%grada = convert(grada)
-      info%c0 = convert(mixing_length_alpha*alpha_c*rho*T*Cp*4d0*pi*pow2(r))
-      info%L0 = convert((16d0*pi*crad*clight/3d0)*cgrav*m*pow4(T)/(P*opacity)) ! assumes QHSE for dP/dm
+      info%c0 = convert(TDC_alpha_C * mixing_length_alpha * alpha_c * rho * T * Cp * 4d0 * pi * pow2(r))
+      info%L0 = convert((16d0*pi*crad*clight/3d0)*cgrav*m*pow4(T)/(P*opacity))  ! assumes QHSE for dP/dm
       info%A0 = conv_vel_start/sqrt_2_div_3
+      info%h = energy + P/rho ! actual enthalpy
       info%T = T
       info%rho = rho
       info%dV = dV
@@ -212,11 +223,30 @@ contains
       info%kap = opacity
       info%Hp = scale_height
       info%Gamma = Gamma
+      info%Eq_div_w = Eq_div_w
+      info%TDC_alpha_C = TDC_alpha_C
+      info%TDC_alpha_S = TDC_alpha_S
 
       ! Get solution
       Zub = upper_bound_Z
       Zlb = lower_bound_Z
-      call get_TDC_solution(info, scale, Zlb, Zub, conv_vel, Y_face, tdc_num_iters, ierr)
+      call get_TDC_solution(info, scale, Zlb, Zub, conv_vel, Y_face, tdc_num_iters, Y_face_guess, ierr)
+
+      ! Cap conv_vel at max_conv_vel_div_csound*cs
+      if (conv_vel%val > max_conv_vel) then
+         conv_vel = max_conv_vel
+         ! if max_conv_vel = csound,
+         ! L = L0 * (gradL + Y) + c0 * Af * Y_env
+         ! L = L0 * (gradL + Y) + c0 * sqrt_2_div_3 * csound * (Gamma / (1 + Gamma)) * Y
+         ! L - L0 * gradL = Y * (L0 + c0 * sqrt_2_div_3 * csound * (Gamma / (1 + Gamma)))
+         if (include_mlt_corr_to_TDC) then
+            Y_face = unconvert(info%L - info%L0 * info%gradL) / &
+               (unconvert(info%L0) + unconvert(info%c0) * sqrt_2_div_3 * max_conv_vel * (info%Gamma / (1d0 + info%Gamma)))
+         else
+            Y_face = unconvert(info%L - info%L0 * info%gradL) / &
+               (unconvert(info%L0) + unconvert(info%c0) * sqrt_2_div_3 * max_conv_vel)
+         end if
+      end if
 
       ! Unpack output
       gradT = Y_face + gradL
@@ -240,7 +270,8 @@ contains
    !! @param opacity opacity (cm^2/g).
    !! @param rho density (g/cm^3).
    !! @param alpha_semiconvection The semiconvective alpha parameter.
-   !! @param semiconvection_option A string specifying which semiconvection theory to use. Currently supported are 'Langer_85 mixing; gradT = gradr' and 'Langer_85'.
+   !! @param semiconvection_option A string specifying which semiconvection theory to use.
+   !!                              Currently supported are 'Langer_85 mixing; gradT = gradr' and 'Langer_85'.
    !! @param cgrav gravitational constant (erg*cm/g^2).
    !! @param Cp Specific heat at constant pressure (erg/g/K).
    !! @param gradr The radiative temperature gradient dlnT/dlnP_{rad}
@@ -273,7 +304,9 @@ contains
 
    !> Calculates the outputs of convective mixing length theory.
    !!
-   !! @param MLT_option A string specifying which MLT option to use. Currently supported are Cox, Henyey, ML1, ML2, Mihalas. Note that 'TDC' is also a valid input and will return the Cox result. This is for use when falling back from TDC -> MLT, as Cox is the most-similar prescription to TDC.
+   !! @param MLT_option A string specifying which MLT option to use. Currently supported are Cox, Henyey, ML1, ML2, Mihalas.
+   !!                   Note that 'TDC' is also a valid input and will return the Cox result.
+   !!                   This is for use when falling back from TDC -> MLT, as Cox is the most-similar prescription to TDC.
    !! @param mixing_length_alpha The mixing length parameter.
    !! @param Henyey_MLT_nu_param The nu parameter in Henyey's MLT prescription.
    !! @param Henyey_MLT_y_param The y parameter in Henyey's MLT prescription.
@@ -298,18 +331,20 @@ contains
    subroutine set_MLT(MLT_option, mixing_length_alpha, Henyey_MLT_nu_param, Henyey_MLT_y_param, &
                      chiT, chiRho, Cp, grav, Lambda, rho, P, T, opacity, &
                      gradr, grada, gradL, &
-                     Gamma, gradT, Y_face, conv_vel, D, mixing_type, ierr)
+                     Gamma, gradT, Y_face, conv_vel, D, mixing_type, max_conv_vel, ierr)
       use mlt
       type(auto_diff_real_star_order1), intent(in) :: chiT, chiRho, Cp, grav, Lambda, rho, P, T, opacity, gradr, grada, gradL
       character(len=*), intent(in) :: MLT_option
-      real(dp), intent(in) :: mixing_length_alpha, Henyey_MLT_nu_param, Henyey_MLT_y_param
+      real(dp), intent(in) :: mixing_length_alpha, Henyey_MLT_nu_param, Henyey_MLT_y_param, max_conv_vel
+
       type(auto_diff_real_star_order1), intent(out) :: Gamma, gradT, Y_face, conv_vel, D
       integer, intent(out) :: mixing_type, ierr
 
       call calc_MLT(MLT_option, mixing_length_alpha, Henyey_MLT_nu_param, Henyey_MLT_y_param, &
                      chiT, chiRho, Cp, grav, Lambda, rho, P, T, opacity, &
                      gradr, grada, gradL, &
-                     Gamma, gradT, Y_face, conv_vel, D, mixing_type, ierr)
+                     Gamma, gradT, Y_face, conv_vel, D, mixing_type, max_conv_vel, ierr)
+
    end subroutine set_MLT
 
 end module turb_lib

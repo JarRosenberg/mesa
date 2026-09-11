@@ -2,6 +2,29 @@
 Reaction Networks
 =================
 
+Default treatment of nuclear energy generation
+----------------------------------------------
+
+By default, MESA tries to include the minimum number of isotopes
+requires to capture with some degree of accuracy the energy generation
+by thermonuclear processes. This is generally sufficient for stellar
+structure calculations, but not for detailed nucleosynthesis studies.
+
+The default behavior (see ``auto_extend_net`` in ``star_job``) is:
+- include only 8 isotopes (h1, he3, he4, c12, n14, o16, ne20, mg24)
+  until central depletion of helium (``basic.net``)
+- add si28 (``co_burn.net``) until central depletion of carbon
+- extend to a 21-isotope nuclear reaction network (``approx21.net``)
+  beyond carbon core burning, including a compound weak reaction that
+  allows for approximate treatment of electron captures and
+  deleptonization when approaching core-collapse.
+
+Each time isotopes and reactions are added to the network, by default
+abundances are re-scaled (see ``adjust_abundances_for_new_isos``).
+
+This default behavior can be changed using the ``change_net`` option
+in ``star_job``, see also ``default_net_name`` in ``controls``.
+
 Summary of available nets
 -------------------------
 
@@ -9,7 +32,7 @@ This is an incomplete summary of the nets included for use with
 mesa/net.  See ``$MESA_DIR/data/net_data/nets`` for the full list.
 
 This lists the isotopes that are included in each net, but not the
-reactions.  To check on those, it is best to have the code list them .
+reactions.  To check on those, it is best to have the code list them.
 In mesa/star you can do this by setting the star_job options
 ``show_net_reactions_info = .true.``; similarly, you can get a list of
 the isotopes by setting ``show_net_species_info = .true.``.
@@ -356,7 +379,7 @@ Each of the files in ``$MESA_DIR/data/rates_data/cache`` contains
 10000 lines listing temperature and corresponding rate for the
 specific reaction. However, these are in binary format. Inside
 ``$MESA_DIR/rates/test`` you can find an executable called
-``show_rates`` which can be used to to print the rates in a human
+``show_rates`` which can be used to print the rates in a human
 readable format. To do so, run it passing the path to a cache file as
 argument. You can pipe the output of this executable to a file to
 obtain a file that you can easily plot.

@@ -2,24 +2,18 @@
 !
 !   Copyright (C) 2013  The MESA Team
 !
-!   MESA is free software; you can use it and/or modify
-!   it under the combined terms and restrictions of the MESA MANIFESTO
-!   and the GNU General Library Public License as published
-!   by the Free Software Foundation; either version 2 of the License,
-!   or (at your option) any later version.
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
 !
-!   You should have received a copy of the MESA MANIFESTO along with
-!   this software; if not, it is available at the mesa website:
-!   http://mesa.sourceforge.net/
-!
-!   MESA is distributed in the hope that it will be useful,
+!   This program is distributed in the hope that it will be useful,
 !   but WITHOUT ANY WARRANTY; without even the implied warranty of
 !   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-!   See the GNU Library General Public License for more details.
+!   See the GNU Lesser General Public License for more details.
 !
-!   You should have received a copy of the GNU Library General Public License
-!   along with this software; if not, write to the Free Software
-!   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
 !
 ! ***********************************************************************
 
@@ -135,7 +129,7 @@
          new_v_center, &
          dv_per_step, &
          relax_v_center_dt, &
-         
+
          zero_alpha_RTI, &
          zero_initial_alpha_RTI, &
 
@@ -169,7 +163,6 @@
          fallback_check_total_energy, &
          remove_fallback_speed_limit, &
          remove_center_set_zero_v_center, &
-         retain_fallback_at_each_step, &
          limit_center_logP_at_each_step, &
          remove_center_adjust_L_center, &
          remove_center_logRho_limit, &
@@ -216,7 +209,7 @@
          remove_surface_do_entropy, &
          remove_surface_turn_off_energy_sources_and_sinks, &
          remove_surface_by_relax_to_star_cut, &
-         
+
          remove_initial_surface_at_cell_k, &
          remove_initial_surface_at_he_core_boundary, &
          remove_initial_surface_by_optical_depth, &
@@ -269,14 +262,6 @@
          adjust_tau_factor_to_surf_density, &
          base_for_adjust_tau_factor_to_surf_density, &
 
-         relax_Tsurf_factor, &
-         relax_initial_Tsurf_factor, &
-         set_Tsurf_factor, &
-         set_initial_Tsurf_factor, &
-         relax_to_this_Tsurf_factor, &
-         set_to_this_Tsurf_factor, &
-         dlogTsurf_factor, &
-
          relax_irradiation, &
          relax_initial_irradiation, &
          set_irradiation, &
@@ -292,53 +277,53 @@
          relax_mass_change_max_yrs_dt, &
          relax_mass_change_init_mdot, &
          relax_mass_change_final_mdot, &
-         
+
          change_RTI_flag, &
          change_initial_RTI_flag, &
          new_RTI_flag, &
-         
+
          change_RSP_flag, &
          change_initial_RSP_flag, &
          new_RSP_flag, &
-         
+
          change_RSP2_flag, &
          change_initial_RSP2_flag, &
          change_RSP2_flag_at_model_number, &
          new_RSP2_flag, &
          create_RSP2_model, &
-         
+
          change_w_div_wc_flag, &
          change_initial_w_div_wc_flag, &
          new_w_div_wc_flag, &
-         
+
          change_j_rot_flag, &
          change_initial_j_rot_flag, &
          new_j_rot_flag, &
-         
+
          create_RSP_model, &
-         
+
          change_v_flag, &
          change_initial_v_flag, &
          new_v_flag, &
-         
+
          change_D_omega_flag, &
          change_initial_D_omega_flag, &
          new_D_omega_flag, &
-         
+
          change_am_nu_rot_flag, &
          change_initial_am_nu_rot_flag, &
          new_am_nu_rot_flag, &
-         
+
          use_D_omega_for_am_nu_rot, &
-         
+
          change_u_flag, &
          change_initial_u_flag, &
          new_u_flag, &
-         
+
          change_reconstruction_flag, &
          change_initial_reconstruction_flag, &
          new_reconstruction_flag, &
-         
+
          center_ye_limit_for_v_flag, &
          change_rotation_flag, &
          change_initial_rotation_flag, &
@@ -346,7 +331,7 @@
          use_w_div_wc_flag_with_rotation, &
          use_j_rot_flag_with_rotation, &
 
-         
+
          set_omega, &
          set_initial_omega, &
          set_omega_step_limit, &
@@ -430,21 +415,21 @@
          limit_initial_dt, &
          years_for_initial_dt, &
          seconds_for_initial_dt, &
- 
+
          set_initial_cumulative_energy_error, &
          set_cumulative_energy_error, &
          set_cumulative_energy_error_at_step, &
          set_cumulative_energy_error_each_step_if_age_less_than, &
          set_cumulative_energy_error_each_relax, &
          new_cumulative_energy_error, &
-         
+
          change_net, &
          change_initial_net, &
          new_net_name, &
          change_small_net, &
          change_initial_small_net, &
          new_small_net_name, &
-         
+
          h_he_net, &
          co_net, &
          adv_net, &
@@ -452,7 +437,7 @@
          set_uniform_xa_from_file, &
          set_uniform_initial_xa_from_file, &
          file_for_uniform_xa, &
-      
+
          mix_section, mix_initial_section, &
          mix_section_nzlo, mix_section_nzhi, &
 
@@ -511,11 +496,11 @@
          chem_name2, &
          replace_element_nzlo, replace_element_nzhi, &
          do_special_test, &
-         
+
          save_pulse_data_for_model_number, &
          save_pulse_data_when_terminate, &
          save_pulse_data_filename, &
-         
+
          chem_isotopes_filename, &
          ionization_file_prefix, &
          ionization_Z1_suffix, &
@@ -531,11 +516,8 @@
          special_rate_factor, &
          filename_of_special_rate, &
          reaction_for_special_factor,&
-         color_num_files,&
-         color_file_names,&
-         color_num_colors,&
          warn_run_star_extras, &
-         
+
          report_garbage_collection, &
          num_steps_for_garbage_collection
 
@@ -543,89 +525,50 @@
 
 
       subroutine do_read_star_job(s, filename, ierr)
+         use utils_namelist, only: read_namelist, missing_namelist_error
          use star_private_def
-         use utils_lib
          type (star_info), pointer :: s
          character(*), intent(in) :: filename
          integer, intent(out) :: ierr
-         character (len=strlen) :: star_job_namelist_name
-         star_job_namelist_name = ''
-         ierr = 0
+
          call set_default_star_job_controls
-         call read_star_job_file(s, filename, 1, ierr)
+         call read_namelist(filename, read_star_job_file, "star_job", ierr, missing_namelist_error)
+
+         if (ierr /= 0) return
+         call store_star_job_controls(s)
          call check_star_job_controls(s, ierr)
       end subroutine do_read_star_job
 
+      subroutine read_star_job_file(unit, iostat, iomsg, extra_inlists, extra_inlists_mask)
+         use const_def, only: strlen
+         use utils_namelist, only: max_extra_inlists
 
-      recursive subroutine read_star_job_file(s, filename, level, ierr)
-         use star_private_def
-         use utils_lib
-         character(*), intent(in) :: filename
-         type (star_info), pointer :: s
-         integer, intent(in) :: level
-         integer, intent(out) :: ierr
-         logical, dimension(max_extra_inlists) :: read_extra
-         character (len=strlen), dimension(max_extra_inlists) :: extra
-         integer :: unit, i
+         integer, intent(in) :: unit
+         integer, intent(out) :: iostat
+         character(len=strlen), intent(out) :: iomsg
+         character(len=strlen), dimension(max_extra_inlists), intent(out) :: extra_inlists
+         logical, dimension(max_extra_inlists), intent(out) :: extra_inlists_mask
 
-         ierr = 0
+         integer :: i
 
-         if (level >= 10) then
-            write(*,*) 'ERROR: too many levels of nested extra star_job inlist files'
-            ierr = -1
+         read_extra_star_job_inlist(:) = .false.
+
+         read(unit, nml=star_job, iostat=iostat, iomsg=iomsg)
+
+         if (iostat /= 0) then
             return
          end if
 
-         if (len_trim(filename) > 0) then
-            open(newunit=unit, file=trim(filename), action='read', delim='quote', status='old', iostat=ierr)
-            if (ierr /= 0) then
-               write(*, *) 'Failed to open control namelist file "'//trim(filename)//'"'
-               return
-            end if
-            read(unit, nml=star_job, iostat=ierr)
-            close(unit)
-            if (ierr /= 0) then
-               write(*, *)
-               write(*, *)
-               write(*, *)
-               write(*, *)
-               write(*, '(a)') &
-                  'Failed while trying to read control namelist file: ' // trim(filename)
-               write(*, '(a)') &
-                  'Perhaps the following runtime error message will help you find the problem.'
-               write(*, *)
-               open(newunit=unit, file=trim(filename), action='read', delim='quote', status='old', iostat=ierr)
-               read(unit, nml=star_job)
-               close(unit)
-               return
-            end if
-         end if
-
-         call store_star_job_controls(s, ierr)
-
-         ! recursive calls to read other inlists
          do i=1, max_extra_inlists
-            read_extra(i) = read_extra_star_job_inlist(i)
-            read_extra_star_job_inlist(i) = .false.
-            extra(i) = extra_star_job_inlist_name(i)
-            extra_star_job_inlist_name(i) = 'undefined'
-            
-            if (read_extra(i)) then
-               call read_star_job_file(s, extra(i), level+1, ierr)
-               if (ierr /= 0) return
-            end if
+            extra_inlists(i) = extra_star_job_inlist_name(i)
+            extra_inlists_mask(i) = read_extra_star_job_inlist(i)
          end do
-
 
       end subroutine read_star_job_file
 
-
-      subroutine store_star_job_controls(s, ierr)
+      subroutine store_star_job_controls(s)
          use star_private_def
          type (star_info), pointer :: s
-         integer, intent(out) :: ierr
-
-         ierr = 0
 
          s% job% mesa_dir = mesa_dir
          s% job% eosDT_cache_dir = eosDT_cache_dir
@@ -730,7 +673,7 @@
          s% job% new_v_center = new_v_center
          s% job% dv_per_step = dv_per_step
          s% job% relax_v_center_dt = relax_v_center_dt
-         
+
          s% job% zero_alpha_RTI = zero_alpha_RTI
          s% job% zero_initial_alpha_RTI = zero_initial_alpha_RTI
 
@@ -783,7 +726,6 @@
          s% job% fallback_check_total_energy = fallback_check_total_energy
          s% job% remove_fallback_speed_limit = remove_fallback_speed_limit
          s% job% remove_center_set_zero_v_center = remove_center_set_zero_v_center
-         s% job% retain_fallback_at_each_step = retain_fallback_at_each_step
          s% job% limit_center_logP_at_each_step = limit_center_logP_at_each_step
          s% job% remove_center_adjust_L_center = remove_center_adjust_L_center
          s% job% remove_center_logRho_limit = remove_center_logRho_limit
@@ -820,7 +762,7 @@
          s% job% remove_surface_by_v_surf_div_v_escape = remove_surface_by_v_surf_div_v_escape
          s% job% min_q_for_remove_surface_by_v_surf_div_v_escape = min_q_for_remove_surface_by_v_surf_div_v_escape
          s% job% max_q_for_remove_surface_by_v_surf_div_v_escape = max_q_for_remove_surface_by_v_surf_div_v_escape
-         
+
          s% job% remove_surface_do_jrot = remove_surface_do_jrot
          s% job% remove_surface_do_entropy = remove_surface_do_entropy
          s% job% remove_surface_turn_off_energy_sources_and_sinks = remove_surface_turn_off_energy_sources_and_sinks
@@ -864,14 +806,6 @@
          s% job% relax_opacity_factor = relax_opacity_factor
          s% job% relax_initial_opacity_factor = relax_initial_opacity_factor
 
-         s% job% relax_Tsurf_factor = relax_Tsurf_factor
-         s% job% relax_initial_Tsurf_factor = relax_initial_Tsurf_factor
-         s% job% set_Tsurf_factor = set_Tsurf_factor
-         s% job% set_initial_Tsurf_factor = set_initial_Tsurf_factor
-         s% job% relax_to_this_Tsurf_factor = relax_to_this_Tsurf_factor
-         s% job% set_to_this_Tsurf_factor = set_to_this_Tsurf_factor
-         s% job% dlogTsurf_factor = dlogTsurf_factor
-
          s% job% relax_irradiation = relax_irradiation
          s% job% relax_initial_irradiation = relax_initial_irradiation
          s% job% set_irradiation = set_irradiation
@@ -904,7 +838,7 @@
          s% job% change_j_rot_flag = change_j_rot_flag
          s% job% change_initial_j_rot_flag = change_initial_j_rot_flag
          s% job% new_j_rot_flag = new_j_rot_flag
-         
+
          s% job% create_RSP_model = create_RSP_model
 
          s% job% change_v_flag = change_v_flag
@@ -925,7 +859,7 @@
          s% job% change_reconstruction_flag = change_reconstruction_flag
          s% job% change_initial_reconstruction_flag = change_initial_reconstruction_flag
          s% job% new_reconstruction_flag = new_reconstruction_flag
-         
+
          s% job% center_ye_limit_for_v_flag = center_ye_limit_for_v_flag
          s% job% change_rotation_flag = change_rotation_flag
          s% job% change_initial_rotation_flag = change_initial_rotation_flag
@@ -1015,21 +949,21 @@
          s% job% limit_initial_dt = limit_initial_dt
          s% job% years_for_initial_dt = years_for_initial_dt
          s% job% seconds_for_initial_dt = seconds_for_initial_dt
- 
+
          s% job% set_initial_cumulative_energy_error = set_initial_cumulative_energy_error
          s% job% set_cumulative_energy_error = set_cumulative_energy_error
          s% job% set_cumulative_energy_error_at_step = set_cumulative_energy_error_at_step
          s% job% set_cumulative_energy_error_each_step_if_age_less_than = set_cumulative_energy_error_each_step_if_age_less_than
          s% job% new_cumulative_energy_error = new_cumulative_energy_error
          s% job% set_cumulative_energy_error_each_relax = set_cumulative_energy_error_each_relax
-         
+
          s% job% change_net = change_net
          s% job% change_initial_net = change_initial_net
          s% job% new_net_name = new_net_name
          s% job% change_small_net = change_small_net
          s% job% change_initial_small_net = change_initial_small_net
          s% job% new_small_net_name = new_small_net_name
-         
+
          s% job% h_he_net = h_he_net
          s% job% co_net = co_net
          s% job% adv_net = adv_net
@@ -1100,11 +1034,11 @@
          s% job% replace_element_nzlo = replace_element_nzlo
          s% job% replace_element_nzhi = replace_element_nzhi
          s% job% do_special_test = do_special_test
-         
+
          s% job% save_pulse_data_for_model_number = save_pulse_data_for_model_number
          s% job% save_pulse_data_when_terminate = save_pulse_data_when_terminate
          s% job% save_pulse_data_filename = save_pulse_data_filename
-         
+
          s% job% chem_isotopes_filename = chem_isotopes_filename
          s% job% ionization_file_prefix = ionization_file_prefix
          s% job% ionization_Z1_suffix = ionization_Z1_suffix
@@ -1120,9 +1054,6 @@
          s% job% special_rate_factor = special_rate_factor
          s% job% filename_of_special_rate = filename_of_special_rate
          s% job% reaction_for_special_factor = reaction_for_special_factor
-         s% job% color_num_files = color_num_files
-         s% job% color_file_names = color_file_names
-         s% job% color_num_colors = color_num_colors
 
          s% job% warn_run_star_extras = warn_run_star_extras
          s% job% report_garbage_collection = report_garbage_collection
@@ -1140,8 +1071,6 @@
          special_rate_factor(:) = 1d0
          filename_of_special_rate(:) = ''
          reaction_for_special_factor(:) = ''
-         color_num_colors(:) = 0
-         color_file_names(:) = ''
          include 'star_job.defaults'
          include 'star_job_dev.defaults'
       end subroutine set_default_star_job_controls
@@ -1212,7 +1141,7 @@
          create_pre_main_sequence_model = s% job% create_pre_main_sequence_model
          pre_ms_relax_to_start_radiative_core = s% job% pre_ms_relax_to_start_radiative_core
          pre_ms_relax_num_steps = s% job% pre_ms_relax_num_steps
-         pre_ms_min_steps_before_check_radiative_core = s% job% pre_ms_min_steps_before_check_radiative_core 
+         pre_ms_min_steps_before_check_radiative_core = s% job% pre_ms_min_steps_before_check_radiative_core
          pre_ms_check_radiative_core_start = s% job% pre_ms_check_radiative_core_start
          pre_ms_check_radiative_core_stop = s% job% pre_ms_check_radiative_core_stop
          pre_ms_check_radiative_core_Lnuc_div_L_limit = s% job% pre_ms_check_radiative_core_Lnuc_div_L_limit
@@ -1283,7 +1212,7 @@
          new_v_center = s% job% new_v_center
          dv_per_step = s% job% dv_per_step
          relax_v_center_dt = s% job% relax_v_center_dt
-         
+
          zero_alpha_RTI = s% job% zero_alpha_RTI
          zero_initial_alpha_RTI = s% job% zero_initial_alpha_RTI
 
@@ -1358,12 +1287,12 @@
          remove_surface_by_v_surf_div_v_escape = s% job% remove_surface_by_v_surf_div_v_escape
          min_q_for_remove_surface_by_v_surf_div_v_escape = s% job% min_q_for_remove_surface_by_v_surf_div_v_escape
          max_q_for_remove_surface_by_v_surf_div_v_escape = s% job% max_q_for_remove_surface_by_v_surf_div_v_escape
-         
+
          remove_surface_do_jrot = s% job% remove_surface_do_jrot
          remove_surface_do_entropy = s% job% remove_surface_do_entropy
          remove_surface_turn_off_energy_sources_and_sinks = s% job% remove_surface_turn_off_energy_sources_and_sinks
          remove_surface_by_relax_to_star_cut = s% job% remove_surface_by_relax_to_star_cut
-         
+
          remove_initial_surface_at_cell_k = s% job% remove_initial_surface_at_cell_k
          remove_initial_surface_at_he_core_boundary = s% job% remove_initial_surface_at_he_core_boundary
          remove_initial_surface_by_optical_depth = s% job% remove_initial_surface_by_optical_depth
@@ -1415,14 +1344,6 @@
          d_opacity_factor = s% job% d_opacity_factor
          relax_opacity_factor = s% job% relax_opacity_factor
          relax_initial_opacity_factor = s% job% relax_initial_opacity_factor
-
-         relax_Tsurf_factor = s% job% relax_Tsurf_factor
-         relax_initial_Tsurf_factor = s% job% relax_initial_Tsurf_factor
-         set_Tsurf_factor = s% job% set_Tsurf_factor
-         set_initial_Tsurf_factor = s% job% set_initial_Tsurf_factor
-         relax_to_this_Tsurf_factor = s% job% relax_to_this_Tsurf_factor
-         set_to_this_Tsurf_factor = s% job% set_to_this_Tsurf_factor
-         dlogTsurf_factor = s% job% dlogTsurf_factor
 
          relax_irradiation = s% job% relax_irradiation
          relax_initial_irradiation = s% job% relax_initial_irradiation
@@ -1566,21 +1487,21 @@
          limit_initial_dt = s% job% limit_initial_dt
          years_for_initial_dt = s% job% years_for_initial_dt
          seconds_for_initial_dt = s% job% seconds_for_initial_dt
- 
+
          set_initial_cumulative_energy_error = s% job% set_initial_cumulative_energy_error
          set_cumulative_energy_error = s% job% set_cumulative_energy_error
          set_cumulative_energy_error_at_step = s% job% set_cumulative_energy_error_at_step
          set_cumulative_energy_error_each_step_if_age_less_than = s% job% set_cumulative_energy_error_each_step_if_age_less_than
          new_cumulative_energy_error = s% job% new_cumulative_energy_error
          set_cumulative_energy_error_each_relax = s% job% set_cumulative_energy_error_each_relax
-         
+
          change_net = s% job% change_net
          change_initial_net = s% job% change_initial_net
          new_net_name = s% job% new_net_name
          change_small_net = s% job% change_small_net
          change_initial_small_net = s% job% change_initial_small_net
          new_small_net_name = s% job% new_small_net_name
-         
+
          h_he_net = s% job% h_he_net
          co_net = s% job% co_net
          adv_net = s% job% adv_net
@@ -1651,11 +1572,11 @@
          replace_element_nzlo = s% job% replace_element_nzlo
          replace_element_nzhi = s% job% replace_element_nzhi
          do_special_test = s% job% do_special_test
-         
+
          save_pulse_data_for_model_number = s% job% save_pulse_data_for_model_number
          save_pulse_data_when_terminate = s% job% save_pulse_data_when_terminate
          save_pulse_data_filename = s% job% save_pulse_data_filename
-         
+
          chem_isotopes_filename = s% job% chem_isotopes_filename
          ionization_file_prefix = s% job% ionization_file_prefix
          ionization_Z1_suffix = s% job% ionization_Z1_suffix
@@ -1670,11 +1591,8 @@
          num_special_rate_factors = s% job% num_special_rate_factors
          special_rate_factor = s% job% special_rate_factor
          filename_of_special_rate = s% job% filename_of_special_rate
-         
+
          reaction_for_special_factor = s% job% reaction_for_special_factor
-         color_num_files = s% job% color_num_files
-         color_file_names = s% job% color_file_names
-         color_num_colors = s% job% color_num_colors
 
          warn_run_star_extras = s% job% warn_run_star_extras
          report_garbage_collection = s% job% report_garbage_collection
@@ -1715,69 +1633,68 @@
          character(len=*),intent(in) :: name
          character(len=*), intent(out) :: val
          integer, intent(out) :: ierr
-   
+
          character(len(name)+1) :: upper_name
          character(len=512) :: str
          integer :: iounit,iostat,ind,i
-   
+
          ierr = 0
 
          ! First save current controls
          call set_star_job_controls_for_writing(s, ierr)
          if(ierr/=0) return
-   
-         ! Write namelist to temporay file
+
+         ! Write namelist to temporary file
          open(newunit=iounit,status='scratch')
          write(iounit,nml=star_job)
          rewind(iounit)
-   
-         ! Namelists get written in captials
+
+         ! Namelists get written in capitals
          upper_name = trim(StrUpCase(name))//'='
          val = ''
          ! Search for name inside namelist
-         do 
+         do
             read(iounit,'(A)',iostat=iostat) str
             ind = index(trim(str),trim(upper_name))
             if( ind /= 0 ) then
-               val = str(ind+len_trim(upper_name):len_trim(str)-1) ! Remove final comma and starting =
+               val = str(ind+len_trim(upper_name):len_trim(str)-1)  ! Remove final comma and starting =
                do i=1,len(val)
                   if(val(i:i)=='"') val(i:i) = ' '
                end do
                exit
             end if
             if(is_iostat_end(iostat)) exit
-         end do   
-   
+         end do
+
          if(len_trim(val) == 0 .and. ind==0 ) ierr = -1
-   
+
          close(iounit)
-   
+
       end subroutine get_star_job
-   
+
       subroutine set_star_job(s, name, val, ierr)
          type (star_info), pointer :: s
          character(len=*), intent(in) :: name, val
          character(len=len(name)+len(val)+12) :: tmp
          integer, intent(out) :: ierr
-   
+
          ierr = 0
 
          ! First save current star_job
          call set_star_job_controls_for_writing(s, ierr)
          if(ierr/=0) return
-   
+
          tmp=''
          tmp = '&star_job '//trim(name)//'='//trim(val)//'/'
-   
+
          ! Load into namelist
          read(tmp, nml=star_job)
-   
+
          ! Add to star
-         call store_star_job_controls(s, ierr)
+         call store_star_job_controls(s)
          if(ierr/=0) return
-   
+
       end subroutine set_star_job
 
 
       end module star_job_ctrls_io
-

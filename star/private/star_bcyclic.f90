@@ -1,17 +1,20 @@
 ! ***********************************************************************
-! Copyright (C) 2012  The MESA Team
-! This file is part of MESA.
-! MESA is free software; you can redistribute it and/or modify
-! it under the terms of the GNU General Library Public License as published
-! by the Free Software Foundation; either version 2 of the License, or
-! (at your option) any later version.
-! MESA is distributed in the hope that it will be useful,
-! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-! GNU Library General Public License for more details.
-! You should have received a copy of the GNU Library General Public License
-! along with this software; if not, write to the Free Software
-! Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+!
+!   Copyright (C) 2012  The MESA Team
+!
+!   This program is free software: you can redistribute it and/or modify
+!   it under the terms of the GNU Lesser General Public License
+!   as published by the Free Software Foundation,
+!   either version 3 of the License, or (at your option) any later version.
+!
+!   This program is distributed in the hope that it will be useful,
+!   but WITHOUT ANY WARRANTY; without even the implied warranty of
+!   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+!   See the GNU Lesser General Public License for more details.
+!
+!   You should have received a copy of the GNU Lesser General Public License
+!   along with this program. If not, see <https://www.gnu.org/licenses/>.
+!
 ! ***********************************************************************
 
 ! derived from BCYCLIC written hirshman et. al.
@@ -35,7 +38,6 @@
       logical, parameter :: dbg = .false.
       logical, parameter :: do_set_nan = .false.
 
-
       contains
 
       subroutine bcyclic_factor ( &
@@ -43,14 +45,14 @@
             B1, row_scale_factors1, col_scale_factors1, &
             equed1, iter, ierr)
          type (star_info), pointer :: s
-         integer, intent(in) :: nvar ! linear size of each block
-         integer, intent(in) :: nz ! number of block rows
+         integer, intent(in) :: nvar  ! linear size of each block
+         integer, intent(in) :: nz  ! number of block rows
          real(dp), pointer, dimension(:) :: &
             lblk1, dblk1, ublk1, lblkF1, dblkF1, ublkF1, &
             B1, row_scale_factors1, col_scale_factors1
          integer, pointer :: ipivot1(:)
          character (len=nz) :: equed1
-         integer, intent(in) :: iter ! solver iteration number for debugging output
+         integer, intent(in) :: iter  ! solver iteration number for debugging output
          integer, intent(out) :: ierr
 
          integer, pointer :: nslevel(:), ipivot(:)
@@ -61,14 +63,14 @@
          character (len=1) :: equed
          real(dp) :: min_rcond_from_DGESVX, rpgfac
          integer :: k_min_rcond_from_DGESVX
-         
+
          integer, allocatable :: factored(:)
 
          include 'formats'
-         
+
          if (s% use_DGESVX_in_bcyclic .and. s% report_min_rcond_from_DGESXV) &
             min_rcond_from_DGESVX = 1d99
-         
+
          allocate(factored(nz))
          do k=1,nz
             factored(k) = 0
@@ -124,7 +126,7 @@
          if (dbg) write(*,*) 'start factor_cycle'
 
          !call cali_begin_phase('factor_cycle')
-         factor_cycle: do ! perform cyclic-reduction factorization
+         factor_cycle: do  ! perform cyclic-reduction factorization
 
             nslevel(nlevel) = nstemp
 
@@ -141,13 +143,13 @@
                return
             end if
 
-            if (nstemp == 1) exit
+            if (nstemp == 1) exit factor_cycle
 
             nstemp = (nstemp+1)/2
             nlevel = nlevel+1
             ncycle = 2*ncycle
 
-            if (nlevel > maxlevels) exit
+            if (nlevel > maxlevels) exit factor_cycle
 
          end do factor_cycle
          !call cali_end_phase('factor_cycle')
@@ -171,8 +173,8 @@
             call dealloc
             return
          end if
-         
-         do k=1,nz ! check that every cell factored exactly once
+
+         do k=1,nz  ! check that every cell factored exactly once
             if (factored(k) /= 1) then
                write(*,3) 'factored /= 1', k, factored(k)
                call mesa_error(__FILE__,__LINE__,'bcyclic_factor')
@@ -180,7 +182,7 @@
          end do
 
          call dealloc
-            
+
          if (s% use_DGESVX_in_bcyclic .and. s% report_min_rcond_from_DGESXV) then
             write(*,4) 'DGESVX: k_min, iter, model, min rcond, rpgfac', &
                k_min_rcond_from_DGESVX, iter, s% model_number, min_rcond_from_DGESVX, rpgfac
@@ -237,7 +239,7 @@
                deallocate( &
                   s% bcyclic_odd_storage(nlevel)% umat1, &
                   s% bcyclic_odd_storage(nlevel)% lmat1)
-            new_sz = min_sz*1.1 + 100
+            new_sz = min_sz*1.1d0 + 100
             s% bcyclic_odd_storage(nlevel)% ul_size = new_sz
             allocate (s% bcyclic_odd_storage(nlevel)% umat1(new_sz), &
                       s% bcyclic_odd_storage(nlevel)% lmat1(new_sz), stat=ierr)
@@ -602,12 +604,12 @@
          integer, intent(out) :: ierr
          include 'formats'
          ierr = 0
-         
+
          if (s% use_DGESVX_in_bcyclic) then
             call factor_with_DGESVX
             return
          end if
-         
+
          if (nvar == 4) then
             call my_getf2_n4(mtxF, ipivot, ierr)
          else if (nvar == 5) then
@@ -615,9 +617,9 @@
          else
             call my_getf2(nvar, mtxF, nvar, ipivot, ierr)
          end if
-         
+
          contains
-         
+
          subroutine factor_with_DGESVX
             character (len=1) :: fact, trans
             integer, parameter :: nrhs = 0
@@ -633,13 +635,13 @@
                   a(i,j) = mtxF(i,j)
                end do
             end do
-            
+
             if (s% use_equilibration_in_DGESVX) then
-               fact = 'E' ! matrix A will be equilibrated, then copied to AF and factored
+               fact = 'E'  ! matrix A will be equilibrated, then copied to AF and factored
             else
-               fact = 'N' ! matrix A will be copied to AF and factored
+               fact = 'N'  ! matrix A will be copied to AF and factored
             end if
-            trans = 'N' ! no transpose
+            trans = 'N'  ! no transpose
 
 !      SUBROUTINE DGESVX( FACT, TRANS, N, NRHS, A, LDA, AF, LDAF, IPIV,
 !     $                   EQUED, R, C, B, LDB, X, LDX, RCOND, FERR, BERR,
@@ -648,16 +650,16 @@
             call DGESVX(fact, trans, nvar, nrhs, a, nvar, af, nvar, ipiv, &
                         equed, r, c, b, nvar, x, nvar, rcond, ferr, berr, &
                         work, iwork, ierr)
-               
-            if (ierr > 0 .and. ierr <= nvar) then ! singular
+
+            if (ierr > 0 .and. ierr <= nvar) then  ! singular
                write(*,3) 'singular matrix for DGESVX', k, ierr
                call mesa_error(__FILE__,__LINE__,'factor_with_DGESVX')
             end if
-            if (ierr == nvar+1) then ! means bad rcond, but may not be fatal
+            if (ierr == nvar+1) then  ! means bad rcond, but may not be fatal
                write(*,2) 'DGESVX reports bad matrix conditioning: k, rcond', k, rcond
                ierr = 0
             end if
-            
+
             do i=1,nvar
                do j=1,nvar
                   mtx(i,j) = a(i,j)
@@ -667,7 +669,7 @@
                col_scale_factors(i) = c(i)
                ipivot(i) = ipiv(i)
             end do
-            
+
             if (s% report_min_rcond_from_DGESXV .and. rcond < min_rcond_from_DGESVX) then
                !$OMP CRITICAL (bcyclic_dense_factor_crit)
                min_rcond_from_DGESVX = rcond
@@ -677,9 +679,9 @@
             end if
 
          end subroutine factor_with_DGESVX
-         
+
       end subroutine dense_factor
-   
+
 
       subroutine bcyclic_solve ( &
             s, nvar, nz, lblk1, dblk1, ublk1, lblkF1, dblkF1, ublkF1, ipivot1, &
@@ -704,7 +706,7 @@
 
 
          if (dbg) write(*,*) 'start bcyclic_solve'
-         
+
          ! copy B to soln
          !$OMP PARALLEL DO SIMD
          do i=1,nvar*nz
@@ -745,13 +747,13 @@
                return
             end if
 
-            if (nstemp == 1) exit
+            if (nstemp == 1) exit forward_cycle
 
             nstemp = (nstemp+1)/2
             nlevel = nlevel+1
             ncycle = 2*ncycle
 
-            if (nlevel > maxlevels) exit
+            if (nlevel > maxlevels) exit forward_cycle
 
          end do forward_cycle
 
@@ -777,7 +779,7 @@
             nlevel = nlevel-1
             if (nlevel < 1) then
                ierr = -1
-               exit
+               exit back_cycle
             end if
             nstemp = nslevel(nlevel)
             call cycle_solve( &
@@ -829,7 +831,7 @@
          integer :: i
          real(dp), pointer :: X(:)
          ierr = 0
-         
+
          if (s% use_DGESVX_in_bcyclic) then
             call solve_with_DGESVX
             return
@@ -841,9 +843,9 @@
                row_scale_factors, col_scale_factors, equed, ierr)
             if (ierr /= 0) return
          end do
-         
+
          contains
-         
+
          subroutine solve_with_DGESVX
             character (len=1) :: fact, trans
             real(dp) :: rcond
@@ -867,9 +869,9 @@
                c(i) = col_scale_factors(i)
                ipiv(i) = ipivot(i)
             end do
-            
-            fact = 'F' ! factored
-            trans = 'N' ! no transpose
+
+            fact = 'F'  ! factored
+            trans = 'N'  ! no transpose
 
 !      SUBROUTINE DGESVX( FACT, TRANS, N, NRHS, A, LDA, AF, LDAF, IPIV,
 !     $                   EQUED, R, C, B, LDB, X, LDX, RCOND, FERR, BERR,
@@ -881,7 +883,7 @@
             if (ierr /= 0) then
                write(*,2) 'solve_with_DGESVX failed', k
             end if
-            
+
             do i=1,nvar
                !$OMP SIMD
                do j=1,nvar
@@ -906,12 +908,12 @@
          integer, intent(out) :: ierr
          include 'formats'
          ierr = 0
-         
+
          if (s% use_DGESVX_in_bcyclic) then
             call solve1_with_DGESVX
             return
          end if
-         
+
          if (nvar == 4) then
             call my_getrs1_n4(mtxF, ipivot, X_vec, ierr)
          else if (nvar == 5) then
@@ -919,9 +921,9 @@
          else
             call my_getrs1(nvar, mtxF, nvar, ipivot, X_vec, nvar, ierr)
          end if
-         
+
          contains
-         
+
          subroutine solve1_with_DGESVX
             character (len=1) :: fact, trans
             real(dp) :: rcond
@@ -945,9 +947,9 @@
                c(i) = col_scale_factors(i)
                ipiv(i) = ipivot(i)
             end do
-            
-            fact = 'F' ! factored
-            trans = 'N' ! no transpose
+
+            fact = 'F'  ! factored
+            trans = 'N'  ! no transpose
 
 !      SUBROUTINE DGESVX( FACT, TRANS, N, NRHS, A, LDA, AF, LDAF, IPIV,
 !     $                   EQUED, R, C, B, LDB, X, LDX, RCOND, FERR, BERR,
@@ -956,7 +958,7 @@
             call DGESVX(fact, trans, nvar, nrhs, a, nvar, af, nvar, ipiv, &
                         equed, r, c, b, nvar, x, nvar, rcond, ferr, berr, &
                         work, iwork, ierr)
-            
+
             !$OMP SIMD
             do i=1,nvar
                X_vec(i) = x(i,1)
@@ -967,7 +969,6 @@
       end subroutine dense_solve1
 
 
-
       subroutine bcyclic_deallocate (s, ierr)
          type (star_info), pointer :: s
          integer, intent(out) :: ierr
@@ -976,6 +977,5 @@
 
 
       include 'mtx_solve_routines.inc'
-
 
       end module star_bcyclic
