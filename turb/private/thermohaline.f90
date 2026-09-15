@@ -110,12 +110,12 @@ contains
 
       select case (thermohaline_option)
       case ('Kippenhahn')
-      case ('Brown_Garaud_Stellmach_13')
-         if (th_info%r_prime >= 1._dp) return
-      case ('Harrington_Garaud_19')
-         if (th_info%r_prime >= 1._dp) return
-      case ('Fraser_Reifenstein_Garaud_24')
-         if (th_info%r_prime >= 1._dp) return
+      ! case ('Brown_Garaud_Stellmach_13')
+      !    if (th_info%r_prime >= 1._dp) return
+      ! case ('Harrington_Garaud_19')
+      !    if (th_info%r_prime >= 1._dp) return
+      ! case ('Fraser_Reifenstein_Garaud_24')
+      !    if (th_info%r_prime >= 1._dp) return
       case default
          if (th_info%r >= 1._dp) return
       end select
@@ -280,13 +280,17 @@ contains
       real(dp), intent(in)           :: r_ext
       type(th_info_t), intent(inout) :: th_info
 
+      type(auto_diff_real_1var_order1) :: gradL_composition_term_auto_diff
+
+      ! Initialize the gradL_composition_term with auto_diff
+
+      gradL_composition_term_auto_diff%val    = gradL_composition_term
+      gradL_composition_term_auto_diff%d1val1 = 1d0
+
       ! Set stratification coefficients in th_info
 
-      th_info%R_0 = (gradr - grada)/gradL_composition_term
+      th_info%R_0 = (gradr - grada)/gradL_composition_term_auto_diff
       th_info%r = (th_info%R_0 - 1._dp)/(1._dp/th_info%tau - 1._dp)
-
-      th_info%r_prime = MIN(th_info%r, r_ext)
-      th_info%R_0_prime = th_info%r_prime*(1._dp/th_info%tau - 1._dp) + 1._dp
 
 !      print *,'set strat:',th_info%R_0, th_info%r, th_info%R_0_prime, th_info%r_prime, gradL_composition_term
 
@@ -326,7 +330,7 @@ contains
       ! Denissenkov. ApJ 723:563–579, 2010.
 
       th_info%D_thrm = 101._dp*sqrt(th_info%K_C*th_info%nu)* &
-         exp(-3.6_dp*th_info%r)*pow(1._dp - th_info%r, 1.1_dp) ! eqn. (24)
+         exp(-3.6_dp*th_info%r%val)*pow(1._dp - th_info%r%val, 1.1_dp) ! eqn. (24)
 
    end subroutine set_info_TGS11
 
@@ -337,16 +341,21 @@ contains
       type(th_info_t), intent(inout) :: th_info
       integer, intent(out)           :: ierr
 
+      type(auto_diff_real_1var_order1) :: D_thrm_auto_diff
+
       ! Set components of th_info following Brown, Garaud, &
       ! Stellmach, ApJ 768:34 (2013)
 
-      call eval_fastest_fingering(th_info%Pr, th_info%tau, th_info%R_0_prime, th_info%lam_hat, th_info%l2_hat, ierr)
+      call eval_fastest_fingering(th_info%Pr, th_info%tau, th_info%R_0, th_info%lam_hat, th_info%l2_hat, ierr)
 !      call eval_fastest_fingering(th_info%Pr, th_info%tau, th_info%R_0, th_info%lam_hat, th_info%l2_hat, ierr)
       if (ierr /= 0) return
 
       th_info%Nu_C = Nu_C_brown(th_info%tau, th_info%l2_hat, th_info%lam_hat)
-      th_info%D_thrm = th_info%K_C*(th_info%Nu_C - 1._dp)*th_info%R_0_prime/th_info%R_0
-!      th_info%D_thrm = th_info%K_C*(th_info%Nu_C - 1._dp)
+      D_thrm_auto_diff = th_info%K_C*(th_info%Nu_C - 1._dp)
+
+      th_info%D_thrm = D_thrm_auto_diff%val
+      th_info%dD_thrm_dgradL_composition_term = D_thrm_auto_diff%d1val1
+
 
    end subroutine set_info_BGS13
 
@@ -362,12 +371,12 @@ contains
       ! Set componets of th_info following Harrington & Garaud, ApJ
       ! Letters, 870:L5 (2019; HG19)
 
-      call eval_fastest_fingering(th_info%Pr, th_info%tau, th_info%R_0_prime, th_info%lam_hat, th_info%l2_hat, ierr)
+      call eval_fastest_fingering(th_info%Pr, th_info%tau, th_info%R_0, th_info%lam_hat, th_info%l2_hat, ierr)
       if (ierr /= 0) return
 
       ! Solve for w_HG19
 
-      call solve_HG19_eqn32(th_info%H_B, th_info%l2_hat, th_info%lam_hat, th_info%w_HG19, ierr)
+      call solve_HG19_eqn32(th_info%H_B, th_info%l2_hat%val, th_info%lam_hat%val, th_info%w_HG19, ierr)
       if (ierr /= 0) then
          write(*,*) 'failed in solve_HG19_eqn32'
          write(*,*) 'H_B', th_info%H_B
@@ -382,8 +391,9 @@ contains
       ! Evaluate Nu_C and D_thrm
 
       th_info%Nu_C = Nu_C(th_info%tau, th_info%w, th_info%lam_hat, th_info%l2_hat, K_B)
-      th_info%D_thrm = th_info%K_C*(th_info%Nu_C - 1._dp)*th_info%R_0_prime/th_info%R_0
-!      th_info%D_thrm = th_info%K_C*(th_info%Nu_C - 1._dp)*exp(-(th_info%r - th_info%r_prime))
+!      th_info%D_thrm = th_info%K_C*(th_info%Nu_C - 1._dp)*th_info%R_0_prime/th_info%R_0
+      ! th_info%D_thrm = th_info%K_C*(th_info%Nu_C - 1._dp)*exp(-(th_info%r - th_info%r_prime))
+      th_info%D_thrm = th_info%K_C*(th_info%Nu_C%val - 1._dp)
 
    end subroutine set_info_HG19
 
@@ -405,7 +415,7 @@ contains
       ! Set components of th_info following Fraser, Reifenstein, &
       ! Garaud, ApJ 964:184 (2024; FRG24)
 
-      call eval_fastest_fingering(th_info%Pr, th_info%tau, th_info%R_0_prime, th_info%lam_hat, th_info%l2_hat, ierr)
+      call eval_fastest_fingering(th_info%Pr, th_info%tau, th_info%R_0, th_info%lam_hat, th_info%l2_hat, ierr)
       if (ierr /= 0) return
 
       ! Define grid of vertical wavenumbers. This may evolve. Rich is
@@ -423,14 +433,14 @@ contains
 
       ! Solve for w_FRG24
 
-      call eval_parasite_saturation(th_info%Pr, th_info%tau, th_info%R_0_prime, th_info%H_B, th_info%D_B, &
-         th_info%lam_hat, th_info%l2_hat, k_z, N, safety, th_info%sigma_max, th_info%k_z_max, th_info%w_FRG24, ierr)
+      call eval_parasite_saturation(th_info%Pr, th_info%tau, th_info%R_0%val, th_info%H_B, th_info%D_B, &
+         th_info%lam_hat%val, th_info%l2_hat%val, k_z, N, safety, th_info%sigma_max, th_info%k_z_max, th_info%w_FRG24, ierr)
       if (ierr /= 0) then
          write(*,*) 'failed in eval_parasite_saturation'
          write(*,*) 'Pr', th_info%Pr
          write(*,*) 'tau', th_info%tau
          write(*,*) 'R_0', th_info%R_0
-         write(*,*) 'R_0', th_info%R_0_prime
+         ! write(*,*) 'R_0', th_info%R_0_prime
          write(*,*) 'H_B', th_info%H_B
          write(*,*) 'D_B', th_info%D_B
          write(*,*) 'l2_hat', th_info%l2_hat
@@ -442,7 +452,7 @@ contains
       ! For safety = 0, merge with w_HG19
 
       if (safety == 0) then
-         call solve_HG19_eqn32(th_info%H_B, th_info%l2_hat, th_info%lam_hat, th_info%w_HG19, ierr)
+         call solve_HG19_eqn32(th_info%H_B, th_info%l2_hat%val, th_info%lam_hat%val, th_info%w_HG19, ierr)
          if (ierr /= 0) then
             write(*,*) 'failed in solve_HG19_eqn32'
             write(*,*) 'H_B', th_info%H_B
@@ -459,7 +469,7 @@ contains
       ! Evaluate Nu_C and D_thrm
 
       th_info%Nu_C = Nu_C(th_info%tau, th_info%w, th_info%lam_hat, th_info%l2_hat, K_B)
-      th_info%D_thrm = th_info%K_C*(th_info%Nu_C - 1._dp)*th_info%R_0_prime/th_info%R_0
+      th_info%D_thrm = th_info%K_C*(th_info%Nu_C%val - 1._dp) !*th_info%R_0_prime/th_info%R_0
 
    end subroutine set_info_FRG24
 
@@ -468,9 +478,9 @@ contains
    function Nu_C_brown(tau, l2_hat, lam_hat) result(Nu_C)
 
       real(dp), intent(in) :: tau
-      real(dp), intent(in) :: l2_hat
-      real(dp), intent(in) :: lam_hat
-      real(dp)             :: Nu_C
+      type(auto_diff_real_1var_order1), intent(in) :: l2_hat
+      type(auto_diff_real_1var_order1), intent(in) :: lam_hat
+      type(auto_diff_real_1var_order1)             :: Nu_C
 
       ! The Nusselt number Nu_C reduces to this simpler form for the
       ! Brown model, Formula (33) from Brown et al, with C = 7.
@@ -485,10 +495,10 @@ contains
 
       real(dp), intent(in) :: tau
       real(dp), intent(in) :: w
-      real(dp), intent(in) :: lam_hat
-      real(dp), intent(in) :: l2_hat
+      type(auto_diff_real_1var_order1), intent(in) :: lam_hat
+      type(auto_diff_real_1var_order1), intent(in) :: l2_hat
       real(dp), intent(in) :: KB
-      real(dp)             :: Nu_C
+      type(auto_diff_real_1var_order1)             :: Nu_C
 
       ! More general expression for the Nusselt number Nu_C in terms
       ! of w, for Harrington and Fraser models KB = 1.24 for

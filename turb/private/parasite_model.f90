@@ -32,7 +32,7 @@ module parasite_model
    use fingering_modes
    use parasite_model_matrices
 
-   use f95_lapack
+   use f95_lapack, only: LA_GEEV
 
    implicit none
 
@@ -170,7 +170,7 @@ contains
          w_2 = w_2*10._dp
          f_2 = root_func_(w_2, dfdx, lrpar, rpar, lipar, ipar, ierr)
          if (ierr /= 0) return
-         
+
       end do
 
       ! Call bracketed root finder
@@ -182,7 +182,7 @@ contains
       ! Set sigma_max and k_max
 
       call find_fastest_parasite(w, k_z, Pr, tau, R_0, H_B, D_B, lam_hat, l_hat, N, safety, sigma_max, k_z_max, ierr)
-      
+
    contains
 
       function root_func_(x, dfdx, lrpar, rpar, lipar, ipar, ierr) result(f)
@@ -211,7 +211,7 @@ contains
       end function root_func_
 
    end subroutine eval_parasite_saturation
-         
+
    !****
 
    subroutine find_fastest_parasite(w, k_z, Pr, tau, R_0, H_B, D_B, lam_hat, l_hat, N, safety, sigma_max, k_z_max, ierr)
@@ -250,7 +250,7 @@ contains
          call find_fastest_parasite_k_z(w, k_z(i), Pr, tau, R_0, H_B, D_B, lam_hat, l_hat, N, safety, sigma_max_i, ierr)
          if (ierr /= 0) return
 
-         if (sigma_max_i > sigma_max) then 
+         if (sigma_max_i > sigma_max) then
             sigma_max = sigma_max_i
             k_z_max = k_z(i)
             i_max = i

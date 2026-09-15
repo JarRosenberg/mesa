@@ -26,6 +26,8 @@
 module turb_def
 
    use const_def, only: dp, no_mixing
+   ! Use auto_diff to track the derivative with respect to the gradL_composition_term for implicit diffusion purposes
+   use auto_diff
 
    implicit none
 
@@ -36,22 +38,21 @@ module turb_def
       real(dp) :: nu = 0._dp              ! Viscosity
       real(dp) :: Pr = 0._dp              ! Prandtl number
       real(dp) :: tau = 0._dp             ! Chemical diffusivity ratio
-      real(dp) :: R_0 = 0._dp             ! Density ratio
-      real(dp) :: R_0_prime = 0._dp       ! Modified density ratio (for extrapolation)
-      real(dp) :: r = 0._dp               ! Reduced density ratio
-      real(dp) :: r_prime = 0._dp         ! Modified reduced density ratio (for extrapolation)
+      type(auto_diff_real_1var_order1) :: R_0 = auto_diff_real_1var_order1(0d0, 0d0)             ! Density ratio
+      type(auto_diff_real_1var_order1) :: r = auto_diff_real_1var_order1(0d0, 0d0)            ! Reduced density ratio
       real(dp) :: H_B = 0._dp             ! Lorentz force coefficient
       real(dp) :: Pm = 0._dp              ! Magnetic Prandtl number
       real(dp) :: D_B = 0._dp             ! Magnetic diffusivity
-      real(dp) :: lam_hat = 0._dp         ! Growth rate of fastest-growing fingering mode
-      real(dp) :: l2_hat = 0._dp          ! Horizontal wavenumber squared of fastest-growing fingering mode
+      type(auto_diff_real_1var_order1) :: lam_hat = auto_diff_real_1var_order1(0d0, 0d0)          ! Growth rate of fastest-growing fingering mode
+      type(auto_diff_real_1var_order1) :: l2_hat = auto_diff_real_1var_order1(0d0, 0d0)          ! Horizontal wavenumber squared of fastest-growing fingering mode
       real(dp) :: sigma_max = 0._dp       ! Growth rate of fastest-growing parasitic mode
       real(dp) :: k_z_max = 0._dp         ! Vertical wavenumber of fastest-growing parasitic mode
       real(dp) :: w = 0._dp               ! Saturation flow speed
       real(dp) :: w_HG19 = 0._dp          ! Saturation flow speed in HG19 treatment
       real(dp) :: w_FRG24 = 0._dp         ! Saturation flow speed in FRG24 treatment
-      real(dp) :: Nu_C = 0._dp            ! Compositional Nusselt number
+      type(auto_diff_real_1var_order1) :: Nu_C = auto_diff_real_1var_order1(0d0, 0d0)            ! Compositional Nusselt number
       real(dp) :: D_thrm = 0._dp          ! Effective thermohaline mixing diffusivity
+      real(dp) :: dD_thrm_dgradL_composition_term = 0._dp      ! Derivative of diffusivity w.r.t. ledoux term
       integer  :: mixing_type = no_mixing ! Mixing type
    end type th_info_t
 
